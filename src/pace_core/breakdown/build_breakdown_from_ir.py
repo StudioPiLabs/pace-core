@@ -66,7 +66,7 @@ RULES
 4. `state_notes` records what is true AFTER the shot because of it -- a
    panel that lost power stays off. Carry only states your events caused.
 5. description_en describes the IMAGE, not the plot. "The car falls on top of
-   him" not "Ryan dies tragically".
+   him" not "Omar dies tragically".
 """
 
 

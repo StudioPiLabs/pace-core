@@ -32,7 +32,7 @@ SCENE = {"shot_defaults": {"camera": {"creative_intent": {"aspect_ratio": "2.35:
                                       "extrinsics": {"angle": "eye_level"}}}}
 SHOT = {"camera": {"creative_intent": {"shot_size": "wide"},
                    "intrinsics": {"lens_mm": 35}},
-        "setup": {"subjects": [{"character_id": "emily"}]}}
+        "setup": {"subjects": [{"character_id": "nina"}]}}
 
 
 def test_a_panel_without_an_override_gets_the_shot_camera():
@@ -66,7 +66,7 @@ def test_setup_override_resolves_too_not_just_its_excluded_leaf():
     out = resolve_shot(SCENE, SHOT, end)
     assert out["setup"]["environment"]["style"] == "sketch_bw"
     # …and the shot's own setup survives alongside it
-    assert out["setup"]["subjects"][0]["character_id"] == "emily"
+    assert out["setup"]["subjects"][0]["character_id"] == "nina"
 
 
 def test_the_excluded_leaf_keeps_working():

@@ -3,7 +3,7 @@
 The greybox is a clay beauty pass, and the pipeline calls it "shape only"
 everywhere while handing the sampler a smoothly shaded render. Shading is
 appearance, so it survives the denoise and lands in the delivered panel:
-measured on AutomaticDrive scene_03/shot_01, one seed, one prompt, the same
+measured on one corpus shot, one seed, one prompt, the same
 `line_art_clean` style clause every panel compiles, the clay init delivered
 grayscale photorealism at 8.7% flat regions where the style asked for line
 art. The same panel from a flattened init delivered line art.

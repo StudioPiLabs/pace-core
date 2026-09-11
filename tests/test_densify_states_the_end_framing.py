@@ -143,7 +143,7 @@ def test_a_shot_that_declares_static_is_not_densified():
     """`static: true` says the frame is held. A shot that also lists a move is
     contradicting itself, and which half is wrong is an authoring decision.
 
-    Every 2-panel shot in AutomaticDrive came from this pair of statements —
+    Every 2-panel shot in the evaluation corpus came from this pair of statements —
     4 declaring static alongside a crane, 0 genuinely moving — and the pairs
     rendered identically because there was no second framing to state.
     """

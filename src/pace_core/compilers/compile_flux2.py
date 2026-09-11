@@ -65,7 +65,7 @@ from pace_core.pai_compat import (
 
 # Shot sizes describe how much of a PERSON is in frame -- a facial feature, a
 # head, the waist up. An environment-only insert has no person, so that prose
-# does not merely fail to help, it contradicts the shot: scene_04's three
+# does not merely fail to help, it contradicts the shot: one scene's three
 # highway inserts compiled to "an environment-only insert shot with no people
 # or animals in frame" AND "an extreme close-up, a single facial feature
 # filling 70-90% of the frame", and all three rendered an enormous eye over
@@ -412,7 +412,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
         # together with commas, and say the count before them rather than only
         # in the framing clause further down.
         #
-        # Measured on AutomaticDrive scene_02/shot_01 (three declared
+        # Measured on one corpus shot (three declared
         # subjects, seed 1693641188, everything else held identical): the
         # comma-run form rendered FOUR people with 8 reference plates, with 7,
         # and with none at all — so the extra person was coming from the text,
@@ -436,8 +436,8 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
             parts.append(opening)
 
     # 3. Action, placed directly after the subjects rather than after the
-    # framing/prop/location/lighting block. Measured on Automatic Drive
-    # scene_02, three consecutive panels compiled to prompts that were 99.2%
+    # framing/prop/location/lighting block. Measured on one
+    # corpus scene, three consecutive panels compiled to prompts that were 99.2%
     # word-for-word identical: 250 words of cast, framing, props, location and
     # style shared verbatim, with the beat as a single trailing clause. The
     # renders were correspondingly indistinguishable. The beat is the only
@@ -557,7 +557,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     #
     # Props survive an environment-only insert; people do not. The empty-shot
     # branch says "no people or animals in frame", which is not the same claim
-    # as "no objects" — scene_04's highway inserts declare the car console,
+    # as "no objects" — one scene's highway inserts declare the car console,
     # and the reference channel duly attaches its plate to every one of them.
     # Skipping the prop text there meant the render was handed a picture of
     # the console and a prompt describing an empty highway.
@@ -573,7 +573,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
             # the subject list above, with a sharper edge: the reference
             # channel attaches a plate for EVERY prop the shot declares, so a
             # capped prompt hands the model a picture of an object it was
-            # never told about. scene_02 declares five and the swivel seat sat
+            # never told about. One scene declares five and the swivel seat sat
             # past the cap in all four panels — its plate arrived, its anchor
             # did not, and the seats came out different every render.
             # Each with its declared place when that place is away from the
@@ -602,7 +602,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
         # anchor clause is dropped in favour of it below rather than
         # stacked alongside it -- stacking produced a self-contradictory
         # prompt (one clause placing a wrecked car in frame, the "backed
-        # by" clause explicitly excluding it) for a scene_09 close-up whose
+        # by" clause explicitly excluding it) for a close-up whose
         # shot-level override had been corrected without touching the
         # location anchor its accident_scene location shares with two
         # other scenes. A background naming a DIFFERENT scope (the ext.

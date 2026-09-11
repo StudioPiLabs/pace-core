@@ -35,10 +35,10 @@ def test_roll_changes_the_anchor_only_when_there_is_one():
 def _scene(extrinsics):
     shot = {"shot_id": "shot_01",
             "setup": {"backdrop": {"setting": "ext", "location": "a roadside"},
-                      "subjects": [{"character_id": "ryan"}]},
+                      "subjects": [{"character_id": "omar"}]},
             "camera": {"extrinsics": extrinsics,
                        "creative_intent": {"shot_size": "full"}},
-            "events": {"actions": [{"description_en": "ryan pushes against the car"}]},
+            "events": {"actions": [{"description_en": "omar pushes against the car"}]},
             "panels": [{"id": "scene_01_shot_01_panel_0001", "panel_number": 1}]}
     return {"scene_id": "scene_01", "shots": [shot]}, shot
 

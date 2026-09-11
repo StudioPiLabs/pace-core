@@ -10,7 +10,7 @@ has no second target to check against.
 What counts as "moving" is the schema's own vocabulary, not a guess. Movement2D
 (pan/tilt/zoom) and Movement3D (push_in, tracking, crane, ...) change framing.
 Gear does not: `handheld` and `steadicam` describe how the rig behaves, not
-where the frame goes. This matters in practice -- AutomaticDrive stores
+where the frame goes. This matters in practice -- the evaluation corpus stores
 `handheld` inside `movement_3d`, where it is not a legal value, and 16 of its
 27 shots therefore look like moving shots while holding frame.
 
@@ -150,7 +150,7 @@ def end_angle(start: str | None, moves: list[str]) -> str | None:
 
 
 def _next_panel_n(scene_doc: dict) -> int:
-    """Panel numbering is scene-wide, not per shot -- scene_04's shot_02 holds
+    """Panel numbering is scene-wide, not per shot -- one scene's shot_02 holds
     panel_0002. Advance the scene counter so a new panel cannot collide with
     one in a sibling shot."""
     known = [int(str(p.get("id", "")).rsplit("_", 1)[-1] or 0)
@@ -180,7 +180,7 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
         # the panel it would add is a second framing for a shot that says it
         # has only one.
         #
-        # That is not hypothetical. Every 2-panel shot in AutomaticDrive came
+        # That is not hypothetical. Every 2-panel shot in the evaluation corpus came
         # from exactly this pair of statements — 4 shots declaring static
         # alongside a crane, and 0 shots genuinely moving — and their panels
         # rendered identically because there was no second framing to state.
@@ -246,7 +246,7 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
 
 
 # No LLM beat pass lives here, and that is deliberate. split_script.py already
-# runs a model over the screenplay and extracts its beats -- in AutomaticDrive,
+# runs a model over the screenplay and extracts its beats -- in the evaluation corpus,
 # 27 key_actions became 27 shots, exactly 1:1 in every scene. A second pass
 # asking a model for "more visual beats" either restates what the first already
 # captured or invents action the screenplay does not contain. If beat density

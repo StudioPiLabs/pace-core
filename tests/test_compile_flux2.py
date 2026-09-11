@@ -103,7 +103,7 @@ def test_flux2_panel_events_override_wins_over_shot_action(scene_with_flux2_trap
     primary_focus_of/excluded_of already followed. It didn't: every compiler
     called action0_of(shot) alone, so a panel like "the man disappears
     beneath the car" silently rendered its shot's default action instead,
-    with nothing saying so. AutomaticDrive scene_01_shot_02_panel_0004 is
+    with nothing saying so. One corpus panel is
     the real panel this was caught on."""
     scene = scene_with_flux2_traps
     shot = scene["shots"][0]
@@ -242,11 +242,11 @@ def _three_subject_scene():
                              "location": "interior of a family autonomous car",
                              "time_of_day": "day"},
                 "subjects": [
-                    {"character_id": "emily", "age_state": "adult_50"},
-                    {"character_id": "ryan",  "age_state": "adult_50"},
-                    {"character_id": "ethan", "age_state": "adult_18"},
+                    {"character_id": "nina", "age_state": "adult_50"},
+                    {"character_id": "omar",  "age_state": "adult_50"},
+                    {"character_id": "theo", "age_state": "adult_18"},
                 ],
-                "primary_focus": {"type": "character", "ref": "emily"},
+                "primary_focus": {"type": "character", "ref": "nina"},
                 "excluded": [],
             },
             "camera": {"extrinsics": {"angle": "eye_level"},
@@ -264,7 +264,7 @@ def test_multi_person_cast_is_enumerated_with_the_count_first(ctx):
     where one person's description ends and the next begins, and a family-car
     prompt resolves that ambiguity by adding a body.
 
-    Measured on AutomaticDrive scene_02/shot_01 (three declared subjects,
+    Measured on one corpus shot (three declared subjects,
     seed 1693641188, everything else held identical): the run-on form
     rendered FOUR people with 8 reference plates, with 7, and with none at
     all — so the extra person came from the text, not the reference channel.
@@ -293,7 +293,7 @@ def test_single_subject_is_not_enumerated(scene_with_flux2_traps, ctx):
 def test_every_declared_prop_reaches_the_prompt(ctx):
     """The reference channel attaches a plate for EVERY declared prop, so a
     capped prompt hands the model a picture of an object it was never told
-    about. AutomaticDrive scene_02 declares five; the swivel seat sat past the
+    about. One corpus scene declares five; the swivel seat sat past the
     old cap of four in all four panels."""
     scene = _three_subject_scene()
     shot = scene["shots"][0]

@@ -188,7 +188,7 @@ def _gerund(word: str) -> str:
     """English -ing, well enough to ask a question with.
 
     Naive `word + "ing"` produced "pauseing", "changeing" and -- because
-    `endswith("ing")` is true of the word SING -- "Is emily sing?". A VQA model
+    `endswith("ing")` is true of the word SING -- "Is nina sing?". A VQA model
     asked a malformed question still answers, so the grammar is not cosmetic.
     """
     w = word.lower()
@@ -302,7 +302,7 @@ def questions_for(facts: list[dict], subjects: list[str],
 def plan(beat: dict, cast: set[str], resolve=None) -> BeatVisualIR:
     facts = [f.as_dict() for f in facts_from_beat(beat, cast)]
     # Only people THIS beat acts on. Inherited state names entities that are
-    # true elsewhere in the film -- the climax beat carries "emily.alive =
+    # true elsewhere in the film -- the climax beat carries "nina.alive =
     # false" from the wreck two scenes earlier -- and asking whether she is
     # visible in a frame she is not in produces a confident wrong answer.
     subjects = [s for s in dict.fromkeys(

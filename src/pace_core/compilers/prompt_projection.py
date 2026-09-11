@@ -147,17 +147,17 @@ FIELDS: dict[str, Rule] = {
     "setup.environment.background": Rule(
         Mode.WRITE, "What sits behind the cast."),
     "setup.environment.density": Rule(
-        Mode.QUARANTINED, "Holds 'crowded_crash_site' on 16 of 27 shots, "
-        "including scene_01's quiet family-car interior. The value is a "
-        "leaked template default, not a description, and a model told the "
-        "frame is a crowded crash site will draw one. Restore when the field "
-        "describes the shot it is on.", "measured", True),
+        Mode.QUARANTINED, "Found holding one template value on most shots of "
+        "the evaluation corpus, including interiors it contradicts. A leaked "
+        "default is not a description, and a model told a frame is crowded "
+        "will draw a crowd. Restore when the field describes the shot it is "
+        "on.", "measured", True),
     "setup.environment.scale": Rule(
         Mode.WRITE, "How large the space reads, and distinct from shot_size, "
         "which is only where the camera stands — writing scale stretched a "
         "courtyard from 14 gate-widths to 30-40 with the shot size unchanged. "
-        "Note it is the single value 'intimate' on all 27 shots here, so it "
-        "currently differentiates nothing; harmless, but do not read a "
+        "Note it held one value on every shot of the evaluation corpus, so "
+        "it differentiated nothing there; harmless, but do not read a "
         "difference into it.", "measured", True),
     "setup.environment.style": Rule(
         Mode.WITHHELD, "The style anchor is a constant this pipeline owns and "
@@ -165,7 +165,7 @@ FIELDS: dict[str, Rule] = {
         "competes with it: one sentence of lighting logic moved black coverage "
         "25.4% -> 1.3% by contradicting the style pack.", "measured"),
     "setup.environment.elements": Rule(
-        Mode.NEVER_FILLED, "0 of 27 shots in AutomaticDrive."),
+        Mode.NEVER_FILLED, "Never filled on the evaluation corpus."),
 
     # ── the film's world, which is not a per-shot field ──────────────────
     # Not read off a shot at all: it comes from `kb/shot_design.json` and is
@@ -213,10 +213,10 @@ FIELDS: dict[str, Rule] = {
     # ── subjects: appearance yes, position no ────────────────────────────
     "setup.subjects[].continuity_anchor": Rule(
         Mode.QUARANTINED, "Meant to be the character's fixed identity phrase, "
-        "written verbatim — and it contradicts characters.json for 4 of the 5 "
-        "cast. emily, ryan and lucas are registered middle_aged and their "
-        "anchors open 'young adult'; ethan is registered young_adult and his "
-        "opens 'child'. The deterministic compiler never read this field, so "
+        "written verbatim — and on the evaluation corpus it contradicted "
+        "characters.json for 4 of 5 cast, anchors opening 'young adult' for "
+        "characters registered middle_aged and 'child' for one registered "
+        "young_adult. The deterministic compiler never read this field, so "
         "the contradiction has been free until now; writing it verbatim as the "
         "identity authority would make it expensive. Restore once the anchors "
         "agree with the registry. (Also: never let a momentary state into one "
@@ -224,9 +224,8 @@ FIELDS: dict[str, Rule] = {
         "scene where the table was intact.)", "measured", True),
     "setup.subjects[].costume": Rule(
         Mode.QUARANTINED, "Found to contradict the character registry's own "
-        "costumes.default for the same character in the same shot — this "
-        "says 'casual futuristic attire, comfortable and stylish', the "
-        "registry says 'a plain cream cotton t-shirt and soft grey trousers'. "
+        "costumes.default for the same character in the same shot, one a "
+        "genre phrase and the other a specific garment. "
         "character.costume (the registry) is now WRITE in its place; this "
         "field returns once the two are reconciled or this one is retired.",
         "measured", True),

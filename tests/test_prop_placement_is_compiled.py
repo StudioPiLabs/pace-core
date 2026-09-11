@@ -1,6 +1,6 @@
 """A prop declared away from the cast is written with its place.
 
-On the pilot scene's beat 2 the only prop text was "mechanical robotic arms
+On one scene's second beat the only prop text was "mechanical robotic arms
 emerging from the wreckage", declared in the background and staged nowhere,
 and the sampler attached the arms to the one man in frame: his hands came back
 mechanical. Written with its declared place, the prop has somewhere to be.
@@ -103,14 +103,14 @@ def _cabin_scene():
         "shot_id": "shot_01",
         "setup": {
             "backdrop": {"setting": "int", "location": "inside a small car", "time_of_day": "day"},
-            "subjects": [{"character_id": "emily",
+            "subjects": [{"character_id": "nina",
                           "gaze": {"target_type": "object", "target_ref": "car_console"}}],
-            "primary_focus": {"type": "character", "ref": "emily"},
+            "primary_focus": {"type": "character", "ref": "nina"},
             "props": [{"prop_id": "car_console"}, {"prop_id": "game_device"}],
         },
         "camera": {"extrinsics": {"angle": "eye_level"},
                    "creative_intent": {"shot_size": "medium"}},
-        "events": {"actions": [{"description_en": "emily stares ahead"}]},
+        "events": {"actions": [{"description_en": "nina stares ahead"}]},
         "panels": [{"id": "scene_01_shot_01_panel_0001", "panel_number": 1}],
     }
     return {"scene_id": "scene_01", "shots": [shot]}, shot
@@ -133,8 +133,8 @@ def test_with_no_build_record_nothing_is_left_out(tmp_path):
 
 def test_an_eyeline_to_a_prop_out_of_frame_does_not_name_it():
     _scene, shot = _cabin_scene()
-    assert gaze_clauses_of(shot) == ["emily gazing at the car console"]
-    assert gaze_clauses_of(shot, {"car_console"}) == ["emily gazing at something out of frame"]
+    assert gaze_clauses_of(shot) == ["nina gazing at the car console"]
+    assert gaze_clauses_of(shot, {"car_console"}) == ["nina gazing at something out of frame"]
 
 
 def test_a_prop_staged_behind_the_lens_is_not_named(tmp_path):

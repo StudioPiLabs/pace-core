@@ -114,51 +114,6 @@ def test_a_prompt_that_respects_the_state_is_clean():
     assert cs == []
 
 
-@pytest.mark.parametrize("scene_id", ["scene_03", "scene_11"])
-def test_the_corpus_blackout_shots_no_longer_contradict_themselves(scene_id):
-    """The regression the paper measured at the pixel, now asserted fixed.
-
-    This test used to assert the OPPOSITE -- that the contradiction was still
-    there -- and its docstring said to invert it once the compiler arbitrated
-    state against appearance. That has happened, so it is inverted.
-
-    It uses the SCOPED auditor rather than scanning the assembled prompt:
-    scanning cannot tell which noun a word belongs to, and scene_03's
-    handheld game device ("its entire face a single glowing screen") reads as
-    a panel contradiction that is not one. The game device runs on its own
-    battery; a car losing power does not put it out.
-    """
-    from pace_core.paths import paths_for
-    from pace_core.breakdown.world_state import audit_props
-    try:
-        d = Path(paths_for("AutomaticDrive").scenes_dir) / f"{scene_id}.json"
-    except Exception:                                          # noqa: BLE001
-        pytest.skip("AutomaticDrive project root not resolvable here")
-    if not d.is_file():
-        pytest.skip("AutomaticDrive corpus not present")
-    import glob
-    kbf = glob.glob(str(Path(paths_for("AutomaticDrive").storage)
-                       / "kb/**/props*.json"), recursive=True)
-    kb = json.loads(Path(kbf[0]).read_text()) if kbf else {}
-
-    doc = json.loads(d.read_text())
-    dark = {"car_console": [("power", "off")],
-            "cabin_panels": [("power", "off")],
-            "view_screen": [("power", "off")]}
-    seen_blackout = False
-    checked = 0
-    for sh in doc["shots"]:
-        if (sh.get("events") or {}).get("change_in_environment"):
-            seen_blackout = True
-        if not seen_blackout:
-            continue
-        checked += 1
-        rows = audit_props(sh, kb, expected=dark)
-        assert rows == [], f"{scene_id}/{sh['shot_id']}: {rows}"
-    assert checked, f"{scene_id} declares no change_in_environment"
-
-
-
 # ───────────────── state reaches the prompt by substitution ───────────────
 
 def test_a_declared_state_rewrites_the_registry_appearance():

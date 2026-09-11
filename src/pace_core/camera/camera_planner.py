@@ -438,7 +438,7 @@ def plan_camera(shot: dict, bible: Optional[dict] = None) -> dict:
         # whole-body centroid to the target in a close-up is not a better
         # composition, it is a worse one — the camera has to tilt down far
         # enough to push the head out of frame to get there (measured: on
-        # scene_08's three panels the two-point objective cut the
+        # one scene's three panels the two-point objective cut the
         # mask-centroid offset to ~1-3% of frame height while filling the
         # frame with the subject's torso and losing the face entirely).
         # The composition-precision measurement that produced these

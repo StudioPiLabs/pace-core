@@ -286,7 +286,7 @@ def camera_brief(shot: dict, scene: Optional[dict] = None,
     if motion:
         parts.append(motion)
         # A tripod under a moving camera is the data contradicting itself —
-        # every crane shot in AutomaticDrive declares gear "tripod" too.
+        # every crane shot in the evaluation corpus declares gear "tripod" too.
         # The move is the more specific claim, so the rig stays quiet rather
         # than asking a language model to reconcile the two.
         if gear == "tripod":
@@ -412,7 +412,7 @@ def compile_h3_motion(movements: list[str], easing: str = DEFAULT_EASING, *,
     H3's guide asks for one natural sentence, not a list of tags.
 
     `static` alongside a real motion token is a contradiction, not a
-    combination — some AutomaticDrive shots carry both (trajectory.static
+    combination — some corpus shots carry both (trajectory.static
     = true AND movement_3d = ["crane"] on disk, stale data from a shot
     that was set to hold after crane was declared, or vice versa; which
     side is the true intent isn't decidable from the data alone). Rather

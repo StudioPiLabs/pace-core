@@ -61,8 +61,8 @@ cannot compute it.
 
 Thresholds come from the corpus, not from preference; see the constants.
 
-    uv run python -m pace_core.qc.greybox_gate --project AutomaticDrive
-    uv run python -m pace_core.qc.greybox_gate --project AutomaticDrive --strict
+    uv run python -m pace_core.qc.greybox_gate --project <slug>
+    uv run python -m pace_core.qc.greybox_gate --project <slug> --strict
 """
 from __future__ import annotations
 
@@ -72,7 +72,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Measured over AutomaticDrive's 81 staged bodies across 37 panels: the
+# Measured over the evaluation corpus's 81 staged bodies across 37 panels: the
 # smallest any subject has ever projected is 0.0231 of the frame and the 5th
 # percentile is 0.0359. So 0.01 passes every body in the corpus today. That is
 # deliberate -- this is a floor against a subject VANISHING (staged outside the
@@ -131,7 +131,7 @@ STALE_TOLERANCE_S = 5.0
 # It is what the sampler actually starts from, so an init from an older build
 # would mean the generator began from a picture of a different staging than
 # the depth and the mattes describe -- exactly the failure this clause exists
-# for. 23 of AutomaticDrive's 33 built panels have one on disk, the oldest 41
+# for. 23 of the evaluation corpus's 33 built panels have one on disk, the oldest 41
 # hours older than its own frame. None of them can reach a render: the init is
 # derived lazily by `structure_init.structure_init_for`, which rebuilds it
 # whenever the greybox is newer, and that is the only path any consumer takes
@@ -287,7 +287,7 @@ def screen_order_agreement(declared: list[tuple[str, float]],
     """Fraction of declared left-to-right pairs the render actually delivered.
 
     Pairwise rather than a rank correlation so the failures name themselves:
-    a report saying "ethan renders left of ryan, declared right" is actionable
+    a report saying "theo renders left of omar, declared right" is actionable
     where a coefficient is not. Pairs that declare the same x are skipped --
     they assert no order, so the geometry cannot violate one.
     """
