@@ -39,7 +39,7 @@ byte-identical. `NO_CHANNEL` records which, and the test suite proves it by
 comparing the compiled messages rather than by asserting it in prose.
 
     uv run python -m pace_core.breakdown.inject_errors \\
-        --project AutomaticDrive --baseline eval_existing_breakdown.json \\
+        --project <slug> --baseline eval_existing_breakdown.json \\
         --script-ir script_ir.json --map scene_map_existing.json \\
         --out-dir /tmp/mutated --manifest /tmp/manifest.json
 """
@@ -183,7 +183,7 @@ def swap_names(text: str, a: str, b: str) -> str:
 
     Each name is put back in the SURFACE form the text used, not in the script
     IR's canonical form. The IR spells characters in screenplay caps, so
-    substituting it directly produced "wreckage limps toward the RYAN" -- a
+    substituting it directly produced "wreckage limps toward the OMAR" -- a
     sentence carrying a second, louder signal than the role swap being tested,
     and a mutation that is obvious for the wrong reason measures the wrong
     thing.
@@ -544,7 +544,7 @@ def main(argv=None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     b = sub.add_parser("build", help="write a mutated breakdown + manifest")
-    b.add_argument("--project", default="AutomaticDrive")
+    b.add_argument("--project", required=True, help="project slug")
     b.add_argument("--baseline", required=True, help="a prior verify_breakdown result")
     b.add_argument("--script-ir", required=True)
     b.add_argument("--map", required=True)

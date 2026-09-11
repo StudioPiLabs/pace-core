@@ -2,7 +2,7 @@
 
 `fitted_mesh` scaled every axis independently to fill the declared span, which
 means a prop whose natural proportions differ from its slot is anisotropically
-distorted -- and nothing said so. Measured in-build on AutomaticDrive's cabin,
+distorted -- and nothing said so. Measured in-build on the evaluation corpus's cabin,
 each mesh yawed as it is actually placed:
 
     car_console   1.75 x 0.56 x 0.38  ->  1.89 x 0.35 x 0.18    2.29x

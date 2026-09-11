@@ -269,7 +269,7 @@ def test_h3_motion_easing_clause_only_when_no_intensity(fails):
 
 
 def test_h3_motion_static_dropped_when_a_real_movement_also_present(fails):
-    """static + crane_up together is a contradiction some AutomaticDrive
+    """static + crane_up together is a contradiction some corpus
     shots actually carry on disk (stale data, not a real combined move)
     -- 'holds a static shot while pedestaling up' is nonsense regardless
     of which token is the leftover, so static loses to any real movement."""

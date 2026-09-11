@@ -1,6 +1,6 @@
 """Who a beat panel shows, and where a prop the beat moves ends up.
 
-The pilot's climax staged a second man on his feet beside the car -- Ethan,
+The pilot's climax staged a second man on his feet beside the car -- Theo,
 who in the screenplay is trapped inside it and only heard -- and parked the
 car where the registry keeps it rather than on the man it falls on.
 """
@@ -11,50 +11,63 @@ import json
 from pace_core.breakdown import build_beat_panels as bbp
 from pace_core.node import panel_greybox as pg
 
-CAST = {"ryan", "ethan"}
+CAST = {"omar", "theo"}
 CLIMAX = {"id": "b5", "source_event_ids": [], "evidence": [], "transition": [
-    {"predicate": "FALL_ON_TOP_OF", "actor": "the_car", "patient": "ryan", "target": None},
-    {"predicate": "FADE_SCREAMS", "actor": "ethan", "patient": None, "target": None}]}
+    {"predicate": "FALL_ON_TOP_OF", "actor": "the_car", "patient": "omar", "target": None},
+    {"predicate": "FADE_SCREAMS", "actor": "theo", "patient": None, "target": None}]}
 TEMPLATE = {"setup": {"props": [{"prop_id": "wrecked_car"}, {"prop_id": "robot_arms"}],
                       "subjects": []},
-            "camera": {}, "lighting": {}, "_ages": {"ryan": "adult_50", "ethan": "adult_18"}}
+            "camera": {}, "lighting": {}, "_ages": {"omar": "adult_50", "theo": "adult_18"}}
+# The project's map from the beat's event actors to registry prop ids.
+PROP_MAP = {"event": {"the_car": ["wrecked_car"]}}
 
 
 def test_an_actor_who_only_makes_a_sound_is_heard_not_shown():
-    assert bbp.human_actors(CLIMAX, CAST) == ["ryan"]
-    assert bbp.heard_actors(CLIMAX, CAST) == ["ethan"]
+    assert bbp.human_actors(CLIMAX, CAST) == ["omar"]
+    assert bbp.heard_actors(CLIMAX, CAST) == ["theo"]
 
 
 def test_a_sound_aimed_at_someone_keeps_its_actor_in_frame():
-    sob = {"transition": [{"predicate": "SOB_OVER", "actor": "ryan",
-                           "patient": None, "target": "emily"}]}
-    assert bbp.human_actors(sob, {"ryan", "emily"}) == ["ryan", "emily"]
+    sob = {"transition": [{"predicate": "SOB_OVER", "actor": "omar",
+                           "patient": None, "target": "nina"}]}
+    assert bbp.human_actors(sob, {"omar", "nina"}) == ["omar", "nina"]
 
 
 def test_an_actor_heard_in_one_event_and_seen_in_another_is_shown():
     b = {"transition": [
-        {"predicate": "SCREAM", "actor": "ryan", "patient": None, "target": None},
-        {"predicate": "PUSH_AGAINST", "actor": "ryan", "patient": "the_car", "target": None}]}
-    assert bbp.human_actors(b, CAST) == ["ryan"]
+        {"predicate": "SCREAM", "actor": "omar", "patient": None, "target": None},
+        {"predicate": "PUSH_AGAINST", "actor": "omar", "patient": "the_car", "target": None}]}
+    assert bbp.human_actors(b, CAST) == ["omar"]
     assert bbp.heard_actors(b, CAST) == []
 
 
 def _panel(plan):
-    return bbp.to_panel(CLIMAX, plan, TEMPLATE, 5, "scene_20")
+    return bbp.to_panel(CLIMAX, plan, TEMPLATE, 5, "scene_20", PROP_MAP)
 
 
 def test_the_panel_drops_a_subject_the_beat_does_not_show():
-    sh = _panel({"subjects": [{"character_id": "ryan", "pose": "lying"},
-                              {"character_id": "ethan", "pose": "standing"}]})
-    assert [s["character_id"] for s in sh["setup"]["subjects"]] == ["ryan"]
+    sh = _panel({"subjects": [{"character_id": "omar", "pose": "lying"},
+                              {"character_id": "theo", "pose": "standing"}]})
+    assert [s["character_id"] for s in sh["setup"]["subjects"]] == ["omar"]
 
 
 def test_a_prop_that_falls_on_someone_rests_on_them():
-    sh = _panel({"subjects": [{"character_id": "ryan", "pose": "lying"}]})
+    sh = _panel({"subjects": [{"character_id": "omar", "pose": "lying"}]})
     props = {p["prop_id"]: p for p in sh["setup"]["props"]}
-    assert props["wrecked_car"]["rests_on"] == "ryan"
+    assert props["wrecked_car"]["rests_on"] == "omar"
     assert "rests_on" not in props["robot_arms"]
     assert "rests_on" not in TEMPLATE["setup"]["props"][0]      # template untouched
+
+
+def test_without_a_map_no_prop_is_guessed_for_an_event_actor():
+    sh = bbp.to_panel(CLIMAX, {"subjects": [{"character_id": "omar"}]}, TEMPLATE, 5, "scene_20")
+    assert all("rests_on" not in p for p in sh["setup"]["props"])
+
+
+def test_an_entity_with_no_map_entry_is_taken_as_a_prop_id():
+    beat = {"state_after": {"view_screen.power": "off"}}
+    assert bbp.prop_states(beat) == {"view_screen": "powered_off"}
+    assert bbp.prop_states(beat, {"view_screen": ["a", "b"]}) == {"a": "powered_off", "b": "powered_off"}
 
 
 def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
@@ -66,8 +79,8 @@ def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
         props_file = tmp_path / "props.json"
         storage = tmp_path
 
-    on = pg._panel_fixtures(P, {"props": [{"prop_id": "wrecked_car", "rests_on": "ryan"}]})
-    assert on[0]["on_subject"] == "ryan"
+    on = pg._panel_fixtures(P, {"props": [{"prop_id": "wrecked_car", "rests_on": "omar"}]})
+    assert on[0]["on_subject"] == "omar"
     # Absent unless set: `fixtures` is an anchor field, so a key on every
     # fixture would restamp every panel's anchor for geometry that did not move.
     plain = pg._panel_fixtures(P, {"props": [{"prop_id": "wrecked_car"}]})
@@ -75,7 +88,7 @@ def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
 
 
 def test_the_panel_asks_only_for_a_camera_the_greybox_can_build():
-    one = [{"character_id": "ryan"}]
+    one = [{"character_id": "omar"}]
     assert _panel({"camera_position": "side", "subjects": one}
                   )["camera"]["extrinsics"]["position"] in pg.BUILDABLE_POSITIONS
     assert _panel({"camera_position": "front", "subjects": one}
@@ -84,7 +97,7 @@ def test_the_panel_asks_only_for_a_camera_the_greybox_can_build():
 
 def test_the_framing_pattern_follows_the_cast_it_has():
     tpl = {**TEMPLATE, "camera": {"creative_intent": {"framing": "two_shot"}}}
-    sh = bbp.to_panel(CLIMAX, {"subjects": [{"character_id": "ryan"}]}, tpl, 5, "scene_20")
+    sh = bbp.to_panel(CLIMAX, {"subjects": [{"character_id": "omar"}]}, tpl, 5, "scene_20")
     assert sh["camera"]["creative_intent"]["framing"] == "single"
     empty = {"id": "b6", "transition": [{"predicate": "CLOSE", "actor": "panels"}]}
     sh = bbp.to_panel(empty, {"subjects": []}, tpl, 6, "scene_20")

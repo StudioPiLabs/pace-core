@@ -210,7 +210,7 @@ def _character_hint(ref: str, characters_kb: dict) -> str:
         proxy does not settle it either: every subject is staged from the same
         gender="neutral" SMPL-X body, whose chest measures 1.03x its waist. So
         with a LoRA trained for none of this cast, the only sex-bearing token
-        in the whole prompt was one inert trigger word, `emily_female`, emitted
+        in the whole prompt was one inert trigger word, `nina_female`, emitted
         for the first-listed character and attached to no position. A male
         character on the left rendered as a woman, which is the sampler
         resolving a question nothing had answered.
@@ -261,7 +261,7 @@ def _character_hint(ref: str, characters_kb: dict) -> str:
         return _with_costume(_with_age(_with_sex(generic)))
     # Last resort before giving up: the trigger-bearing `anchor`, with the
     # trigger removed. Returning the raw ref instead sends an internal
-    # identifier ("emily@adult_30") to a text encoder, which describes
+    # identifier ("nina@adult_30") to a text encoder, which describes
     # nobody — a descriptor that merely needs cleaning is strictly better
     # than no description of the character at all.
     anchor = kb.get("anchor")
@@ -298,9 +298,9 @@ def _character_back_hint(ref: str, characters_kb: dict) -> str:
     """A character as a lens behind them sees them: no face.
 
     `_character_hint` describes the face, and a subject the camera sees from
-    behind has none to show. Measured on the over-the-shoulder of scene_02's
-    "Dad swivels his chair around to face Ethan", with the geometry fixed: told
-    Ryan had "weathered features and a determined expression", the sampler
+    behind has none to show. Measured on the over-the-shoulder of one scene's
+    "Dad swivels his chair around to face Theo", with the geometry fixed: told
+    Omar had "weathered features and a determined expression", the sampler
     turned him to face the lens, or painted his face onto the back of his head;
     told he was seen from behind, it kept him turned toward his son. So this
     keeps what reads from behind -- sex, age, build, hair, clothing -- and says
@@ -369,7 +369,7 @@ def _focus_character(pf: dict) -> str:
     The schema keeps the focus id in `ref` and reserves `of_character` for
     type="feature" -- "which character does the feature belong to". A
     compiler that reads only `of_character` gets null for every
-    character-type focus, so declaring `primary_focus: emily` would have no
+    character-type focus, so declaring `primary_focus: nina` would have no
     effect on anything: the trigger would not be steered to her, and
     nothing in the prompt would say she was the subject.
     """

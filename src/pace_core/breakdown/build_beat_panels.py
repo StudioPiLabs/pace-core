@@ -27,22 +27,17 @@ import sys
 
 GENERATOR_DEFAULT = "claude-opus-5-rb"
 
-# Entities the world state names, mapped to the prop ids the registry uses.
-# A beat says "panels"; the KB says "cabin_panels". Without this the state
-# reaches nothing, which is the failure mode the whole state layer exists for.
-STATE_TO_PROP = {
-    "panels": ("cabin_panels", "view_screen"),
-    "car_console": ("car_console",),
-    "view_screen": ("view_screen",),
-}
+# A beat names entities in the screenplay's words ("the panels"); the registry
+# names props by id. The project supplies the map (--prop-map), kept apart by
+# kind: "state" for what a state_after names, "event" for the actor of an event
+# that moves a prop. A name with no entry is taken to be a prop id.
 DARK_VALUES = {"off", "closed"}
 
 # A beat's events name everyone involved, including people who are only HEARD.
-# "Ethan's SCREAMS slowly fade as the panels close" is Ethan trapped inside the
-# car, and staging every named actor put him on his feet beside it -- a second
-# man the frame reads as the protagonist in a different shirt. A vocal sound
-# aimed at no one is heard, not seen; one aimed at someone ("Ryan SOBS over
-# her body") places its actor beside them and stays in frame.
+# A scream from someone trapped inside a car, staged like any other actor, put
+# a second person on their feet beside it, whom the frame reads as the
+# protagonist. A vocal sound aimed at no one is heard, not seen; one aimed at
+# someone ("he SOBS over her body") places its actor beside them.
 SOUND_WORDS = {"SCREAM", "SCREAMS", "SHOUT", "SHOUTS", "YELL", "YELLS",
                "WAIL", "WAILS", "MOAN", "MOANS", "CRY", "CRIES", "SOB", "SOBS"}
 
@@ -84,7 +79,7 @@ RULES
 2. screen_x is where the subject sits across the frame, 0 at frame left. Give
    distinct values; two people do not occupy one position.
 3. `pose` describes the body, not the mood. "kneeling" not "grief-stricken".
-4. action_en describes the image. "The car falls on top of him", not "Ryan
+4. action_en describes the image. "The car falls on top of him", not "He
    dies tragically".
 5. Choose framing for LEGIBILITY of the beat's own event, not for drama.
 """
@@ -124,43 +119,45 @@ def build_messages(beat: dict, cast: set[str], location: str) -> list[dict]:
             }, ensure_ascii=False, indent=1)}]
 
 
-def prop_states(beat: dict) -> dict[str, str]:
+def prop_states(beat: dict, state_map: dict | None = None) -> dict[str, str]:
     """World state -> the props that carry it, in the schema's flat form."""
     out = {}
     for key, val in (beat.get("state_after") or {}).items():
         ent, _, attr = key.partition(".")
         if str(val).lower() not in DARK_VALUES:
             continue
-        for pid in STATE_TO_PROP.get(ent, ()):
+        for pid in (state_map or {}).get(ent, (ent,)):
             out[pid] = "powered_off" if attr in ("power", "display") else "closed"
     return out
 
 
-# Entities a beat names, mapped to registry prop ids, for events that move a
-# prop. The same gap STATE_TO_PROP closes for state.
-ENTITY_TO_PROP = {"the_car": ("wrecked_car",)}
-# Events that leave a prop lying on a person. "The car falls on top of him" is
-# where the car ends up; a panel that parks it where the registry keeps it
-# leaves the generator to invent a car at the man's size, fused to him.
+# Events that leave a prop lying on a person. Such an event says where the
+# prop ends up; a panel that parks it where the registry keeps it leaves the
+# generator to invent one at the person's size, fused to them.
 REST_ON_PREDICATES = {"FALL_ON_TOP_OF", "FALL_ON", "LAND_ON", "CRUSH", "PIN_UNDER"}
 
 
-def props_on_subjects(beat: dict, shown: set[str]) -> dict[str, str]:
+def props_on_subjects(beat: dict, shown: set[str],
+                      entity_map: dict | None = None) -> dict[str, str]:
     """prop_id -> the shown character the beat leaves it lying on."""
     out = {}
     for t in beat.get("transition") or []:
         if (str(t.get("predicate") or "").upper() in REST_ON_PREDICATES
                 and t.get("patient") in shown):
-            for pid in ENTITY_TO_PROP.get(t.get("actor"), ()):
+            for pid in (entity_map or {}).get(t.get("actor"), (t.get("actor"),)):
                 out[pid] = t["patient"]
     return out
 
 
 def to_panel(beat: dict, plan: dict, template: dict, n: int,
-             scene_id: str) -> dict:
-    """A shot carrying one panel, in the shape the greybox stage reads."""
+             scene_id: str, prop_map: dict | None = None) -> dict:
+    """A shot carrying one panel, in the shape the greybox stage reads.
+
+    `prop_map` maps the beat's state and event names to registry prop ids.
+    """
+    pm = prop_map or {}
     setup = json.loads(json.dumps(template["setup"]))       # deep copy
-    states = prop_states(beat)
+    states = prop_states(beat, pm.get("state"))
     for p in setup.get("props") or []:
         if p.get("prop_id") in states:
             p["state"] = states[p["prop_id"]]
@@ -168,7 +165,7 @@ def to_panel(beat: dict, plan: dict, template: dict, n: int,
     # The cast is the beat's to say, not the plan's: a subject the plan names
     # outside the people the beat shows is dropped rather than trusted.
     shown = set(human_actors(beat, set(template["_ages"] or {})))
-    resting = props_on_subjects(beat, shown)
+    resting = props_on_subjects(beat, shown, pm.get("event"))
     for p in setup.get("props") or []:
         if p.get("prop_id") in resting:
             p["rests_on"] = resting[p["prop_id"]]
@@ -233,11 +230,15 @@ def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--beats", required=True)
     ap.add_argument("--scene", type=int, required=True, help="script scene index")
-    ap.add_argument("--project", default="AutomaticDrive")
+    ap.add_argument("--project", required=True, help="project slug")
     ap.add_argument("--template-scene", required=True,
                     help="an existing scene doc to inherit location/props from")
     ap.add_argument("--out", required=True)
-    ap.add_argument("--out-scene-id", default="scene_20")
+    ap.add_argument("--out-scene-id", required=True,
+                    help="the scene id the built panels are numbered under")
+    ap.add_argument("--prop-map", default=None, metavar="JSON",
+                    help='{"state": {entity: [prop_id]}, "event": {actor: [prop_id]}}; '
+                         "a name with no entry is taken to be a prop id")
     ap.add_argument("--model", default=GENERATOR_DEFAULT)
     ap.add_argument("--only", default=None, metavar="BEAT_ID",
                     help="re-plan this one beat and keep every other shot in --out")
@@ -245,6 +246,7 @@ def main(argv=None) -> int:
     g.add_argument("--dry-run", action="store_true")
     g.add_argument("--execute", action="store_true")
     a = ap.parse_args(argv)
+    pm = json.loads(pathlib.Path(a.prop_map).read_text()) if a.prop_map else {}
 
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
     from pace_core.paths import paths_for
@@ -276,7 +278,7 @@ def main(argv=None) -> int:
         for b in todo:
             print(f"   {b['id']}  actors={human_actors(b, cast)}  "
                   f"heard={heard_actors(b, cast) or '-'}  "
-                  f"states={prop_states(b) or '-'}")
+                  f"states={prop_states(b, pm.get('state')) or '-'}")
         print(f"EST COST  : ${cost:.4f}")
         return 0
 
@@ -291,14 +293,14 @@ def main(argv=None) -> int:
             plan = json.loads(strip_fences(raw))
         except json.JSONDecodeError as e:
             print(f"  {b['id']} PLAN FAILED: {e}"); continue
-        sh = to_panel(b, plan, template, i, a.out_scene_id)
+        sh = to_panel(b, plan, template, i, a.out_scene_id, pm)
         # The count is geometry, so say when the plan lost an actor.
         want, got = set(human_actors(b, cast)), {s["character_id"] for s in sh["setup"]["subjects"]}
         note = "" if want == got else f"  CAST MISMATCH want={sorted(want)} got={sorted(got)}"
         shots.append(sh)
         print(f"  {b['id']} -> {sh['panels'][0]['id']} {plan.get('framing'):<12}"
               f" subj={len(sh['setup']['subjects'])} "
-              f"state_applied={len(prop_states(b)) and sum(1 for p in sh['setup'].get('props') or [] if p.get('prop_id') in prop_states(b))}"
+              f"state_applied={len(prop_states(b, pm.get('state'))) and sum(1 for p in sh['setup'].get('props') or [] if p.get('prop_id') in prop_states(b, pm.get('state')))}"
               f"{note}  ${spent:.4f}")
     out = pathlib.Path(a.out)
     if a.only:

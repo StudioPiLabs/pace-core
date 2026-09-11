@@ -18,18 +18,18 @@ from pace_core.breakdown.beat_visual_ir import (  # noqa: E402
     INFERRED, SCRIPT, VISUALIZATION, facts_from_beat, moment_for, plan,
 )
 
-CAST = {"ryan", "emily", "ethan"}
+CAST = {"omar", "nina", "theo"}
 
 
 def _beat(**over):
     b = {"id": "s_beat_01", "scene_id": "scene_07",
          "source_event_ids": ["e11", "e12"],
          "transition": [
-             {"predicate": "FALL_ON_TOP_OF", "actor": "the_car", "patient": "ryan"},
-             {"predicate": "FADE_SCREAMS", "actor": "ethan", "patient": None}],
-         "state_before": {"emily.alive": "false"},
-         "state_after": {"emily.alive": "false", "ryan.injured": "crushed"},
-         "state_changes": [{"entity": "ryan", "attribute": "injured",
+             {"predicate": "FALL_ON_TOP_OF", "actor": "the_car", "patient": "omar"},
+             {"predicate": "FADE_SCREAMS", "actor": "theo", "patient": None}],
+         "state_before": {"nina.alive": "false"},
+         "state_after": {"nina.alive": "false", "omar.injured": "crushed"},
+         "state_changes": [{"entity": "omar", "attribute": "injured",
                             "to": "crushed"}]}
     b.update(over)
     return b
@@ -38,16 +38,16 @@ def _beat(**over):
 # ── the two defects the corpus exposed ────────────────────────────────────
 
 def test_inherited_state_does_not_put_an_absent_character_in_frame():
-    """The climax beat carries `emily.alive = false` from a wreck two scenes
+    """The climax beat carries `nina.alive = false` from a wreck two scenes
     earlier. She is not in that frame, and asking a VQA model whether she is
     visible gets a confident wrong answer either way."""
     ir = plan(_beat(), CAST)
-    assert "emily" not in ir.subjects
-    assert not any(q["about"] == "emily" for q in ir.verification_questions)
+    assert "nina" not in ir.subjects
+    assert not any(q["about"] == "nina" for q in ir.verification_questions)
     # ...but the fact is still RECORDED, just not required
-    emily = [f for f in ir.visible_facts if f["subject"] == "emily"]
-    assert emily and emily[0]["provenance"] == INFERRED
-    assert emily[0]["required"] is False
+    nina = [f for f in ir.visible_facts if f["subject"] == "nina"]
+    assert nina and nina[0]["provenance"] == INFERRED
+    assert nina[0]["required"] is False
 
 
 def test_a_predicate_ending_in_a_preposition_gets_its_object():
@@ -55,7 +55,7 @@ def test_a_predicate_ending_in_a_preposition_gets_its_object():
     unanswerable question still answers."""
     ir = plan(_beat(), CAST)
     asks = [q["ask"] for q in ir.verification_questions]
-    assert "Is the car falling on top of ryan?" in asks
+    assert "Is the car falling on top of omar?" in asks
     for a in asks:
         assert a.rstrip("?").split()[-1] not in {"of", "on", "at", "to", "with"}, a
 
@@ -99,7 +99,7 @@ def test_only_this_beat_s_own_facts_are_required():
 def test_the_state_the_beat_causes_is_required():
     ir = plan(_beat(), CAST)
     crushed = [f for f in ir.required()
-               if f["subject"] == "ryan" and f["predicate"] == "injured"]
+               if f["subject"] == "omar" and f["predicate"] == "injured"]
     assert crushed and crushed[0]["value"] == "crushed"
 
 
@@ -130,7 +130,7 @@ def test_a_beat_with_no_action_is_not_mid_way_through_one():
 
 
 def test_an_unrecognised_predicate_still_gets_a_moment():
-    m, _ = moment_for(_beat(transition=[{"predicate": "BLORP", "actor": "ryan"}],
+    m, _ = moment_for(_beat(transition=[{"predicate": "BLORP", "actor": "omar"}],
                             state_changes=[]))
     assert m in ("MID_ACTION", "ACTION_PEAK", "PRE_ACTION",
                  "ACTION_START", "POST_ACTION")
@@ -140,7 +140,7 @@ def test_an_unrecognised_predicate_still_gets_a_moment():
 
 def test_gerunds_are_formed_correctly():
     """`word + "ing"` gave "pauseing" and "changeing", and because
-    endswith("ing") is true of SING it gave "Is emily sing?". A VQA model
+    endswith("ing") is true of SING it gave "Is nina sing?". A VQA model
     asked a malformed question still answers, so this is not cosmetic."""
     from pace_core.breakdown.beat_visual_ir import _gerund
     assert _gerund("pause") == "pausing"

@@ -1,6 +1,6 @@
 """panel_greybox — a panel's control geometry: N bodies, in seats, under its own camera.
 
-Text cannot hold a subject count. Measured on AutomaticDrive scene_02: an
+Text cannot hold a subject count. Measured on one corpus scene: an
 enumerated three-person cast rendered four people, and adding one prop clause
 to a prompt that had just rendered three brought the fourth back at the same
 seed. Nothing in the sampler enforces cardinality and cfg=1.0 leaves no
@@ -89,7 +89,7 @@ from pace_core.paths import paths_for
 DEFAULT_RES = (1280, 544)
 # The shell this builds is a cabin: a floor, a roof, two side walls with
 # window bays, and no front wall to look in through. That is right for a
-# vehicle interior and wrong for everything else -- on AutomaticDrive, 22 of
+# vehicle interior and wrong for everything else -- on the evaluation corpus, 22 of
 # 36 panels are vehicle_interior and the other 14 are a highway and a crash
 # site, where a cabin would be an invention rather than a proxy. A batch has
 # to know the difference, so eligibility is a question that can be asked
@@ -114,7 +114,7 @@ SUBJECT_SPACING_M = 0.95
 #
 # It was 0.24, so seats covered 48% of the width and left a quarter of the
 # cabin empty on each side. Bare floor in a control image is an invitation:
-# scene_10/shot_02 came back with a chair and a wraparound console invented
+# one shot came back with a chair and a wraparound console invented
 # into it. Staging the seats a vehicle actually has (`_unoccupied_slots`)
 # closed that for cars carrying fewer people than seats, and did nothing for
 # the case where the box itself is simply too wide for its seating.
@@ -561,7 +561,7 @@ def fit_scale(ext, size, policy=_FIT_DEFAULT):
     is a fact about the disagreement and not about how we settled it. A
     fixture reported at 14x was not modelled for the slot it is standing in.
 
-    Measured in-build on AutomaticDrive's cabin under the old unconditional
+    Measured in-build on the evaluation corpus's cabin under the old unconditional
     per-axis fit: car_console 2.29x, cabin_panels 14.60x -- the wall lining
     squeezed to 3.9% of its own width to reach a 7 cm door-card slot.
 
@@ -630,7 +630,7 @@ def _record_surface(surfaces: dict, fx: dict, pos, size) -> None:
 #   wraparound became a tub between lens and cast.
 #
 #   And what image-to-3D returns for a location is not a room. All four
-#   AutomaticDrive locations were run through it: two collapsed (a hairline,
+#   the evaluation corpus's locations were run through it: two collapsed (a hairline,
 #   a blob), and the two that worked came back as car EXTERIORS -- the tool
 #   reconstructs a silhouette, the inverse of a space that contains a camera.
 #
@@ -649,7 +649,7 @@ def _panel_fixtures(paths, setup: dict) -> list[dict]:
     the shell and how much of the width it takes, and the builder places
     whatever it is told about. That is the difference between a pipeline and
     one film's set dressing compiled into it -- the shared builder had
-    `box("console", ...)` in it, which is a car from AutomaticDrive living in
+    `box("console", ...)` in it, which is one production's car living in
     code every other project also runs.
 
     A `model_3d.mesh_file` that exists on disk is used in place of the
@@ -763,7 +763,7 @@ def _unoccupied_slots(seat_count: int, occupied: list, cabin: list) -> list:
     Seats were staged one per SUBJECT, so a two-person shot in a four-seat car
     put two chairs on the floor and left the rest of it bare — and bare floor
     in a control image is an invitation rather than a constraint. Measured on
-    scene_10/shot_02: the greybox staged two seats, and the delivered panel
+    one shot: the greybox staged two seats, and the delivered panel
     came back with a third chair and a wraparound console invented into the
     empty half of the cabin. How many seats a car has is a fact about the set,
     and the set is what the greybox exists to state.
@@ -786,7 +786,7 @@ def _unoccupied_slots(seat_count: int, occupied: list, cabin: list) -> list:
 # Garment tones for the proxy, read off the registered costume. The greybox is
 # one flat grey, and denoised from it at 0.55 the sampler decides a garment
 # from the body's shape alone -- so the same declared shirt came back a
-# different shirt in every panel of the pilot scene, with the character's own
+# different shirt in every panel of one scene, with the character's own
 # plate as a reference and without. A tone in the control image is a decision
 # the sampler starts from rather than one it makes. Values are the grey the
 # garment should read as, on the 0..1 scale of the greybox's own 0.55.
@@ -886,14 +886,14 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # camera sits in front of the cast looking back, which mirrors world
         # X onto screen X (+X renders screen-left, -X renders screen-right —
         # confirmed by measuring rendered body mattes against declared
-        # screen_position for scene_01_shot_02_panel_0002). Seats are built
+        # screen_position for one panel). Seats are built
         # in screen-left-to-right order so they can be indexed directly by
         # `subs`, which is sorted ascending by declared screen x.
         fx = cabin[0] * SEAT_SPREAD_FRAC
         # Row separation. It was 0.22 of cabin depth behind a front row at
         # 0.10, and at a three-quarter azimuth that put a rear subject
         # directly behind the centre-front one: scene 2 rendered 67% of
-        # ethan's silhouette under emily's in every one of its four panels,
+        # one subject's silhouette under another's in every one of its four panels,
         # and the greybox gate had to grow a clause to notice.
         #
         # Widening the rear row is the other lever and this cabin no longer
@@ -919,8 +919,8 @@ def build_spec(project: str, scene_id: str, panel_id: str,
             # world +fx..-fx, same sign convention as above) instead means
             # x=0.5 truly lands at world x=0, and only a genuinely
             # off-center declaration moves off it. Measured against the
-            # declared target on the rendered head mattes for scene_05,
-            # scene_07, scene_08, scene_10 and scene_11 (17-33% off center
+            # declared target on the rendered head mattes for five
+            # corpus scenes (17-33% off center
             # under the old binary pick, <1% after this change).
             #
             # SUBJECT_SPACING_M is a hard floor here for exactly the reason it
@@ -1016,7 +1016,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # Fixing only that sign is not enough on its own: an evenly-spaced
         # line still has no reason to put a declared-centre subject at
         # world x=0 rather than at whichever slot their rank happens to
-        # land on -- measured on scene_07 (ryan declared centre, x=0.5)
+        # land on -- measured on one scene (a subject declared centre, x=0.5)
         # landing at a rendered read-point 27%+ off target either way the
         # sign runs. SUBJECT_SPACING_M has to stay a hard floor (this is a
         # crash site, not a car bench: crowding two subjects together
@@ -1075,7 +1075,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # panel from the same side no matter what it declared, which is the
     # mistake the distance solve already stopped making.
     # An unstated position is not the same statement as "front", and it was
-    # being treated as one. scene_02 declares three_quarter on three of its
+    # being treated as one. One scene declares three_quarter on three of its
     # four shots and leaves shot_03 empty, so that shot alone swung 25 degrees
     # onto the axis mid-scene and the cast's spread jumped from 0.255 of frame
     # width to 0.400 — a continuity break nothing reported, produced by an
@@ -1903,7 +1903,7 @@ def _kernel_greybox(spec: dict) -> dict:
 
     # The location's own set, when one was built. `build_locations` already
     # renders each bible's `primitives_spec` into
-    # `blender_scenes/<scene>.blend` -- another production's scene_03 holds a floor, a
+    # `blender_scenes/<scene>.blend` -- another production's scene holds a floor, a
     # dropped ceiling, two walls, a window curtain wall, three desk row banks,
     # a hero desk and a cubicle partition -- and nothing read it. The greybox
     # built its own empty box beside it, so a scene about a hundred people at
@@ -1912,13 +1912,13 @@ def _kernel_greybox(spec: dict) -> dict:
     # Appended rather than linked: a linked object is not editable in the file
     # the render runs from, and the fixtures below are placed against these.
     #
-    # Not for a vehicle cabin. AutomaticDrive's scene_11.blend holds
+    # Not for a vehicle cabin. One corpus scene's .blend holds
     # car_floor/car_ceiling/left_wall/right_wall as four 1x1 unit planes at
     # fixed local positions, never scaled to the panel's own solved shell --
     # subway's shell is already sized per panel (fit to camera and cast, W/D/H
     # a few metres each way), so a unit plane appended verbatim lands wherever
     # a metre-scale coordinate happens to put it, which was between the lens
-    # and both subjects' heads on scene_11_shot_01. A vehicle cabin also
+    # and both subjects' heads on its first shot. A vehicle cabin also
     # already builds its own complete shell (pillars, sills, panels, glass)
     # below, so nothing about a room's bible was missing here the way it was
     # for another production's empty office box -- this append exists for shapes that
@@ -1958,7 +1958,7 @@ def _kernel_greybox(spec: dict) -> dict:
 
         The generic fallback used to be two boxes, a cube and a slab, which
         reads as a plinth. The alternative was whatever mesh the KB carried,
-        and AutomaticDrive's `swivel_seat.glb` is a single-view Hunyuan3D
+        and the evaluation corpus's `swivel_seat.glb` is a single-view Hunyuan3D
         generation whose own vertex profile is an egg: 0.24 x 0.09 at the
         floor, widest 0.78 x 0.82 at mid-height, tapering to a point. Fitted
         into the seat slot it stages a pod, and the delivered panel drew a pod,
@@ -2332,7 +2332,7 @@ def _kernel_greybox(spec: dict) -> dict:
             # 1.75 m runs away from the lens instead of across the frame. The
             # cast's measured extents are what the framing solve fits, and one
             # body stretched through depth moved the camera far enough that two
-            # of scene_06's three subjects left the frame entirely. Adding the
+            # of one scene's three subjects left the frame entirely. Adding the
             # quarter turn lays it across the road, which is both what the beat
             # describes and an extent the solve can frame.
             xform_rot = (math.radians(-90.0), 0.0,
@@ -2353,8 +2353,8 @@ def _kernel_greybox(spec: dict) -> dict:
         # It is also laid down about its MIDDLE. The proxy's origin is its
         # feet, so a rotation about it left the feet on the seat and ran the
         # whole 1.75 m out from there -- through whoever stood beside it: the
-        # pilot's climax staged Ethan's feet on Ryan's chest, and scene_06
-        # laid Emily under the kneeling Ryan. The seat is where the body is,
+        # pilot's climax staged one subject's feet on another's chest, and another scene
+        # laid a subject under the kneeling one. The seat is where the body is,
         # so the body's centre is what goes on it.
         if lying:
             body.location = (0.0, 0.0, 0.0)
@@ -2476,7 +2476,7 @@ def _kernel_greybox(spec: dict) -> dict:
     # let an asymmetric two-person "two_shot" go unnoticed: centering on
     # the pair's midpoint instead of the declared-centre subject put their
     # rendered read point a full half of their separation off target
-    # (measured 27% on scene_07). aim_focus_id is deliberately not gated to
+    # (measured 27% on one scene). aim_focus_id is deliberately not gated to
     # the `single` pattern the way focus_id/`framed` above is -- fitting
     # the frame's WIDTH still has to include everyone the panel puts in
     # it, only WHERE the lens points should prefer the one the panel names.
@@ -2758,7 +2758,7 @@ def _kernel_greybox(spec: dict) -> dict:
     #
     # A location .blend is built once from the location bible; the camera is
     # solved per panel, from the shot size and the cast. So an open-plan floor
-    # of desk rows is correct as a room and wrong as a frame: on scene_03 the
+    # of desk rows is correct as a room and wrong as a frame: on one scene the
     # solve put the lens at y=4.6 and `desk_row_bank_mid` spans y=2.75..4.45,
     # a 15 m slab 16 cm in front of it. It hid two of the three subjects and
     # filled two thirds of the picture -- proxy_coverage_pct 14.1 -- and the
@@ -2777,7 +2777,7 @@ def _kernel_greybox(spec: dict) -> dict:
     # that goes. Footprint containment, not bounding-box overlap: a subject
     # standing AT a desk overlaps it -- that is what standing at a desk is --
     # while a subject whose feet are inside its footprint is buried in it.
-    # scene_07 staged three at one workstation and the middle one came out a
+    # one scene staged three at one workstation and the middle one came out a
     # head resting on a desktop.
     # The horizontal centre of each body's box, not its object origin: a
     # proxy's origin is wherever the generator put it, and the question here
@@ -2960,7 +2960,7 @@ def _kernel_greybox(spec: dict) -> dict:
         # The set dressing an exterior declares, staged like any other fixture.
         # place_fixtures used to be called only from the cabin branch, so a
         # prop outdoors could not be staged however its placement was written:
-        # scene_07 declares robot_arms "emerging from the wreckage" and the
+        # one scene declares robot_arms "emerging from the wreckage" and the
         # greybox held two bodies and open ground, so the model invented both
         # the wreck and the arms and put them where the composition had room —
         # across the chest of the subject in the middle. Metres, not fractions
@@ -3148,7 +3148,7 @@ def _kernel_greybox(spec: dict) -> dict:
     # cavity. Fed to VACE as control_video it carries that appearance along with
     # the structure, and the clip comes back as clay mannequins at a strength
     # high enough to hold the cast, or loses the cast entirely at a strength low
-    # enough to look photoreal. Measured on scene_01/shot_01: cs 0.50 kept three
+    # enough to look photoreal. Measured on one corpus shot: cs 0.50 kept three
     # bodies and rendered them in clay; cs 0.30 dissolved them; cs 0.15 produced
     # a different scene.
     #
@@ -3227,7 +3227,7 @@ def _kernel_greybox(spec: dict) -> dict:
 
     # ── one matte per body, for masked per-face identity ──
     # Whole-frame reference conditioning cannot carry a group panel: measured on
-    # scene_02/shot_02, eight reference plates rendered four people where three
+    # one shot, eight reference plates rendered four people where three
     # were declared, and so did five, and so did two plates of inanimate props.
     # inpaint_ref_flux2 solves that by bounding every edited pixel to a mask —
     # but nothing was producing the masks. The geometry already knows exactly

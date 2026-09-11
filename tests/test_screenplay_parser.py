@@ -110,19 +110,3 @@ def test_offsets_are_into_the_text_as_given_not_a_normalised_copy():
     els = parse(SAMPLE)
     heading = next(e for e in els if e.kind == "scene_heading")
     assert SAMPLE[heading.start:heading.end] == "EXT. CITY WALL - NIGHT"
-
-
-def test_the_real_screenplay_parses_with_no_drift():
-    """The corpus's own script, if it is present."""
-    import pytest
-    pytest.importorskip("pypdf")
-    pdf = (Path(__file__).resolve().parents[1] / "production/projects/AutomaticDrive"
-           / "script/20260804T150024Z_0fbc189b_AutomaticDrive.pdf")
-    if not pdf.is_file():
-        import pytest
-        pytest.skip("AutomaticDrive script not present")
-    from pypdf import PdfReader
-    text = "\n".join((p.extract_text() or "") for p in PdfReader(str(pdf)).pages)
-    els = parse(text)
-    assert verify_spans(text, els) == []
-    assert len(scenes(els)) == 8

@@ -194,8 +194,8 @@ def subjects_of(shot: dict) -> tuple[list[str], dict[str, str]]:
 def ref_to_id_age(ref: str | None) -> tuple[str, str | None]:
     """Parse a canonical character reference.
 
-    >>> ref_to_id_age("emily@adult_50")
-    ('emily', 'adult_50')
+    >>> ref_to_id_age("nina@adult_50")
+    ('nina', 'adult_50')
     >>> ref_to_id_age("modern_office_man")
     ('modern_office_man', None)
     >>> ref_to_id_age("") == ref_to_id_age(None) == ("", None)
@@ -212,8 +212,8 @@ def ref_to_id_age(ref: str | None) -> tuple[str, str | None]:
 def id_age_to_ref(character_id: str, age_state: str | None) -> str:
     """Inverse of ref_to_id_age — assemble the canonical string form.
 
-    >>> id_age_to_ref("emily", "adult_50")
-    'emily@adult_50'
+    >>> id_age_to_ref("nina", "adult_50")
+    'nina@adult_50'
     >>> id_age_to_ref("modern_office_man", None)
     'modern_office_man'
     """
@@ -393,10 +393,10 @@ def gaze_clauses_of(shot: dict, offscreen: frozenset[str] | set[str] = frozenset
     at the car console" asks for a console the frame does not hold.
 
     Examples produced:
-      "emily looking at ryan"
-      "ethan gazing at the tablet"
-      "ryan looking off-frame right"
-      "emily looking directly into camera"
+      "nina looking at omar"
+      "theo gazing at the tablet"
+      "omar looking off-frame right"
+      "nina looking directly into camera"
     """
     out: list[str] = []
     for sub in (dig(shot, "setup", "subjects") or []):
@@ -811,7 +811,7 @@ def prop_phrase(p: dict, props_kb: dict | None = None) -> str:
 
 # Where a prop declares itself in the frame, in words -- only for the zones that
 # put it away from the cast. A prop described with no place is attached by the
-# sampler to whatever in frame matches its words: the pilot scene's "mechanical
+# sampler to whatever in frame matches its words: one scene's "mechanical
 # robotic arms emerging from the wreckage", declared in the background, came
 # back as the hands of the man in the foreground. A prop held in the hands or
 # set in the foreground is left as written; its place is the cast's.
@@ -847,7 +847,7 @@ def prop_left_unstaged_away_from_cast(p: dict, props_kb: dict | None = None) -> 
     does not stage -- one the prompt should not name.
 
     Such a prop has nothing in the control image to be drawn on, so the
-    sampler draws it on what is there. On the pilot scene's beat 2, "mechanical
+    sampler draws it on what is there. On one scene's second beat, "mechanical
     robotic arms emerging from the wreckage" (1.5 m, declared in the
     background, no placement) came back as the hands of the one man in frame,
     with or without its place written after it; the same render without the

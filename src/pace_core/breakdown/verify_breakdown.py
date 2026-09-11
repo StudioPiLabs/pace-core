@@ -13,7 +13,7 @@ severity, which do not. The model never returns a score.
 
 Usage:
     uv run python -m pace_core.breakdown.verify_breakdown \
-        --script-ir script_ir.json --project AutomaticDrive --dry-run
+        --script-ir script_ir.json --project <slug> --dry-run
 """
 from __future__ import annotations
 
@@ -168,7 +168,7 @@ def score(alignments: list[dict], script_scenes: list[dict]) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--script-ir", required=True)
-    ap.add_argument("--project", default="AutomaticDrive")
+    ap.add_argument("--project", required=True, help="project slug")
     ap.add_argument("--scenes-dir", help="judge a candidate breakdown in this "
                     "directory instead of the project's own scenes")
     ap.add_argument("--map", required=True,

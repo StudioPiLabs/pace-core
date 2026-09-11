@@ -38,18 +38,18 @@ def _doc(sid: str, actions: list[str]) -> dict:
 SCRIPT_IR = [{
     "index": 0, "heading": "EXT. HIGHWAY - DAY", "start": 0, "end": 100,
     "entities": [
-        {"local_id": "ryan", "type": "CHARACTER", "canonical_name": "RYAN",
+        {"local_id": "omar", "type": "CHARACTER", "canonical_name": "OMAR",
          "aliases": ["he"]},
-        {"local_id": "ethan", "type": "CHARACTER", "canonical_name": "ETHAN",
+        {"local_id": "theo", "type": "CHARACTER", "canonical_name": "THEO",
          "aliases": []},
     ],
     "events": [
-        {"local_id": "e1", "predicate": "PULL_FREE", "actor": "ryan",
-         "patient": "ethan", "order": 1, "importance": 0.9,
-         "evidence": {"source_text": "Ryan pulls Ethan free"}},
-        {"local_id": "e2", "predicate": "STAND", "actor": "ethan",
+        {"local_id": "e1", "predicate": "PULL_FREE", "actor": "omar",
+         "patient": "theo", "order": 1, "importance": 0.9,
+         "evidence": {"source_text": "Omar pulls Theo free"}},
+        {"local_id": "e2", "predicate": "STAND", "actor": "theo",
          "patient": None, "order": 2, "importance": 0.4,
-         "evidence": {"source_text": "Ethan stands"}},
+         "evidence": {"source_text": "Theo stands"}},
     ],
     "states": [],
 }]
@@ -65,8 +65,8 @@ BASELINE = {"alignments": [{
     "invented_events": [], "over_specified": [],
 }]}
 
-ACTIONS = {"scene_01/shot_01/a0": "Ryan drags Ethan out of the wreck.",
-           "scene_01/shot_02/a0": "Ethan gets to his feet."}
+ACTIONS = {"scene_01/shot_01/a0": "Omar drags Theo out of the wreck.",
+           "scene_01/shot_02/a0": "Theo gets to his feet."}
 MAPPING = {"0": ["scene_01"]}
 
 
@@ -74,8 +74,8 @@ MAPPING = {"0": ["scene_01"]}
 
 def test_swap_names_keeps_the_surface_form():
     """The IR spells names in screenplay caps; the text may not."""
-    out = swap_names("Ryan drags Ethan out.", "RYAN", "ETHAN")
-    assert out == "Ethan drags Ryan out."
+    out = swap_names("Omar drags Theo out.", "OMAR", "THEO")
+    assert out == "Theo drags Omar out."
 
 
 def test_swap_names_is_one_pass():
@@ -84,14 +84,14 @@ def test_swap_names_is_one_pass():
 
 
 def test_swap_names_leaves_text_alone_when_a_name_is_absent():
-    assert swap_names("Ryan alone.", "RYAN", "ETHAN") == "Ryan alone."
+    assert swap_names("Omar alone.", "OMAR", "THEO") == "Omar alone."
 
 
 def _apply(kind: str, action_id: str, event: str | None, expect: str):
     docs = {"scene_01": _doc("scene_01", [ACTIONS["scene_01/shot_01/a0"],
                                           ACTIONS["scene_01/shot_02/a0"]])}
     mu = Mutation(kind, 0, "scene_01", action_id, event, expect,
-                  "RYAN <-> ETHAN" if kind.startswith("Swap") else "")
+                  "OMAR <-> THEO" if kind.startswith("Swap") else "")
     landed = apply([mu], docs, SCRIPT_IR)
     return docs, landed
 
@@ -116,7 +116,7 @@ def test_specialize_keeps_the_event_and_adds_only_craft():
     docs, landed = _apply("SpecializePredicate", "scene_01/shot_01/a0", "e1",
                           "OVERSPEC")
     t = docs["scene_01"]["shots"][0]["events"]["actions"][0]["description_en"]
-    assert t.startswith("Ryan drags Ethan out of the wreck")
+    assert t.startswith("Omar drags Theo out of the wreck")
     assert len(t) > len(ACTIONS["scene_01/shot_01/a0"])
 
 
@@ -132,13 +132,13 @@ def test_craft_detail_introduces_no_new_participant():
 def test_swap_actor_reverses_the_roles():
     docs, _ = _apply("SwapActor", "scene_01/shot_01/a0", "e1", "ROLE")
     assert (docs["scene_01"]["shots"][0]["events"]["actions"][0]["description_en"]
-            == "Ethan drags Ryan out of the wreck.")
+            == "Theo drags Omar out of the wreck.")
 
 
 def test_generalize_keeps_the_actor_and_drops_the_predicate():
     docs, _ = _apply("GeneralizePredicate", "scene_01/shot_01/a0", "e1", "OVERGEN")
     t = docs["scene_01"]["shots"][0]["events"]["actions"][0]["description_en"]
-    assert "ryan" in t.lower() and "drags" not in t.lower()
+    assert "omar" in t.lower() and "drags" not in t.lower()
 
 
 # ── planning ──────────────────────────────────────────────────────────────
@@ -254,10 +254,10 @@ def test_invisible_mutations_do_not_change_the_prompt(kind):
     from pace_core.breakdown.verify_breakdown import load_breakdown_actions
 
     doc = _doc("scene_01", [ACTIONS["scene_01/shot_01/a0"]])
-    doc["narrative_meta"] = {"location_ref": "highway", "characters_present": ["ryan"]}
+    doc["narrative_meta"] = {"location_ref": "highway", "characters_present": ["omar"]}
     doc["shots"][0]["setup"] = {
         "backdrop": {"location": "highway", "time_of_day": "day"},
-        "subjects": [{"character_id": "ryan", "costume": "jacket",
+        "subjects": [{"character_id": "omar", "costume": "jacket",
                       "state": "injured"}],
         "props": [{"prop_id": "car", "state": "intact"}],
         "relations": [],
@@ -271,8 +271,8 @@ def test_invisible_mutations_do_not_change_the_prompt(kind):
                                       .__setitem__("state", "destroyed"),
         "DropRelation": lambda d: d["shots"][0]["setup"].pop("relations"),
         "InvertRelation": lambda d: d["shots"][0]["setup"]["relations"]
-                                     .append({"a": "ryan", "rel": "LEFT_OF",
-                                              "b": "ethan"}),
+                                     .append({"a": "omar", "rel": "LEFT_OF",
+                                              "b": "theo"}),
         "ReplaceCostume": lambda d: d["shots"][0]["setup"]["subjects"][0]
                                      .__setitem__("costume", "spacesuit"),
     }

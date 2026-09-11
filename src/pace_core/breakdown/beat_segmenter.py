@@ -51,8 +51,8 @@ TAU_HIGH, TAU_LOW = 0.55, 0.20
 # Measured on this screenplay the two diverge sharply. Under the formula alone,
 # 40 of 41 adjudicated pairs merged: without a state change the sum tops out
 # near 0.48 against a 0.55 threshold, so pairs the adjudicator scored 0.8 for
-# goal shift ("Ryan shifts from grieving Emily to actively searching") and 0.8
-# for reveal ("the arms swerve around Ryan, revealing they are ignoring him")
+# goal shift ("Omar shifts from grieving Nina to actively searching") and 0.8
+# for reveal ("the arms swerve around Omar, revealing they are ignoring him")
 # were folded into a 13-event beat spanning a robot arm emerging through a car
 # being dragged away. That is not the smallest unit in which the world changes.
 #
