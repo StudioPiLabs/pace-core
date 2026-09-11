@@ -1,0 +1,646 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/pillar.setup.schema.json",
+  "title": "PACE Setup Pillar (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "definitions": {
+    "screenPosition": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "zone": {
+          "enum": [
+            "left",
+            "center",
+            "right",
+            "upper",
+            "lower",
+            "upper_left",
+            "upper_center",
+            "upper_right",
+            "lower_left",
+            "lower_center",
+            "lower_right",
+            "center_left",
+            "center_right"
+          ],
+          "description": "三分法 13 区(自 PAILang ScreenZone 吸收,3×3 + 边带语义齐全;原 9 区的 top/bottom 改名 upper/lower,值迁移见 10 §B2)"
+        },
+        "x": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "屏幕水平位置。"
+        },
+        "y": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "屏幕垂直位置。"
+        },
+        "depth": {
+          "enum": [
+            "foreground",
+            "midground",
+            "background"
+          ],
+          "description": "空间深度。"
+        }
+      },
+      "description": "有 physicalLayout 时由相机投影派生,手填仅作回退"
+    },
+    "gaze": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "targetType": {
+          "enum": [
+            "character",
+            "object",
+            "feature",
+            "camera"
+          ],
+          "description": "注视目标类型。"
+        },
+        "targetRef": {
+          "type": "string",
+          "description": "注视目标引用。"
+        },
+        "direction": {
+          "enum": [
+            "off_left",
+            "off_right",
+            "off_up",
+            "off_down",
+            "up",
+            "down",
+            "left",
+            "right",
+            "into_camera",
+            "averted"
+          ],
+          "description": "方向。"
+        },
+        "note": {
+          "type": "string",
+          "description": "备注。"
+        }
+      },
+      "description": "target_* 与 direction 二选一"
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "characterId": {
+          "type": "string",
+          "description": "角色 ID。"
+        },
+        "ageState": {
+          "type": "string",
+          "description": "角色年龄或阶段状态。"
+        },
+        "cls": {
+          "type": "string",
+          "description": "分类标签。"
+        },
+        "costume": {
+          "type": "string",
+          "description": "服装描述。"
+        },
+        "hair": {
+          "type": "string",
+          "description": "发型描述。"
+        },
+        "makeup": {
+          "type": "string",
+          "description": "妆容描述。"
+        },
+        "pose": {
+          "type": "string",
+          "description": "姿态描述。"
+        },
+        "silhouette": {
+          "type": "string",
+          "description": "轮廓特征。"
+        },
+        "proportions": {
+          "type": "string",
+          "description": "比例特征。"
+        },
+        "accessories": {
+          "type": "string",
+          "description": "配饰列表。"
+        },
+        "gaze": {
+          "$ref": "#/definitions/gaze",
+          "description": "视线或注视关系。"
+        },
+        "screenPosition": {
+          "$ref": "#/definitions/screenPosition",
+          "description": "画面中的屏幕位置。"
+        },
+        "inFrame": {
+          "enum": [
+            "yes",
+            "partial",
+            "no",
+            "tbd"
+          ],
+          "description": "本 panel 是否入画：yes 入画，partial 局部入画（被画框切到），no 不入画（只作朝向参照），tbd 待确认（原文未给定，不等于入画）。"
+        },
+        "inFrameExtent": {
+          "type": "string",
+          "description": "局部入画时画面露出的部分，如「右肩前景」。"
+        }
+      },
+      "description": "复用结构 `subject`,用于 `pillar.setup.schema.json` 中的嵌套对象。"
+    },
+    "prop": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "propId": {
+          "type": "string",
+          "description": "道具 ID。"
+        },
+        "description": {
+          "type": "string",
+          "description": "文本说明。"
+        },
+        "cls": {
+          "type": "string",
+          "description": "分类标签。"
+        },
+        "material": {
+          "enum": [
+            "wood",
+            "glass",
+            "metal",
+            "paper",
+            "plastic",
+            "fabric",
+            "stone",
+            "ceramic",
+            "leather"
+          ],
+          "description": "材质。"
+        },
+        "pattern": {
+          "enum": [
+            "grid",
+            "checker",
+            "stripes",
+            "zigzag",
+            "dots",
+            "bricks",
+            "metal",
+            "hexagons"
+          ],
+          "description": "图案。"
+        },
+        "utility": {
+          "enum": [
+            "decorative",
+            "functional"
+          ],
+          "description": "用途。"
+        },
+        "state": {
+          "enum": [
+            "pristine",
+            "weathered",
+            "broken",
+            "burning",
+            "wet",
+            "frozen",
+            "bloodied",
+            "dusty",
+            "rusted",
+            "polished"
+          ],
+          "description": "状态。"
+        },
+        "color": {
+          "type": "string",
+          "description": "颜色。"
+        },
+        "size": {
+          "enum": [
+            "palm_sized",
+            "wearable",
+            "human_scale",
+            "two_person",
+            "monumental",
+            "miniature"
+          ],
+          "description": "尺寸。"
+        },
+        "heldBy": {
+          "type": "string",
+          "description": "角色 ref(id@version)"
+        },
+        "screenPosition": {
+          "$ref": "#/definitions/screenPosition",
+          "description": "画面中的屏幕位置。"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "数量。"
+        },
+        "inFrame": {
+          "enum": [
+            "yes",
+            "partial",
+            "no",
+            "tbd"
+          ],
+          "description": "本 panel 是否入画：yes 入画，partial 局部入画（被画框切到），no 不入画（只作朝向参照），tbd 待确认（原文未给定，不等于入画）。未声明时由灰模记录判定。"
+        },
+        "inFrameExtent": {
+          "type": "string",
+          "description": "局部入画时画面露出的部分，如「底边露出右端」。"
+        }
+      },
+      "description": "复用结构 `prop`,用于 `pillar.setup.schema.json` 中的嵌套对象。"
+    },
+    "textElement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "enum": [
+            "phone_screen",
+            "billboard",
+            "letter",
+            "subtitle",
+            "title_card",
+            "sign",
+            "scroll",
+            "book_page",
+            "tattoo",
+            "newspaper",
+            "carved_stone",
+            "wall_graffiti",
+            "banner"
+          ],
+          "description": "目标对象。"
+        },
+        "content": {
+          "type": "string",
+          "description": "文本内容。"
+        },
+        "language": {
+          "type": "string",
+          "description": "语言代码或语言描述。"
+        },
+        "style": {
+          "enum": [
+            "handwritten",
+            "printed",
+            "calligraphy",
+            "neon",
+            "carved",
+            "stamped",
+            "embroidered"
+          ],
+          "description": "视觉风格。"
+        },
+        "layout": {
+          "enum": [
+            "single_bubble",
+            "header_only",
+            "input_box",
+            "body_paragraph",
+            "list",
+            "headline_only",
+            "two_column"
+          ],
+          "description": "布局。"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "数量。"
+        },
+        "note": {
+          "type": "string",
+          "description": "备注。"
+        }
+      },
+      "description": "复用结构 `textElement`,用于 `pillar.setup.schema.json` 中的嵌套对象。"
+    }
+  },
+  "properties": {
+    "subjects": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/subject"
+      },
+      "description": "画面主体列表。"
+    },
+    "props": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/prop"
+      },
+      "description": "道具列表。"
+    },
+    "backdrop": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "setting": {
+          "enum": [
+            "int",
+            "ext"
+          ],
+          "description": "场景设置或空间类型。"
+        },
+        "timeOfDay": {
+          "enum": [
+            "dawn",
+            "sunrise",
+            "morning",
+            "midday",
+            "afternoon",
+            "evening",
+            "sunset",
+            "dusk",
+            "night",
+            "late_night",
+            "day"
+          ],
+          "description": "故事时间段。"
+        },
+        "location": {
+          "type": "string",
+          "description": "对齐 entities/locations.json 台账 ref"
+        },
+        "era": {
+          "type": "string",
+          "description": "时代背景。"
+        },
+        "region": {
+          "type": "string",
+          "description": "地域背景。"
+        },
+        "culture": {
+          "type": "string",
+          "description": "文化背景。"
+        },
+        "weather": {
+          "type": "string",
+          "description": "天气。"
+        },
+        "season": {
+          "type": "string",
+          "description": "季节。"
+        }
+      },
+      "description": "背景和场景设定。"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "density": {
+          "enum": [
+            "clean",
+            "cluttered"
+          ],
+          "description": "画面元素密度。"
+        },
+        "negativeSpace": {
+          "type": "boolean",
+          "description": "负空间使用。"
+        },
+        "mood": {
+          "type": "string",
+          "description": "整体情绪氛围。"
+        },
+        "scale": {
+          "type": "string",
+          "description": "空间或对象尺度。"
+        },
+        "style": {
+          "enum": [
+            "sketch_bw",
+            "inkwash_bw",
+            "chiaroscuro",
+            "photoreal",
+            "ink_color",
+            "concept_art",
+            "line_art_clean"
+          ],
+          "description": "视觉风格。"
+        },
+        "background": {
+          "type": "string",
+          "description": "背景元素或背景描述。"
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "rain",
+              "snow",
+              "fog",
+              "wind",
+              "thunder",
+              "smoke",
+              "dust",
+              "ash",
+              "fire"
+            ],
+            "description": "数组 `environment.elements[]` 的元素结构。枚举字段,取值必须来自本 schema 的 enum。"
+          },
+          "description": "环境元素列表。"
+        }
+      },
+      "description": "环境氛围和空间属性。"
+    },
+    "texture": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "contrast": {
+          "enum": [
+            "low",
+            "high"
+          ],
+          "description": "对比度。"
+        },
+        "blur": {
+          "enum": [
+            "gaussian",
+            "radial",
+            "motion"
+          ],
+          "description": "模糊程度。"
+        },
+        "noise": {
+          "enum": [
+            "gaussian",
+            "salt_and_pepper",
+            "poisson"
+          ],
+          "description": "噪声程度。"
+        },
+        "filmGrain": {
+          "type": "boolean",
+          "description": "胶片颗粒。"
+        },
+        "colorPalette": {
+          "type": "string",
+          "description": "色彩 palette。"
+        }
+      },
+      "description": "纹理和影像质感。"
+    },
+    "geometry": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "lines": {
+          "enum": [
+            "horizontal",
+            "vertical",
+            "diagonal"
+          ],
+          "description": "线条特征。"
+        },
+        "regularShapes": {
+          "enum": [
+            "square",
+            "circle",
+            "triangle"
+          ],
+          "description": "规则形状。"
+        },
+        "naturalShapes": {
+          "enum": [
+            "water_like",
+            "cloud_like"
+          ],
+          "description": "自然形状。"
+        },
+        "frameBalance": {
+          "enum": [
+            "rule_of_thirds",
+            "symmetry",
+            "right_heavy",
+            "left_heavy"
+          ],
+          "description": "画面平衡。"
+        },
+        "positionalAccuracy": {
+          "type": "string",
+          "description": "位置准确性要求。"
+        },
+        "relativePositioning": {
+          "type": "string",
+          "description": "相对位置关系。"
+        }
+      },
+      "description": "画面几何和构图关系。"
+    },
+    "space": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "depth": {
+          "enum": [
+            "deep",
+            "flat",
+            "limited",
+            "ambiguous"
+          ],
+          "description": "空间深度。"
+        }
+      },
+      "description": "空间深度和空间组织。"
+    },
+    "primaryFocus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "ref"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "character",
+            "object",
+            "environment",
+            "feature"
+          ],
+          "description": "对象类型。"
+        },
+        "ref": {
+          "type": "string",
+          "description": "实体或资产引用。"
+        },
+        "ofCharacter": {
+          "type": "string",
+          "description": "type=feature 时必填(id@version)"
+        },
+        "coveragePct": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "画面覆盖比例,0 到 100。"
+        }
+      },
+      "description": "shot 级真值;panel.primaryFocus 只是 override——仅当该 panel 焦点与 shot 不同时才写(稀疏覆盖链:缺失不覆盖)"
+    },
+    "secondarySubjects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "次要主体列表。"
+    },
+    "excluded": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "需要排除的元素或效果。"
+    },
+    "textGeneration": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/textElement"
+      },
+      "description": "画面文字生成约束。"
+    },
+    "materialAdvanced": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "coat": {
+          "type": "object",
+          "description": "涂层材质参数。"
+        },
+        "thinFilm": {
+          "type": "object",
+          "description": "薄膜干涉材质参数。"
+        },
+        "subsurface": {
+          "type": "object",
+          "description": "次表面散射参数。"
+        },
+        "emission": {
+          "type": "object",
+          "description": "自发光材质参数。"
+        }
+      },
+      "description": "dormant(B-C, MaterialX OpenPBR)"
+    }
+  },
+  "description": "PACE setup pillar schema。定义主体、道具、环境、构图和材质等画面搭建真值。"
+}

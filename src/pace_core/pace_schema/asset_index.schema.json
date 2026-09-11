@@ -1,0 +1,399 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/asset_index.schema.json",
+  "title": "PACE Asset Index (pace-0.2)",
+  "definitions": {
+    "assetRef": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "$comment": "瞬态 URL 字段(url / *_url(s) / *Url(s) / *URL(s))由服务端 PaceValidator 拒绝;本 schema 保留 additionalProperties、不在字段层拦截,纯 schema 校验不能替代该检查。只存 assets:// 到 uri / *_uri。",
+      "properties": {
+        "status": {
+          "enum": [
+            "idle",
+            "generating",
+            "ready",
+            "failed"
+          ],
+          "description": "当前状态。"
+        },
+        "uri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^assets://.+",
+          "description": "assets:// URI。"
+        },
+        "source": {
+          "enum": [
+            "generated",
+            "uploaded",
+            null
+          ],
+          "description": "字段或记录来源。"
+        }
+      }
+    },
+    "characterDepiction": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ageState": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "角色年龄或阶段状态。"
+        },
+        "costume": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "服装描述。"
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "适用场景 ID 列表。"
+        },
+        "image": {
+          "$ref": "#/definitions/assetRef",
+          "description": "图像资产引用。"
+        },
+        "model3d": {
+          "$ref": "#/definitions/assetRef",
+          "description": "三维模型资产引用。"
+        }
+      },
+      "description": "复用结构 `characterDepiction`,用于 `asset_index.schema.json` 中的嵌套对象。"
+    },
+    "propDepiction": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "状态。"
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "适用场景 ID 列表。"
+        },
+        "image": {
+          "$ref": "#/definitions/assetRef",
+          "description": "图像资产引用。"
+        },
+        "model3d": {
+          "$ref": "#/definitions/assetRef",
+          "description": "三维模型资产引用。"
+        }
+      },
+      "description": "复用结构 `propDepiction`,用于 `asset_index.schema.json` 中的嵌套对象。"
+    },
+    "assetDepiction": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "sceneId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "该表现适用的单个场景 ID。"
+        },
+        "ageState": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "角色年龄或阶段状态。"
+        },
+        "costume": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "服装描述。"
+        },
+        "makeup": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "妆发或配饰备注。"
+        },
+        "state": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "道具或资产状态。"
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "适用场景 ID 列表。"
+        },
+        "image": {
+          "$ref": "#/definitions/assetRef",
+          "description": "图像资产引用。"
+        },
+        "model3d": {
+          "$ref": "#/definitions/assetRef",
+          "description": "三维模型资产引用。"
+        }
+      },
+      "description": "资产在某种年龄、服装、状态或场景下的表现。"
+    },
+    "assetAppearance": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ageState": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "角色年龄或阶段状态。"
+        },
+        "costume": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "服装描述。"
+        },
+        "image": {
+          "$ref": "#/definitions/assetRef",
+          "description": "图像资产引用。"
+        },
+        "model3d": {
+          "$ref": "#/definitions/assetRef",
+          "description": "三维模型资产引用。"
+        }
+      },
+      "description": "角色造型卡,用于资产库按造型渲染。"
+    },
+    "assetEntry": {
+      "type": "object",
+      "additionalProperties": true,
+      "$comment": "瞬态 URL 字段(url / *_url(s) / *Url(s) / *URL(s))由服务端 PaceValidator 拒绝;本 schema 保留 additionalProperties、不在字段层拦截,纯 schema 校验不能替代该检查。只存 assets:// 到 uri / *_uri。",
+      "required": [
+        "id"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "PACE 字段 `definitions.assetEntry.id`,用于记录ID。"
+        },
+        "assetId": {
+          "type": "string",
+          "description": "资产 ID。"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "显示名称。"
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "实体描述。"
+        },
+        "trigger": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "LoRA 或形象触发词。"
+        },
+        "anchor": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "参考锚或形象锚。"
+        },
+        "tier": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "角色或资产分级。"
+        },
+        "version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "资产版本标签。"
+        },
+        "directorNotes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "导演备注。"
+        },
+        "setting": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "地点设定,如内景/外景等。"
+        },
+        "category": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "道具或资产分类。"
+        },
+        "productionNotes": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "制作备注。"
+        },
+        "refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "外部或内部引用集合。"
+        },
+        "lora": {
+          "type": [
+            "string",
+            "object",
+            "null"
+          ],
+          "description": "LoRA 资产引用。"
+        },
+        "voiceId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "语音或音色 ID。"
+        },
+        "continuityCard": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "连续性卡片逐行条目。"
+        },
+        "shots": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "出现的 shot ID 列表。"
+        },
+        "scenes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "出现的 scene ID 列表。"
+        },
+        "costumes": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "服装字典或 map。"
+        },
+        "ageStates": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "年龄态字典或 map。"
+        },
+        "genericAnchors": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "通用形象锚字典或 map。"
+        },
+        "animation": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "动画或运动配置。"
+        },
+        "physicalAttributes": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "物理属性字典或 map。"
+        },
+        "continuityStates": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": true,
+          "description": "连续性状态字典或 map。"
+        },
+        "image": {
+          "$ref": "#/definitions/assetRef",
+          "description": "图像资产引用。"
+        },
+        "model3d": {
+          "$ref": "#/definitions/assetRef",
+          "description": "三维模型资产引用。"
+        },
+        "depictions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/assetDepiction"
+          },
+          "description": "资产在不同状态或场景中的表现列表。"
+        },
+        "appearances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/assetAppearance"
+          },
+          "description": "角色造型卡列表。"
+        }
+      }
+    }
+  },
+  "type": "array",
+  "items": {
+    "$ref": "#/definitions/assetEntry"
+  },
+  "description": "文件:entities/characters.json、entities/props.json、entities/locations.json、entities/voices.json。实体资产台账 schema,定义角色、道具、地点、声音等资产索引及其 depictions 表示。"
+}

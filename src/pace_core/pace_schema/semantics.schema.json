@@ -1,0 +1,125 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/semantics.schema.json",
+  "title": "PACE Semantics Layer / OMC-lite (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "version": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "PACE 字段 `version.id`,用于记录ID。"
+        },
+        "derivedFrom": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "派生来源版本或记录。"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "approved",
+            "rejected"
+          ],
+          "description": "当前状态。"
+        }
+      },
+      "description": "take 血缘(OMC Version)"
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "PACE 字段 `task.id`,用于记录ID。"
+        },
+        "layer": {
+          "type": "string",
+          "description": "L0–L5 或 S1–S3"
+        },
+        "participant": {
+          "type": "string",
+          "description": "人或模型(模型也是 Participant)"
+        }
+      },
+      "description": "任务信息。"
+    },
+    "productionContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "shootDay": {
+          "type": "string",
+          "description": "拍摄日或制作日。"
+        },
+        "renderNode": {
+          "type": "string",
+          "description": "渲染节点标识。"
+        },
+        "model": {
+          "type": "string",
+          "description": "模型或工作流标识。"
+        }
+      },
+      "description": "制作物流(与叙事语境分离)"
+    },
+    "narrativeContext": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "location": {
+          "type": "string",
+          "description": "PACE 字段 `narrativeContext.location`,用于记录地点。"
+        },
+        "time": {
+          "type": "string",
+          "description": "PACE 字段 `narrativeContext.time`,用于记录时间。"
+        },
+        "era": {
+          "type": "string",
+          "description": "时代背景。"
+        }
+      },
+      "description": "故事世界"
+    },
+    "relationships": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subject",
+          "rel",
+          "object"
+        ],
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "关系主体。"
+          },
+          "rel": {
+            "type": "string",
+            "description": "heldBy / gazeAt / appearsIn / …"
+          },
+          "object": {
+            "type": "string",
+            "description": "关系客体。"
+          }
+        },
+        "description": "数组 `relationships[]` 的元素结构。类型为 object。"
+      },
+      "description": "实体关系列表。"
+    }
+  },
+  "description": "PACE semantics schema。定义语义版本、生产上下文、叙事上下文和实体关系。"
+}

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pace-core"
+version = "0.1.0"
+description = "PACE: typed storyboard specification, script breakdown, solved camera geometry and self-auditing checks."
+readme = "README.md"
+# The Blender kernels run in Blender 4.2's bundled Python 3.11.
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "Studio Π"}]
+dependencies = [
+    "numpy>=1.26",
+    "Pillow>=10.0",
+]
+
+[project.optional-dependencies]
+usd = ["usd-core>=24.0"]
+render = ["scipy>=1.13"]
+dev = ["pytest>=8.0"]
+
+[project.urls]
+Repository = "https://github.com/StudioPiLabs/pace-core"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pace_core"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

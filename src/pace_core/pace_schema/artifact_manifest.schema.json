@@ -1,0 +1,39 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/artifact_manifest.schema.json",
+  "title": "PACE Artifact Manifest Shape (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "artifacts"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "pace-0.2",
+      "description": "PACE schema 版本号。"
+    },
+    "projectId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "项目 ID,应与项目目录名一致。"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "pace/artifact_item.schema.json"
+      },
+      "description": "产物索引(append-only 数组:同 kind 多条 = 多 take/多上传版本,永不覆盖);结构层级事实文件中的 artifacts[] 均复用 artifact_item.schema.json"
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "记录最后更新时间,使用 ISO 8601 字符串。"
+    }
+  },
+  "description": "不直接对应标准树成员文件;保留为 artifact 列表文档形状。项目级事实文件以 project_manifest.schema.json 为准。"
+}

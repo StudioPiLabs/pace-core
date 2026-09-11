@@ -1,0 +1,123 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/panel_manifest.schema.json",
+  "title": "PACE Panel Manifest (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "panelId"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "pace-0.2",
+      "description": "标准版本号"
+    },
+    "panelId": {
+      "type": "string",
+      "pattern": "^ps\\d+[A-Za-z]?_sh\\d+[A-Za-z]?_p\\d+[A-Za-z]?$",
+      "description": "结构 ID(平台契约 §4.3,如 ps001_sh003_p0001);与所属 panel 目录名一致"
+    },
+    "panelNumber": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "shot 内序号,从 1 起"
+    },
+    "kind": {
+      "enum": [
+        "visual",
+        "title_card",
+        "black",
+        "meta"
+      ],
+      "description": "visual=正常画面 / title_card=字卡 / black=黑屏过场 / meta=非渲染占位;仅 visual 进图像后端"
+    },
+    "primaryFocus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "ref"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "character",
+            "object",
+            "environment",
+            "feature"
+          ],
+          "description": "对象类型。"
+        },
+        "ref": {
+          "type": "string",
+          "description": "实体或资产引用。"
+        },
+        "ofCharacter": {
+          "type": "string",
+          "description": "type=feature 时必填(id@version)"
+        },
+        "coveragePct": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "画面覆盖比例,0 到 100。"
+        }
+      },
+      "description": "override:仅当该 panel 焦点与 shot 级 setup.primaryFocus 不同时才写;真值在 shot 级,缺失即继承(形状同 setup.primaryFocus:{type, ref, ofCharacter?, coveragePct?})"
+    },
+    "model": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "panel 级渲染模型/工作流选择;为空表示使用 worker 或项目默认值。"
+    },
+    "seed": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 0,
+      "description": "panel 级渲染随机种子;为空表示由 worker 自动生成。"
+    },
+    "sceneReference": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^assets://",
+      "description": "前镜/连续性参考图的 assets:// URI;不得保存签名 URL 或 HTTP(S) URL。"
+    },
+    "styleReferences": {
+      "type": [
+        "array",
+        "null"
+      ],
+      "items": {
+        "type": "string",
+        "pattern": "^assets://"
+      },
+      "description": "风格参考图 assets:// URI 列表;不得保存签名 URL 或 HTTP(S) URL。"
+    },
+    "isKeyframe": {
+      "type": [
+        "boolean",
+        "null"
+      ],
+      "description": "是否作为关键帧参与渲染/批量网格;为空表示由 worker 默认策略决定。"
+    },
+    "notes": {
+      "type": "string",
+      "description": "给人看的备注;编译器不消费"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "pace/artifact_item.schema.json"
+      },
+      "description": "panel 级产物索引(append-only),如该关键帧的标注 JSON、参考图或局部输出。"
+    }
+  },
+  "description": "文件:scenes/<sceneId>/shots/<shotId>/panels/<panelId>/manifest.json。panel = 唯一被渲染的叶子,**panel 层单一真值**。panel 不再承载四柱 override;四柱真值在 shot 层。required:schemaVersion+panelId。owner:S1 建骨架。"
+}

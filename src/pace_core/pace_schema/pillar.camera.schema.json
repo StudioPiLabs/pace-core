@@ -1,0 +1,395 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/pillar.camera.schema.json",
+  "title": "PACE Camera Pillar (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "intrinsics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "lensSize": {
+          "enum": [
+            "fisheye",
+            "wide",
+            "standard",
+            "medium",
+            "long_lens",
+            "telephoto"
+          ],
+          "description": "镜头规格或镜头尺寸描述。"
+        },
+        "focalLengthMm": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "焦距,单位毫米。"
+        },
+        "sensorMm": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "[w,h] 物理片门 mm;缺省 36x24。修『焦距→视场角』歧义(C-A)"
+        },
+        "aperture": {
+          "enum": [
+            "wide",
+            "medium",
+            "narrow"
+          ],
+          "description": "光圈描述。"
+        },
+        "apertureF": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "F 制光圈值。"
+        },
+        "tStop": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "T 制光圈值。"
+        },
+        "depthOfField": {
+          "enum": [
+            "deep",
+            "shallow",
+            "soft",
+            "rack",
+            "split_diopter",
+            "tilt_shift"
+          ],
+          "description": "景深控制。"
+        },
+        "focusDistanceM": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "对焦距离,单位米。"
+        },
+        "shutterSpeed": {
+          "enum": [
+            "slow",
+            "medium",
+            "fast"
+          ],
+          "description": "快门速度。"
+        },
+        "shutterAngleDeg": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 360,
+          "description": "快门角度,单位度。"
+        },
+        "iso": {
+          "enum": [
+            "low",
+            "medium",
+            "high"
+          ],
+          "description": "ISO 描述。"
+        },
+        "isoValue": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "ISO 数值。"
+        },
+        "distortion": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "radial": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "径向畸变参数。"
+            },
+            "tangential": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "description": "切向畸变参数。"
+            },
+            "overscan": {
+              "type": "number",
+              "description": "过扫描比例。"
+            }
+          },
+          "description": "dormant(C-B, OpenLensIO)"
+        },
+        "anamorphicSqueeze": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "dormant(C-F)"
+        },
+        "entrancePupilOffset": {
+          "type": "number",
+          "description": "米, dormant(C-G)"
+        },
+        "encoders": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "focus": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "对焦编码器值。"
+            },
+            "iris": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "光圈编码器值。"
+            },
+            "zoom": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "description": "变焦编码器值。"
+            }
+          },
+          "description": "dormant(C-E)"
+        }
+      },
+      "description": "摄影机内参和镜头参数。"
+    },
+    "extrinsics": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "angle": {
+          "enum": [
+            "eye_level",
+            "low",
+            "high",
+            "aerial",
+            "overhead",
+            "dutch",
+            "shoulder",
+            "hip",
+            "knee",
+            "ground",
+            "continuous"
+          ],
+          "description": "拍摄角度。"
+        },
+        "position": {
+          "enum": [
+            "front",
+            "three_quarter",
+            "profile",
+            "ots",
+            "behind"
+          ],
+          "description": "机位位置。"
+        }
+      },
+      "description": "摄影机外参、机位和朝向。"
+    },
+    "trajectory": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "static": {
+          "type": "boolean",
+          "description": "是否静止镜头。"
+        },
+        "movement2d": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "pan_left",
+              "pan_right",
+              "tilt_up",
+              "tilt_down",
+              "zoom_in",
+              "zoom_out"
+            ],
+            "description": "数组 `trajectory.movement2d[]` 的元素结构。枚举字段,取值必须来自本 schema 的 enum。"
+          },
+          "description": "二维画面运动。"
+        },
+        "movement3d": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "push_in",
+              "pull_out",
+              "tracking",
+              "trucking",
+              "arc",
+              "crane",
+              "dolly_zoom",
+              "camera_roll"
+            ],
+            "description": "数组 `trajectory.movement3d[]` 的元素结构。枚举字段,取值必须来自本 schema 的 enum。"
+          },
+          "description": "三维空间运动。"
+        },
+        "gear": {
+          "enum": [
+            "handheld",
+            "tripod",
+            "pedestal",
+            "dolly",
+            "steadicam",
+            "stabilizer",
+            "cranes",
+            "overhead_rigs",
+            "snorricam",
+            "vehicle_mount",
+            "drones",
+            "motion_control"
+          ],
+          "description": "摄影机支撑或运动设备。"
+        },
+        "easing": {
+          "enum": [
+            "linear",
+            "ease_in",
+            "ease_out",
+            "ease_in_out"
+          ],
+          "description": "运动缓动方式。"
+        },
+        "cameraPath": {
+          "type": "string",
+          "description": "artifact 引用:6-DoF 关键帧 JSON 路径"
+        },
+        "rigChain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "id"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "PACE 字段 `trajectory.rigChain.[].id`,用于记录ID。"
+              },
+              "parentId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "父级节点 ID。"
+              },
+              "kind": {
+                "enum": [
+                  "dolly",
+                  "crane_arm",
+                  "head",
+                  "camera"
+                ],
+                "description": "记录类型或产物类型。"
+              }
+            },
+            "description": "数组 `trajectory.rigChain[]` 的元素结构。类型为 object。"
+          },
+          "description": "dormant(C-D)。承载链:dolly→crane→head→camera 的层级变换(OTIO transforms[].id/parentId)。"
+        }
+      },
+      "description": "摄影机运动轨迹。"
+    },
+    "creativeIntent": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "shotSize": {
+          "enum": [
+            "extreme_close_up",
+            "close_up",
+            "medium_close_up",
+            "medium",
+            "medium_full",
+            "full",
+            "wide",
+            "establishing",
+            "master"
+          ],
+          "description": "景别。"
+        },
+        "framing": {
+          "enum": [
+            "single",
+            "two_shot",
+            "crowd",
+            "ots",
+            "pov",
+            "insert",
+            "empty"
+          ],
+          "description": "构图方式。"
+        },
+        "aspectRatio": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?:[0-9]+(\\.[0-9]+)?$",
+          "description": "画幅比例。"
+        }
+      },
+      "description": "镜头创作意图。"
+    },
+    "program": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "lampDsl": {
+          "type": "string",
+          "description": "LAMP 运动 DSL(24 token:4 段 × mx my mz yaw tilt roll);由 lamp_compile 编译为 6-DoF 轨迹帧"
+        },
+        "source": {
+          "enum": [
+            "rule",
+            "llm",
+            "human"
+          ],
+          "description": "DSL 来源:rule=规则规划器 / llm=语言模型起草 / human=人工编写"
+        },
+        "narrative": {
+          "type": "string",
+          "description": "生成该 DSL 的自然语言运镜意图(可复现输入)"
+        }
+      },
+      "description": "运镜程序(自 PAILang camera.program 吸收转正——此前是其 studio 写入的越 schema 野字段)。与 trajectory 的关系:program 是「怎么算出轨迹」的可复现配方(真值),trajectory.camera_path 是算出来的 6-DoF 关键帧 artifact(产物);两者并存,符合「字段是真值,prompt/轨迹是产物」铁律。"
+    },
+    "fps": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "num",
+        "denom"
+      ],
+      "properties": {
+        "num": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "分子数值。"
+        },
+        "denom": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "分母数值。"
+        }
+      },
+      "description": "有理数帧率(23.976=24000/1001), 禁浮点(C-C)"
+    },
+    "frameRange": {
+      "type": "array",
+      "items": {
+        "type": "integer",
+        "minimum": 0
+      },
+      "minItems": 2,
+      "maxItems": 2,
+      "description": "帧范围。"
+    }
+  },
+  "description": "PACE camera pillar schema。定义镜头摄影机、镜头语言和运动轨迹真值。"
+}

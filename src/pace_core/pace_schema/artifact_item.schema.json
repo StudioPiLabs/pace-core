@@ -1,0 +1,105 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/artifact_item.schema.json",
+  "title": "PACE Artifact Item (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "$comment": "瞬态 URL 字段(url / *_url(s) / *Url(s) / *URL(s))由服务端 PaceValidator 拒绝;本 schema 保留 additionalProperties、不在字段层拦截,纯 schema 校验不能替代该检查。只存 assets:// 到 uri / *_uri。",
+  "required": [
+    "kind",
+    "uri"
+  ],
+  "properties": {
+    "kind": {
+      "type": "string",
+      "description": "产物类型,如 source_script_file/source_script_text/storyboard_pdf/storyboard_html/v1_storyboard/reference_video/blender_file/previs_take/final_take/audio_mix/...;source_script_file 表示前端/平台上传的原始剧本文件,可作为 split_script 输入源;source_script_text 表示解析后或规范化后的剧本文本,二者可共存。"
+    },
+    "uri": {
+      "type": "string",
+      "pattern": "^assets://",
+      "description": "二进制或大文件一律对象存储 assets:// URI;不得持久化签名 URL / CDN URL / HTTP(S) URL"
+    },
+    "panelId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "仅 shot/panel 级产物使用;项目级和场景级产物不填"
+    },
+    "versionId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "可选 take / 修订 id"
+    },
+    "mediaType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "MIME type,如 application/pdf 或 text/html"
+    },
+    "filename": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "原始文件名或展示名,非路径真值"
+    },
+    "source": {
+      "enum": [
+        "uploaded",
+        "worker_generated",
+        "imported",
+        "tool_generated"
+      ],
+      "description": "产物来源"
+    },
+    "status": {
+      "enum": [
+        "ready",
+        "processing",
+        "failed",
+        "rejected"
+      ],
+      "description": "产物状态;默认语义为 ready"
+    },
+    "createdAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "记录创建时间,使用 ISO 8601 字符串。"
+    },
+    "createdBy": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "description": "创建者或创建来源。"
+    },
+    "supersedesId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "被当前记录取代的 artifact/version id"
+    },
+    "note": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "备注。"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "标签列表。"
+    }
+  }
+}

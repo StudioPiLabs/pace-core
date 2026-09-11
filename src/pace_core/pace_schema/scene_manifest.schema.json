@@ -1,0 +1,335 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/scene_manifest.schema.json",
+  "title": "PACE Scene Manifest (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "sceneId",
+    "sceneNumber"
+  ],
+  "definitions": {
+    "worldEntity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "ref",
+        "worldXy"
+      ],
+      "properties": {
+        "ref": {
+          "type": "string",
+          "description": "id@version 或 prop_id"
+        },
+        "worldXy": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "PACE 字段 `definitions.worldEntity.worldXy`,用于记录worldxy。"
+        },
+        "z": {
+          "type": "number",
+          "description": "PACE 字段 `definitions.worldEntity.z`,用于记录z。"
+        },
+        "facingDeg": {
+          "type": "number",
+          "description": "PACE 字段 `definitions.worldEntity.facingDeg`,用于记录facingdeg。"
+        },
+        "pitchDeg": {
+          "type": "number",
+          "description": "PACE 字段 `definitions.worldEntity.pitchDeg`,用于记录pitchdeg。"
+        },
+        "rollDeg": {
+          "type": "number",
+          "description": "PACE 字段 `definitions.worldEntity.rollDeg`,用于记录rolldeg。"
+        },
+        "scale": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "空间或对象尺度。"
+        },
+        "bbox": {
+          "type": "array",
+          "items": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "description": "PACE 字段 `definitions.worldEntity.bbox`,用于记录bbox。"
+        }
+      },
+      "description": "复用结构 `worldEntity`,用于 `scene_manifest.schema.json` 中的嵌套对象。"
+    }
+  },
+  "properties": {
+    "schemaVersion": {
+      "const": "pace-0.2",
+      "description": "PACE schema 版本号。"
+    },
+    "sceneId": {
+      "type": "string",
+      "pattern": "^s\\d+[A-Za-z]?$",
+      "description": "场景 ID,格式如 s001。"
+    },
+    "sceneNumber": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "场景序号,从 1 开始。"
+    },
+    "sceneHeading": {
+      "type": "string",
+      "description": "场景标题或场景头。"
+    },
+    "act": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "剧作幕或段落标识。"
+    },
+    "narrativeMeta": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "内容摘要。"
+        },
+        "charactersPresent": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "本场出现的角色 ID 列表。"
+        },
+        "characterAgeStates": {
+          "type": "object",
+          "description": "角色在本场的年龄或阶段状态表。"
+        },
+        "keyActions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "本场关键动作摘要列表。"
+        },
+        "voLines": {
+          "type": "array",
+          "description": "旁白或画外音台词列表。"
+        },
+        "onScreenDialogue": {
+          "type": "array",
+          "description": "画面内对白列表。"
+        },
+        "sfxNotes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "音效备注列表。"
+        },
+        "locationRef": {
+          "type": "string",
+          "description": "标准化地点实体引用。"
+        },
+        "locationRaw": {
+          "type": "string",
+          "description": "剧本原文中的地点描述。"
+        },
+        "timeOfDay": {
+          "type": "string",
+          "description": "故事时间段。"
+        },
+        "interiorExterior": {
+          "enum": [
+            "INT",
+            "EXT"
+          ],
+          "description": "内景/外景标记。"
+        },
+        "storyBeat": {
+          "type": "string",
+          "description": "叙事节拍或剧情节点。"
+        },
+        "impliedShotCount": {
+          "type": "integer",
+          "description": "拆剧本阶段推断的镜头数量。"
+        }
+      },
+      "description": "场景级叙事元数据。"
+    },
+    "shotDefaults": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "camera": {
+          "$ref": "pace/pillar.camera.schema.json",
+          "description": "摄影机四柱。"
+        },
+        "setup": {
+          "$ref": "pace/pillar.setup.schema.json",
+          "description": "画面搭建四柱。"
+        },
+        "lighting": {
+          "$ref": "pace/pillar.lighting.schema.json",
+          "description": "光照四柱。"
+        }
+      },
+      "description": "场级共享字段(稀疏);合并语义:None 永不覆盖有值"
+    },
+    "physicalLayout": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": true,
+      "properties": {
+        "frameOfReference": {
+          "enum": [
+            "stage_top_view",
+            "world_xy"
+          ],
+          "description": "布局坐标参考系。"
+        },
+        "units": {
+          "const": "m",
+          "description": "布局坐标单位。"
+        },
+        "upAxis": {
+          "const": "Z",
+          "description": "世界坐标上方向轴。"
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/worldEntity"
+          },
+          "description": "画面主体列表。"
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/worldEntity"
+          },
+          "description": "道具列表。"
+        },
+        "focusPoints": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "worldXy"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "description": "PACE 字段 `physicalLayout.focusPoints.[].id`,用于记录ID。"
+              },
+              "worldXy": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "PACE 字段 `physicalLayout.focusPoints.[].worldXy`,用于记录worldxy。"
+              },
+              "z": {
+                "type": "number",
+                "description": "PACE 字段 `physicalLayout.focusPoints.[].z`,用于记录z。"
+              }
+            },
+            "description": "数组 `physicalLayout.focusPoints[]` 的元素结构。类型为 object。"
+          },
+          "description": "场景中的焦点坐标列表。"
+        },
+        "cameraSetups": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "shotId",
+              "worldXy"
+            ],
+            "properties": {
+              "shotId": {
+                "type": "string",
+                "description": "镜头 ID,格式如 hs001_sh001。"
+              },
+              "worldXy": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                },
+                "minItems": 2,
+                "maxItems": 2,
+                "description": "PACE 字段 `physicalLayout.cameraSetups.[].worldXy`,用于记录worldxy。"
+              },
+              "z": {
+                "type": "number",
+                "description": "PACE 字段 `physicalLayout.cameraSetups.[].z`,用于记录z。"
+              },
+              "lookingAt": {
+                "type": "string",
+                "description": "focus_point id 或坐标引用"
+              },
+              "lensMm": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "PACE 字段 `physicalLayout.cameraSetups.[].lensMm`,用于记录lensmm。"
+              }
+            },
+            "description": "数组 `physicalLayout.cameraSetups[]` 的元素结构。类型为 object。"
+          },
+          "description": "场景中预设摄影机机位列表。"
+        },
+        "scatter": {
+          "type": "object",
+          "description": "dormant(L-D, PointInstancer 参数)"
+        },
+        "groups": {
+          "type": "array",
+          "description": "dormant(L-G)"
+        },
+        "visibility": {
+          "type": "object",
+          "description": "dormant(L-H)"
+        }
+      },
+      "description": "scene 级世界坐标(dormant→Phase 3;S1 可写粗 blocking)"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "pace/artifact_item.schema.json"
+      },
+      "description": "场景级产物索引(append-only 数组:同 kind 多条 = 多 take/多上传版本,永不覆盖)"
+    },
+    "semantics": {
+      "$ref": "pace/semantics.schema.json",
+      "description": "语义和版本上下文。"
+    },
+    "source": {
+      "type": "string",
+      "description": "字段或记录来源。"
+    },
+    "generatedAt": {
+      "type": "string",
+      "description": "记录生成时间,使用 ISO 8601 字符串。"
+    }
+  },
+  "description": "文件:scenes/<sceneId>/manifest.json。场景级 manifest,保存叙事元数据、场景级布局、shot 默认值和场景级 artifacts[]。"
+}

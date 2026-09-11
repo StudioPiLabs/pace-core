@@ -1,0 +1,209 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/pillar.events.schema.json",
+  "title": "PACE Events Pillar (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "definitions": {
+    "temporal": {
+      "enum": [
+        "atomic",
+        "concurrent",
+        "sequential",
+        "causal",
+        "overlapping",
+        "cyclic",
+        "reverse"
+      ],
+      "description": "复用结构 `temporal`,用于 `pillar.events.schema.json` 中的嵌套对象。"
+    },
+    "foreground": {
+      "enum": [
+        "focal",
+        "local",
+        "global"
+      ],
+      "description": "复用结构 `foreground`,用于 `pillar.events.schema.json` 中的嵌套对象。"
+    }
+  },
+  "properties": {
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "descriptionZh"
+        ],
+        "properties": {
+          "descriptionZh": {
+            "type": "string",
+            "minLength": 1,
+            "description": "中文动作或画面描述。"
+          },
+          "descriptionEn": {
+            "type": "string",
+            "description": "英文动作或画面描述。"
+          },
+          "standalone": {
+            "type": "string",
+            "description": "是否可作为独立动作理解。"
+          },
+          "interactive": {
+            "type": "string",
+            "description": "是否包含角色或物体交互。"
+          },
+          "temporal": {
+            "$ref": "#/definitions/temporal",
+            "description": "时间顺序和节奏信息。"
+          },
+          "foreground": {
+            "$ref": "#/definitions/foreground",
+            "description": "前景动作或元素。"
+          },
+          "background": {
+            "type": "boolean",
+            "description": "背景元素或背景描述。"
+          },
+          "uncertainty": {
+            "enum": [
+              "deterministic",
+              "probabilistic",
+              "mixed"
+            ],
+            "description": "不确定性说明。"
+          },
+          "intensity": {
+            "enum": [
+              "subtle",
+              "medium",
+              "dramatic"
+            ],
+            "description": "动作或情绪强度。"
+          },
+          "beatFeatures": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "节拍特征列表。"
+          },
+          "durationHintS": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "建议持续时间,单位秒。"
+          }
+        },
+        "description": "数组 `actions[]` 的元素结构。类型为 object。"
+      },
+      "description": "动作 beat 列表。"
+    },
+    "emotions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "properties": {
+          "implicit": {
+            "type": "string",
+            "description": "隐含情绪。"
+          },
+          "explicit": {
+            "type": "string",
+            "description": "外显情绪。"
+          },
+          "temporal": {
+            "$ref": "#/definitions/temporal",
+            "description": "时间顺序和节奏信息。"
+          },
+          "foreground": {
+            "$ref": "#/definitions/foreground",
+            "description": "前景动作或元素。"
+          },
+          "background": {
+            "type": "boolean",
+            "description": "背景元素或背景描述。"
+          }
+        },
+        "description": "数组 `emotions[]` 的元素结构。类型为 object。"
+      },
+      "description": "情绪 beat 列表。"
+    },
+    "dialogues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "speaker",
+          "text"
+        ],
+        "properties": {
+          "speaker": {
+            "type": "string",
+            "description": "说话人引用。"
+          },
+          "text": {
+            "type": "string",
+            "description": "对白文本。"
+          },
+          "typeOfDelivery": {
+            "enum": [
+              "dash",
+              "ellipsis",
+              "monologue",
+              "whispered",
+              "shouted"
+            ],
+            "description": "对白表达方式。"
+          },
+          "foreground": {
+            "$ref": "#/definitions/foreground",
+            "description": "前景动作或元素。"
+          },
+          "language": {
+            "type": "string",
+            "description": "语言代码或语言描述。"
+          }
+        },
+        "description": "数组 `dialogues[]` 的元素结构。类型为 object。"
+      },
+      "description": "对白列表。"
+    },
+    "changeInEnvironment": {
+      "type": "string",
+      "description": "环境变化描述。"
+    },
+    "advanced": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "storyStructure": {
+          "enum": [
+            "turning_point",
+            "climax",
+            "foreshadowing",
+            "conflict"
+          ],
+          "description": "故事结构位置。"
+        },
+        "pace": {
+          "enum": [
+            "slow",
+            "fast"
+          ],
+          "description": "镜头四柱真值对象。"
+        },
+        "regularity": {
+          "enum": [
+            "regular",
+            "irregular"
+          ],
+          "description": "节奏规律性。"
+        }
+      },
+      "description": "高级事件语义。"
+    }
+  },
+  "description": "PACE events pillar schema。定义动作、情绪、对白和事件节奏真值。"
+}

@@ -1,0 +1,448 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/shot_manifest.schema.json",
+  "title": "PACE Shot Manifest (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "sceneId",
+    "shotId",
+    "pace",
+    "semantics",
+    "review"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "pace-0.2",
+      "description": "PACE schema 版本号。"
+    },
+    "projectId": {
+      "type": "string",
+      "description": "项目 ID,应与项目目录名一致。"
+    },
+    "sceneId": {
+      "type": "string",
+      "pattern": "^s\\d+[A-Za-z]?$",
+      "description": "场景 ID,格式如 s001。"
+    },
+    "shotId": {
+      "type": "string",
+      "pattern": "^hs\\d+[A-Za-z]?_sh\\d+[A-Za-z]?$",
+      "description": "镜头 ID,格式如 hs001_sh001。"
+    },
+    "sourceScriptRange": {
+      "type": "string",
+      "description": "该镜头对应的源剧本文本范围。"
+    },
+    "narrativeIntent": {
+      "type": "string",
+      "description": "镜头叙事意图。"
+    },
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "id@version 列表"
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "镜头使用的资产引用列表。"
+    },
+    "continuity": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "previousShotId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "前一个镜头 ID。"
+        },
+        "nextShotId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "后一个镜头 ID。"
+        },
+        "screenDirection": {
+          "type": "string",
+          "description": "银幕方向连续性。"
+        },
+        "eyeline": {
+          "type": "string",
+          "description": "视线连续性。"
+        },
+        "lightDirection": {
+          "type": "string",
+          "description": "光线方向连续性。"
+        },
+        "costumeContinuity": {
+          "type": "string",
+          "description": "服装连续性。"
+        },
+        "propState": {
+          "type": "string",
+          "description": "道具状态连续性。"
+        },
+        "timeContinuity": {
+          "type": "string",
+          "description": "时间连续性。"
+        }
+      },
+      "description": "镜头连续性信息。"
+    },
+    "pace": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "setup": {
+          "$ref": "pace/pillar.setup.schema.json",
+          "description": "画面搭建四柱。"
+        },
+        "camera": {
+          "$ref": "pace/pillar.camera.schema.json",
+          "description": "摄影机四柱。"
+        },
+        "lighting": {
+          "$ref": "pace/pillar.lighting.schema.json",
+          "description": "光照四柱。"
+        },
+        "events": {
+          "$ref": "pace/pillar.events.schema.json",
+          "description": "事件四柱。"
+        }
+      },
+      "description": "镜头四柱真值对象。"
+    },
+    "frozenSplit": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "拆剧本阶段生成的四柱冻结快照。worker 重跑拆分、PAILang 编译或 carried narrative 时以该快照作为干净种子,避免读取已被 agent/人工改写过的 pace 后产生逐次漂移。旧临时字段 split_pace/splitPace 迁移到本字段;真值仍以 pace 为当前可编辑版本。",
+      "properties": {
+        "setup": {
+          "$ref": "pace/pillar.setup.schema.json",
+          "description": "画面搭建四柱。"
+        },
+        "camera": {
+          "$ref": "pace/pillar.camera.schema.json",
+          "description": "摄影机四柱。"
+        },
+        "lighting": {
+          "$ref": "pace/pillar.lighting.schema.json",
+          "description": "光照四柱。"
+        },
+        "events": {
+          "$ref": "pace/pillar.events.schema.json",
+          "description": "事件四柱。"
+        }
+      }
+    },
+    "semantics": {
+      "$ref": "pace/semantics.schema.json",
+      "description": "语义和版本上下文。"
+    },
+    "fieldMeta": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "path",
+          "source"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "字段 JSON Pointer 路径,如 /pace/camera/intrinsics/focalLengthMm。"
+          },
+          "source": {
+            "enum": [
+              "script",
+              "llm_inferred",
+              "llm_then_human",
+              "human",
+              "asset_library",
+              "industrial_capture",
+              "tool_generated",
+              "overridden"
+            ],
+            "description": "asset_library=从资产台账带入;industrial_capture=从 OpenTrackIO/实拍数据摄取;tool_generated=系统派生(投影/反推),自动重算可覆盖(区别于人改神圣)"
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "置信度,范围 0 到 1。"
+          },
+          "rationale": {
+            "type": "string",
+            "description": "字段取值理由或推断依据。"
+          },
+          "humanConfirmed": {
+            "type": "boolean",
+            "description": "是否已由人工确认。"
+          }
+        },
+        "description": "字段来源追踪条目。"
+      },
+      "description": "字段来源追踪列表;每条用 path 指向字段,不使用动态 key。"
+    },
+    "audio": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "dialogueRefs": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "引用 pace.events.dialogues[] 的下标;对白文本真值在那边(单一真值),audio 只存音频管线参数"
+        },
+        "voiceId": {
+          "type": "string",
+          "description": "语音或音色 ID。"
+        },
+        "ttsEngine": {
+          "type": "string",
+          "description": "TTS 引擎标识。"
+        },
+        "lipsync": {
+          "type": "string",
+          "description": "口型同步配置。"
+        },
+        "audioTrack": {
+          "type": "string",
+          "description": "音频为二进制 → assets:// URI"
+        },
+        "durationS": {
+          "type": "number",
+          "minimum": 0,
+          "description": "持续时长,单位秒。"
+        }
+      },
+      "description": "镜头音频管线参数。"
+    },
+    "prompts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id",
+          "text"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "prompt/compiler 标识,如 v1T2i、v2FluxEdit、videoGeneration。"
+          },
+          "text": {
+            "type": "string",
+            "description": "编译后的 prompt 文本。"
+          }
+        },
+        "description": "编译产物 prompt 条目。"
+      },
+      "description": "编译产物缓存列表;每条用 id 标识,真值在 pace 字段。"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "pace/artifact_item.schema.json"
+      },
+      "description": "产物索引(append-only 数组:同 kind 多条 = 多 take,永不覆盖;选用哪条由 version.status / review 决定)"
+    },
+    "overrides": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "usdOverLayers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "USD over 覆盖层文件路径列表(入库用 USDA 文本格式,便于 git diff)"
+        },
+        "blenderDeltaFiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Blender 增量文件列表。"
+        },
+        "overrideReason": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "产生覆盖的原因。"
+        },
+        "authoredBy": {
+          "type": "string",
+          "description": "覆盖或提示词作者。"
+        }
+      },
+      "description": "dormant(Phase 3)。非破坏几何覆盖层。分流规则:结构性意图变化(换道具/改布局类型)→ 改 PACE 字段重生成基础层;blocking 微调(挪位置/转角度)→ 写入覆盖层;重生成基础层时覆盖层不被覆盖、经 USD 合成重新生效。"
+    },
+    "renderOutputs": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "resolution": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "exclusiveMinimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2,
+          "description": "输出分辨率。"
+        },
+        "aovs": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "depth",
+              "normal",
+              "mask",
+              "primId",
+              "color",
+              "motion_vector"
+            ],
+            "description": "数组 `renderOutputs.aovs[]` 的元素结构。枚举字段,取值必须来自本 schema 的 enum。"
+          },
+          "description": "渲染 AOV 输出列表。"
+        },
+        "bitDepth": {
+          "type": "integer",
+          "enum": [
+            8,
+            16,
+            32
+          ],
+          "description": "输出位深。"
+        }
+      },
+      "description": "dormant(Phase 3)。渲染产出规格(下游 ComfyUI 工作流按它读取);primId = 渲染器逐像素对象 ID 图,替代手工 mask。"
+    },
+    "compileHints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "panelId"
+        ],
+        "properties": {
+          "panelId": {
+            "type": "string",
+            "description": "关键帧 ID,格式如 ps001_sh001_p0001。"
+          },
+          "flux": {
+            "type": "object",
+            "description": "Flux 工作流提示或参数。"
+          },
+          "gptImage2": {
+            "type": "object",
+            "description": "GPT Image 相关提示或参数。"
+          },
+          "wanI2v": {
+            "type": "object",
+            "description": "WAN I2V 相关提示或参数。"
+          }
+        },
+        "description": "数组 `compileHints[]` 的元素结构。类型为 object。"
+      },
+      "description": "人工 prompt 覆盖(最高优先;authoredBy/authoredAt 必填于覆盖体内)"
+    },
+    "review": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "stage1Ok": {
+          "type": "boolean",
+          "description": "阶段 1 审核是否通过。"
+        },
+        "stage2Ok": {
+          "type": "boolean",
+          "description": "阶段 2 审核是否通过。"
+        },
+        "stage3Ok": {
+          "type": "boolean",
+          "description": "阶段 3 审核是否通过。"
+        },
+        "paceQa": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "D1": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D1`,用于记录d1。"
+            },
+            "D2": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D2`,用于记录d2。"
+            },
+            "D3": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D3`,用于记录d3。"
+            },
+            "D4": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D4`,用于记录d4。"
+            },
+            "D5": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D5`,用于记录d5。"
+            },
+            "D6": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D6`,用于记录d6。"
+            },
+            "D7": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4,
+              "description": "PACE 字段 `review.paceQa.D7`,用于记录d7。"
+            }
+          },
+          "description": "七维 × L0–L4 评分;关键节点全 ≥3 = Director-Ready"
+        },
+        "approvedForNextStage": {
+          "type": "boolean",
+          "description": "是否批准进入下一阶段。"
+        },
+        "notes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "人工备注。"
+        }
+      },
+      "description": "人工或自动审核状态。"
+    }
+  },
+  "description": "文件:scenes/<sceneId>/shots/<shotId>/manifest.json。镜头级 manifest,保存四柱真值 pace、语义、连续性、prompt 编译缓存、shot 级 artifacts[] 和审核状态。"
+}

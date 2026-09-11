@@ -1,0 +1,263 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/pillar.lighting.schema.json",
+  "title": "PACE Lighting Pillar (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "definitions": {
+    "lightRole": {
+      "enum": [
+        "key_light",
+        "back_light",
+        "fill_light",
+        "top_light",
+        "side_light"
+      ],
+      "description": "复用结构 `lightRole`,用于 `pillar.lighting.schema.json` 中的嵌套对象。"
+    }
+  },
+  "properties": {
+    "natural": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "sunlight",
+          "moonlight",
+          "firelight"
+        ],
+        "description": "数组 `natural[]` 的元素结构。枚举字段,取值必须来自本 schema 的 enum。"
+      },
+      "description": "自然光描述。"
+    },
+    "practicals": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "led",
+          "hmi",
+          "tungsten",
+          "fluorescent",
+          "hid"
+        ],
+        "description": "数组 `practicals[]` 的元素结构。枚举字段,取值必须来自本 schema 的 enum。"
+      },
+      "description": "实景光源描述。"
+    },
+    "colorTemperature": {
+      "enum": [
+        "warm",
+        "cool",
+        "cold"
+      ],
+      "description": "色温描述。"
+    },
+    "colorTempK": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "description": "色温数值,单位 K。"
+    },
+    "condition": {
+      "enum": [
+        "candlelight",
+        "golden_hour",
+        "clear_daylight",
+        "overcast",
+        "white_fluorescent"
+      ],
+      "description": "光照条件。"
+    },
+    "softShadows": {
+      "enum": [
+        "diffused_light",
+        "high_key_lighting",
+        "reflectors"
+      ],
+      "description": "是否有柔和阴影。"
+    },
+    "hardShadows": {
+      "enum": [
+        "direct_light",
+        "low_key_lighting"
+      ],
+      "description": "是否有硬阴影。"
+    },
+    "position": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/lightRole"
+      },
+      "description": "机位位置。"
+    },
+    "motion": {
+      "enum": [
+        "flickering",
+        "pulsing"
+      ],
+      "description": "光照运动或变化。"
+    },
+    "reflection": {
+      "type": "string",
+      "description": "反射特征。"
+    },
+    "colorGels": {
+      "type": "string",
+      "description": "色片或染色光配置。"
+    },
+    "notes": {
+      "type": "string",
+      "description": "人工备注。"
+    },
+    "lights": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "required": [
+          "id"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "PACE 字段 `lights.[].id`,用于记录ID。"
+          },
+          "role": {
+            "$ref": "#/definitions/lightRole",
+            "description": "灯具角色。"
+          },
+          "aim": {
+            "type": "string",
+            "description": "focus_point_ref:灯瞄哪个空间点(与相机/视线共瞄,Li-D)"
+          },
+          "intensityLm": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "description": "光通量 lm(Li-C)"
+          },
+          "exposure": {
+            "type": "number",
+            "description": "曝光或光强。"
+          },
+          "iesProfile": {
+            "type": "string",
+            "description": "IES 文件引用(Li-A)"
+          },
+          "beamAngle": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 180,
+            "description": "Li-B"
+          },
+          "fieldAngle": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 180,
+            "description": "Li-B"
+          },
+          "beamType": {
+            "enum": [
+              "Spot",
+              "Wash",
+              "Fresnel",
+              "PC"
+            ],
+            "description": "Li-B"
+          },
+          "colorTempK": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "description": "色温数值,单位 K。"
+          },
+          "colorCie": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 3,
+            "description": "Li-G"
+          },
+          "spectrumRef": {
+            "type": "string",
+            "description": "Li-G"
+          },
+          "fixtureRef": {
+            "type": "string",
+            "description": "灯具资产引用(Li-F)"
+          },
+          "affects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "entity_ref 列表(subject/prop 均可):这盏灯只影响哪些实体(光照解耦 Li-E)"
+          }
+        },
+        "description": "数组 `lights[]` 的元素结构。类型为 object。"
+      },
+      "description": "dormant(Phase 3)。逐灯几何/光度精确轨——多灯布光(主光+轮廓光各自 aim/intensity/affects)在此表达。定性桶字段(natural/condition/position/colorTemperature 等)仍留柱级,描述整体光环境。"
+    },
+    "aim": {
+      "type": "string",
+      "description": "DEPRECATED→lights[]。focus_point_ref —— 灯位变几何(Li-D, dormant)"
+    },
+    "intensityLm": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "DEPRECATED→lights[]。光通量 lm(Li-C, dormant)"
+    },
+    "exposure": {
+      "type": "number",
+      "description": "DEPRECATED→lights[]。曝光档(dormant)"
+    },
+    "iesProfile": {
+      "type": "string",
+      "description": "DEPRECATED→lights[]。IES 文件引用(Li-A, dormant)"
+    },
+    "beamAngle": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 180,
+      "description": "DEPRECATED→lights[]。dormant(Li-B)"
+    },
+    "fieldAngle": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "maximum": 180,
+      "description": "DEPRECATED→lights[]。dormant(Li-B)"
+    },
+    "beamType": {
+      "enum": [
+        "Spot",
+        "Wash",
+        "Fresnel",
+        "PC"
+      ],
+      "description": "DEPRECATED→lights[]。dormant(Li-B)"
+    },
+    "affects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "DEPRECATED→lights[]。逐光分主体 subject_ref 列表(Li-E, dormant)"
+    },
+    "fixtureRef": {
+      "type": "string",
+      "description": "DEPRECATED→lights[]。灯具资产引用(Li-F, dormant)"
+    },
+    "colorCie": {
+      "type": "array",
+      "items": {
+        "type": "number"
+      },
+      "minItems": 2,
+      "maxItems": 3,
+      "description": "DEPRECATED→lights[]。dormant(Li-G)"
+    },
+    "spectrumRef": {
+      "type": "string",
+      "description": "DEPRECATED→lights[]。dormant(Li-G)"
+    }
+  },
+  "description": "PACE lighting pillar schema。定义自然光、灯具、色温、阴影和反射等光照真值。"
+}

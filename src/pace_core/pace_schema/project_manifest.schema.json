@@ -1,0 +1,164 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/project_manifest.schema.json",
+  "title": "PACE Project Manifest (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "project",
+    "projectId",
+    "title"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "PACE schema 版本号。"
+    },
+    "project": {
+      "type": "string",
+      "description": "项目标识或项目目录名。"
+    },
+    "projectId": {
+      "type": "string",
+      "description": "项目 ID,应与项目目录名一致。"
+    },
+    "title": {
+      "type": "string",
+      "description": "项目标题。"
+    },
+    "createdAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "记录创建时间,使用 ISO 8601 字符串。"
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "记录最后更新时间,使用 ISO 8601 字符串。"
+    },
+    "scriptSplit": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "status": {
+          "type": "string",
+          "description": "当前状态。"
+        },
+        "jobId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "平台 job ID。"
+        },
+        "workerName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "执行该任务的 worker 名称。"
+        },
+        "taskType": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "worker task 类型。"
+        },
+        "submittedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "任务提交时间,使用 ISO 8601 字符串。"
+        },
+        "updatedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "记录最后更新时间,使用 ISO 8601 字符串。"
+        },
+        "completedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "任务完成时间,使用 ISO 8601 字符串。"
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "失败时记录错误摘要。"
+        },
+        "sourceScript": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "拆剧本输入剧本的展示名/文件名;承接旧 scenesBreakdown._meta.sourceScript,不作为工程内路径真值。"
+        },
+        "sourceScriptUri": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^assets://",
+          "description": "拆剧本输入剧本的 assets:// URI;剧本文本/PDF/HTML 原件作为项目级 artifact 登记。"
+        },
+        "modelUsed": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "执行拆剧本/结构化任务所用模型或 worker 模型标识;承接旧 scenesBreakdown._meta.modelUsed。"
+        }
+      },
+      "description": "拆剧本流程状态和输入来源元数据。"
+    },
+    "styleId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Selected project visual style id."
+    },
+    "workflowState": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "finalConfirmed": {
+          "type": "boolean",
+          "description": "项目最终确认状态。"
+        },
+        "phaseStatuses": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "各流程阶段的状态表。"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "记录最后更新时间,使用 ISO 8601 字符串。"
+        }
+      },
+      "description": "项目级流程状态。"
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "$ref": "pace/artifact_item.schema.json"
+      },
+      "description": "项目级产物索引(append-only),如源剧本文本、全项目故事板 PDF/HTML。"
+    }
+  },
+  "description": "文件:<projectId>/manifest.json。项目级 manifest,保存项目元数据、流程状态和项目级 artifacts[]。"
+}

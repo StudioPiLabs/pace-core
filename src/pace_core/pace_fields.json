@@ -1,0 +1,2821 @@
+{
+  "schemaVersion": "pace-0.2",
+  "doc": "字段总注册表(机读权威版;人读镜像见 07-field-registry.md)。tier: required|recommended|advanced|requiredIfPresent|requiredIfLayout; status: active|dormant; owner/consumers: S1|S2|S3|POST|ASSET|QA|ORCH(编排器); backends: t2i|flux|wan|blender|post|audio; verified: confirmed(上游标确证)|proposed(提案)。",
+  "fields": [
+    {
+      "path": "setup.subjects[].characterId",
+      "pillar": "setup",
+      "track": "key",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender"
+      ],
+      "industryRef": "USD references; OMC Narrative+Portrayal",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].ageState",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan"
+      ],
+      "industryRef": "USD variantSet ageState; OMC Depiction",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].cls",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].costume",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "ASSET",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan"
+      ],
+      "industryRef": "USD variantSet; OMC Depiction",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].hair",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "ASSET",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "variantSet",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].makeup",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "ASSET",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].accessories",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "ASSET",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].proportions",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "ASSET",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].pose",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "UsdSkel/variant",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].silhouette",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.subjects[].gaze",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "blender"
+      ],
+      "industryRef": "rel pace:gaze:target + look-at",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].screenPosition",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1(coarse)/S2(derived)",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "Hydra 投影派生",
+      "verified": "confirmed",
+      "note": "有 physicalLayout 时派生,不手填"
+    },
+    {
+      "path": "setup.props[].propId",
+      "pillar": "setup",
+      "track": "key",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender"
+      ],
+      "industryRef": "USD references; OMC Asset",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].description",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].cls",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].material",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "UsdShade/OpenPBR 预设",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].pattern",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].utility",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "OMC Purpose",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].state",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan"
+      ],
+      "industryRef": "USD variantSet state; OMC Depiction",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].color",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].size",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "xformOp:scale; OMC Scale",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].heldBy",
+      "pillar": "setup",
+      "track": "key",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "rel pace:heldBy; OMC Relationship",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].screenPosition",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1(coarse)/S2(derived)",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "Hydra 投影派生",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.props[].count",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "UsdGeomPointInstancer",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.backdrop.setting",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender",
+        "post"
+      ],
+      "industryRef": "DomeLight/DistantLight + customData",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.backdrop.timeOfDay",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender",
+        "post"
+      ],
+      "industryRef": "同上",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.backdrop.location",
+      "pillar": "setup",
+      "track": "key",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender"
+      ],
+      "industryRef": "references @sets/<loc>.usd@; OMC Location",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.backdrop.era",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "OMC Narrative Context",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.backdrop.region",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "OMC Narrative Context",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.backdrop.culture",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "OMC Narrative Context",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.backdrop.weather",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.backdrop.season",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.environment.density",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "原 positive 改名",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.environment.negativeSpace",
+      "pillar": "setup",
+      "track": "bool",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.environment.mood",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "wan",
+        "post"
+      ],
+      "industryRef": "调色基准之一",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.environment.scale",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.environment.style",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "post"
+      ],
+      "industryRef": "渲染风格锚",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.environment.background",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.environment.elements",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "画面内可见粒子(≠weather)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.texture.contrast",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "post"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.texture.blur",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.texture.noise",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.texture.filmGrain",
+      "pillar": "setup",
+      "track": "bool",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "post"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.texture.colorPalette",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "post"
+      ],
+      "industryRef": "scene-wide 候选",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.geometry.lines",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.geometry.regularShapes",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.geometry.naturalShapes",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.geometry.frameBalance",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.geometry.positionalAccuracy",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.geometry.relativePositioning",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.space.depth",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.primaryFocus",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender",
+        "post"
+      ],
+      "industryRef": "驱动 focusDistance/景深焦点;shot 级真值,panel.primaryFocus 仅稀疏 override",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.secondarySubjects",
+      "pillar": "setup",
+      "track": "key[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.excluded",
+      "pillar": "setup",
+      "track": "open[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan"
+      ],
+      "industryRef": "皮:编译为 NEGATIVE,不进 USD",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.textGeneration",
+      "pillar": "setup",
+      "track": "struct[]",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "setup.materialAdvanced",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "ASSET",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "post"
+      ],
+      "industryRef": "MaterialX OpenPBR(B-C)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.units",
+      "pillar": "setup",
+      "track": "const",
+      "tier": "requiredIfLayout",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "metersPerUnit(L-A)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.upAxis",
+      "pillar": "setup",
+      "track": "const",
+      "tier": "requiredIfLayout",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "upAxis(L-A)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.subjects[]/props[].facingDeg",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "rotateZ",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.subjects[]/props[].scale",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "xformOp:scale",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.subjects[]/props[].bbox",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "ASSET",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "extent(L-C)——景别/coverage 反推相机距离",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.focusPoints",
+      "pillar": "setup",
+      "track": "struct[]",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "空 Xform + look-at(MVR FocusPoint, L-F);相机/视线/灯共瞄",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.cameraSetups",
+      "pillar": "setup",
+      "track": "struct[]",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "相机 prim 变换",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.scatter",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "UsdGeomPointInstancer(L-D)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.groups",
+      "pillar": "setup",
+      "track": "struct[]",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "Scope/Xform 组(MVR Layer, L-G)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "physicalLayout.visibility",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "visibility 时间采样(L-H)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.creativeIntent.shotSize",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan",
+        "blender",
+        "post"
+      ],
+      "industryRef": "PACE 独有(创作意图);USD customData",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.creativeIntent.framing",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "wan",
+        "blender"
+      ],
+      "industryRef": "PACE 独有",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.creativeIntent.aspectRatio",
+      "pillar": "camera",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "t2i",
+        "wan",
+        "blender",
+        "post"
+      ],
+      "industryRef": "RenderSettings.resolution",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.lensSize",
+      "pillar": "camera",
+      "track": "bucket",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "focalLength 桶",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.focalLengthMm",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "focalLength; OTIO lens.pinholeFocalLength",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.sensorMm",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "horizontal/verticalAperture; OTIO activeSensorPhysicalDimensions(C-A 修焦距→视场角歧义)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.aperture",
+      "pillar": "camera",
+      "track": "bucket",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "fStop 桶",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.apertureF",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "blender",
+        "post"
+      ],
+      "industryRef": "fStop; OTIO lens.fStop",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.tStop",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "OTIO",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.depthOfField",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "blender",
+        "post"
+      ],
+      "industryRef": "fStop+focusDistance(rack=时间采样)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.focusDistanceM",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "blender",
+        "post"
+      ],
+      "industryRef": "focusDistance; OTIO",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.shutterSpeed",
+      "pillar": "camera",
+      "track": "bucket",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.shutterAngleDeg",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "shutter:open/close; OTIO shutterAngle",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.iso",
+      "pillar": "camera",
+      "track": "bucket",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.isoValue",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "exposure 近似; OTIO isoSpeed",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.distortion",
+      "pillar": "camera",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "post"
+      ],
+      "industryRef": "OpenLensIO distortion(C-B);USD 无原生需镜头 shader",
+      "verified": "proposed"
+    },
+    {
+      "path": "camera.intrinsics.anamorphicSqueeze",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "OTIO anamorphicSqueeze(C-F)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.entrancePupilOffset",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "OTIO lens.entrancePupilOffset(C-G)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.intrinsics.encoders",
+      "pillar": "camera",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "OTIO lens.encoders(C-E)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.extrinsics.angle",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "rotateXYZ; OTIO rotation(轴序需校准)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.extrinsics.position",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "绕主体方位角",
+      "verified": "proposed"
+    },
+    {
+      "path": "camera.trajectory.static",
+      "pillar": "camera",
+      "track": "bool",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "QA"
+      ],
+      "backends": [
+        "wan",
+        "blender"
+      ],
+      "industryRef": "常量变换;冲突检查输入",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.trajectory.movement2d",
+      "pillar": "camera",
+      "track": "vocab[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2",
+        "QA"
+      ],
+      "backends": [
+        "wan",
+        "blender"
+      ],
+      "industryRef": "时间采样 rotateXYZ/focalLength",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.trajectory.movement3d",
+      "pillar": "camera",
+      "track": "vocab[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2",
+        "QA"
+      ],
+      "backends": [
+        "wan",
+        "blender"
+      ],
+      "industryRef": "时间采样 translate/rotate",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.trajectory.gear",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "烘曲线;精确 rig 层级见 trajectory.rig_chain(C-D)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.trajectory.rigChain",
+      "pillar": "camera",
+      "track": "struct[]",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "OTIO transforms[].id/parentId 承载链(C-D)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.program",
+      "pillar": "camera",
+      "track": "struct",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "LAMP 运动 DSL(自 PAILang 吸收转正;lamp_dsl+source+narrative = 可复现运镜配方;现有消费者:LAMP 规划器/Blender 预览/VACE 线框控制)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.trajectory.easing",
+      "pillar": "camera",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "时间采样插值",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.trajectory.cameraPath",
+      "pillar": "camera",
+      "track": "artifact",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "blender",
+        "wan",
+        "post"
+      ],
+      "industryRef": "6-DoF 关键帧 JSON;可代码按曲线公式生成",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.fps",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "blender",
+        "wan",
+        "post"
+      ],
+      "industryRef": "timeCodesPerSecond; OTIO sampleRate 有理数(C-C)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "camera.frameRange",
+      "pillar": "camera",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "start/endTimeCode(B-E)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.natural",
+      "pillar": "lighting",
+      "track": "vocab[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "blender",
+        "post"
+      ],
+      "industryRef": "DistantLight/SphereLight",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.practicals",
+      "pillar": "lighting",
+      "track": "vocab[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "SphereLight/RectLight; GDTF LampType",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.colorTemperature",
+      "pillar": "lighting",
+      "track": "bucket",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "t2i",
+        "blender",
+        "post"
+      ],
+      "industryRef": "inputs:colorTemperature; GDTF ColorTemperature;POST 调色基准",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.colorTempK",
+      "pillar": "lighting",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "blender",
+        "post"
+      ],
+      "industryRef": "精确 Kelvin",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.condition",
+      "pillar": "lighting",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "预设宏→光组;PACE 独有情绪宏",
+      "verified": "proposed"
+    },
+    {
+      "path": "lighting.position",
+      "pillar": "lighting",
+      "track": "vocab[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "PACE 独有主光角色语义;灯位钉死后退化为标签",
+      "verified": "proposed"
+    },
+    {
+      "path": "lighting.softShadows",
+      "pillar": "lighting",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "面光+ShadowAPI",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.hardShadows",
+      "pillar": "lighting",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "小 inputs:angle",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.motion",
+      "pillar": "lighting",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "wan",
+        "blender"
+      ],
+      "industryRef": "时间采样 inputs:intensity",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.reflection",
+      "pillar": "lighting",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [
+        "t2i",
+        "post"
+      ],
+      "industryRef": "材质 specular+环境",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.colorGels",
+      "pillar": "lighting",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "blender"
+      ],
+      "industryRef": "inputs:color; MVR Color(CIE)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.notes",
+      "pillar": "lighting",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1"
+      ],
+      "backends": [],
+      "industryRef": "customData,编译器不消费",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].id",
+      "pillar": "lighting",
+      "track": "key",
+      "tier": "requiredIfPresent",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "灯实例标识(lights[] 内必填)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].role",
+      "pillar": "lighting",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "主光角色语义(与柱级 position 词表同源)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].aim",
+      "pillar": "lighting",
+      "track": "key",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "shaping:focus+look-at; MVR Focus→FocusPoint(Li-D 解光位瓶颈)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].intensityLm",
+      "pillar": "lighting",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "inputs:intensity; GDTF LuminousFlux(Li-C 补亮度精确轨)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].exposure",
+      "pillar": "lighting",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "inputs:exposure",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].iesProfile",
+      "pillar": "lighting",
+      "track": "artifact",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "shaping:ies:file; GDTF 光度(Li-A)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].affects",
+      "pillar": "lighting",
+      "track": "key[]",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "collection:lightLink(Li-E 多主体光照解耦;entity_ref 列表,可含 subject/prop)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].fixtureRef",
+      "pillar": "lighting",
+      "track": "key",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "ASSET",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "GDTF 灯具 + MVR Symdef(Li-F)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "lighting.lights[].colorTempK",
+      "pillar": "lighting",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "逐灯精确 Kelvin(柱级 colorTempK 描述整体光环境)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].descriptionZh",
+      "pillar": "events",
+      "track": "open",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "flux",
+        "wan"
+      ],
+      "industryRef": "留 JSON;进阶 DWPose/UsdSkel 桥接",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].descriptionEn",
+      "pillar": "events",
+      "track": "open",
+      "tier": "required",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].standalone",
+      "pillar": "events",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "proposed"
+    },
+    {
+      "path": "events.actions[].interactive",
+      "pillar": "events",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "interactive→关系/约束",
+      "verified": "proposed"
+    },
+    {
+      "path": "events.actions[].temporal",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].foreground",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].background",
+      "pillar": "events",
+      "track": "bool",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].uncertainty",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].intensity",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].beatFeatures",
+      "pillar": "events",
+      "track": "open[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "flux"
+      ],
+      "industryRef": "特写路径直接消费",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.actions[].durationHintS",
+      "pillar": "events",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "wan"
+      ],
+      "industryRef": "SkelAnimation 时间范围",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.emotions[].implicit",
+      "pillar": "events",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "UsdSkel BlendShape(进阶桥接)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.emotions[].explicit",
+      "pillar": "events",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.emotions[].temporal",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.emotions[].foreground",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.emotions[].background",
+      "pillar": "events",
+      "track": "bool",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.dialogues[]",
+      "pillar": "events",
+      "track": "struct[]",
+      "tier": "requiredIfPresent",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "wan",
+        "audio"
+      ],
+      "industryRef": "S2V/口型→blendShapeWeights 桥接",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.changeInEnvironment",
+      "pillar": "events",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "t2i",
+        "wan"
+      ],
+      "industryRef": "可时间采样事件",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.advanced.storyStructure",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "post"
+      ],
+      "industryRef": "customData(规划/剪辑)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.advanced.pace",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "post"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "events.advanced.regularity",
+      "pillar": "events",
+      "track": "vocab",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S3"
+      ],
+      "backends": [
+        "post"
+      ],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "semantics.version",
+      "pillar": "semantics",
+      "track": "struct",
+      "tier": "required",
+      "status": "active",
+      "owner": "EACH_PRODUCING_STAGE",
+      "consumers": [
+        "ALL",
+        "QA",
+        "TRAINING"
+      ],
+      "backends": [],
+      "industryRef": "OMC Version(take 血缘)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "semantics.task",
+      "pillar": "semantics",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "ORCH",
+      "consumers": [
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "OMC Task(SDW)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "semantics.participant",
+      "pillar": "semantics",
+      "track": "open",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "ORCH",
+      "consumers": [
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "OMC Participant(模型也是参与者)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "semantics.productionContext",
+      "pillar": "semantics",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "EACH_PRODUCING_STAGE",
+      "consumers": [
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "OMC Production Context",
+      "verified": "confirmed"
+    },
+    {
+      "path": "semantics.narrativeContext",
+      "pillar": "semantics",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "ALL"
+      ],
+      "backends": [],
+      "industryRef": "OMC Narrative Context",
+      "verified": "confirmed"
+    },
+    {
+      "path": "semantics.relationships",
+      "pillar": "semantics",
+      "track": "struct[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "OMC Relationship → RDF(出口)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.fieldMeta[]",
+      "pillar": "manifest",
+      "track": "struct",
+      "tier": "required",
+      "status": "active",
+      "owner": "FIELD_WRITER",
+      "consumers": [
+        "ALL",
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "工作流 v3 §1.2 来源五值 + 第二轮评审补三值(asset_library/industrial_capture/tool_generated)= 八值",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.continuity",
+      "pillar": "manifest",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1/QA",
+      "consumers": [
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "连续性主线",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.audio",
+      "pillar": "manifest",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "audio",
+        "wan"
+      ],
+      "industryRef": "v3 新增块(配音/口型);对白文本真值在 events.dialogues,audio 只存音频管线参数(dialogue_refs 下标引用)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.prompts[]",
+      "pillar": "manifest",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "EACH_PRODUCING_STAGE",
+      "consumers": [
+        "ALL"
+      ],
+      "backends": [],
+      "industryRef": "编译产物(prompt 是产物,非真值)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "project.artifacts",
+      "pillar": "manifest",
+      "track": "struct[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "EACH_PRODUCING_STAGE",
+      "consumers": [
+        "ALL"
+      ],
+      "backends": [],
+      "industryRef": "项目级产物索引;append-only 数组,二进制/大文件一律 assets://(契约 §4.1)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "scene.artifacts",
+      "pillar": "manifest",
+      "track": "struct[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "EACH_PRODUCING_STAGE",
+      "consumers": [
+        "ALL"
+      ],
+      "backends": [],
+      "industryRef": "场景级产物索引;append-only 数组,二进制/大文件一律 assets://(契约 §4.1)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.artifacts",
+      "pillar": "manifest",
+      "track": "struct[]",
+      "tier": "required",
+      "status": "active",
+      "owner": "EACH_PRODUCING_STAGE",
+      "consumers": [
+        "ALL"
+      ],
+      "backends": [],
+      "industryRef": "产物索引;append-only 数组,二进制一律 assets://(契约 §4.1)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.overrides.usdOverLayers",
+      "pillar": "manifest",
+      "track": "artifact[]",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "USD over + sublayer 合成(非破坏几何覆盖层,命门承接槽)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.overrides.blenderDeltaFiles",
+      "pillar": "manifest",
+      "track": "artifact[]",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "",
+      "verified": "proposed"
+    },
+    {
+      "path": "manifest.overrides.overrideReason",
+      "pillar": "manifest",
+      "track": "open",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.overrides.authoredBy",
+      "pillar": "manifest",
+      "track": "key",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "QA"
+      ],
+      "backends": [],
+      "industryRef": "责任追踪(人改神圣)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.renderOutputs.resolution",
+      "pillar": "manifest",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "渲染产出规格",
+      "verified": "proposed"
+    },
+    {
+      "path": "manifest.renderOutputs.aovs",
+      "pillar": "manifest",
+      "track": "vocab[]",
+      "tier": "recommended",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "Hydra AOV / Cryptomatte 等价物(primId 替代手工 mask)",
+      "verified": "confirmed"
+    },
+    {
+      "path": "manifest.renderOutputs.bitDepth",
+      "pillar": "manifest",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "dormant",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "",
+      "verified": "proposed"
+    },
+    {
+      "path": "manifest.review",
+      "pillar": "manifest",
+      "track": "struct",
+      "tier": "required",
+      "status": "active",
+      "owner": "QA",
+      "consumers": [
+        "ALL"
+      ],
+      "backends": [],
+      "industryRef": "三道门 + pace_qa 七维",
+      "verified": "confirmed"
+    }
+  ]
+}

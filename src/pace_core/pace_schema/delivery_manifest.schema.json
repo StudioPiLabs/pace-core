@@ -1,0 +1,152 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/delivery_manifest.schema.json",
+  "title": "PACE Delivery Manifest (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "projectId",
+    "deliverables"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "pace-0.2",
+      "description": "标准版本号"
+    },
+    "projectId": {
+      "type": "string",
+      "description": "项目 ID(与工程目录根一致)"
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true,
+        "$comment": "瞬态 URL 字段(url / *_url(s) / *Url(s) / *URL(s))由服务端 PaceValidator 拒绝;本 schema 保留 additionalProperties、不在字段层拦截,纯 schema 校验不能替代该检查。只存 assets:// 到 uri / *_uri。",
+        "required": [
+          "kind",
+          "uri"
+        ],
+        "properties": {
+          "kind": {
+            "enum": [
+              "master",
+              "scene_cut",
+              "shot_take",
+              "trailer",
+              "audio_mix",
+              "subtitle",
+              "other"
+            ],
+            "description": "master=成片 / scene_cut=场级剪段 / shot_take=镜头级片段 / trailer=预告 / audio_mix=混音轨 / subtitle=字幕 / other=其余(note 必须说明)"
+          },
+          "uri": {
+            "type": "string",
+            "description": "二进制成片一律 assets:// URI(契约 §4.1);字幕等纯文本允许工程内相对路径"
+          },
+          "sceneId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "kind=scene_cut/shot_take 时填;结构 ID(s001)"
+          },
+          "shotId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "kind=shot_take 时填;结构 ID(hs001_sh003)"
+          },
+          "versionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "对应 semantics.version 血缘链中的 take id(交付物可溯源到具体 take)"
+          },
+          "format": {
+            "type": "string",
+            "description": "容器/编码,如 mp4/h264、mov/prores422、wav/pcm24"
+          },
+          "resolution": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "minItems": 2,
+            "maxItems": 2,
+            "description": "[宽, 高] 像素"
+          },
+          "fps": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "num",
+              "denom"
+            ],
+            "properties": {
+              "num": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "description": "分子"
+              },
+              "denom": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "description": "分母"
+              }
+            },
+            "description": "有理数帧率(23.976=24000/1001),禁浮点——与 camera.fps 同规则(C-C)"
+          },
+          "durationS": {
+            "type": "number",
+            "minimum": 0,
+            "description": "时长(秒)"
+          },
+          "checksum": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "algo",
+              "value"
+            ],
+            "properties": {
+              "algo": {
+                "enum": [
+                  "sha256",
+                  "md5"
+                ],
+                "description": "摘要算法,新交付建议 sha256"
+              },
+              "value": {
+                "type": "string",
+                "description": "十六进制摘要值"
+              }
+            },
+            "description": "完整性校验和(交付验收依据)"
+          },
+          "note": {
+            "type": "string",
+            "description": "给人看的备注(kind=other 时必填说明)"
+          }
+        }
+      },
+      "description": "交付项列表,append-only:只增不改;重交付 = 追加新条目 + 新 versionId,旧条目保留作血缘"
+    },
+    "approvedBy": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "验收人(人名/账号);null = 未验收"
+    },
+    "createdAt": {
+      "type": "string",
+      "description": "ISO 8601 时间戳"
+    }
+  },
+  "description": "文件:delivery/delivery_manifest.json(08 目录树中 delivery/ 下唯一的文件)。交付清单:master/分镜片段的 assets:// 引用 + 规格 + 校验和。owner:S3/POST 阶段写,QA 验收读。"
+}

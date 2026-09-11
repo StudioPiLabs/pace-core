@@ -1,0 +1,43 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "pace/shot_pace.schema.json",
+  "title": "PACE Shot Pace Block (pace-0.2)",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "shotId"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "pace-0.2",
+      "description": "标准版本号;读取方对未知新增字段必须容忍(01 §7)"
+    },
+    "shotId": {
+      "type": "string",
+      "pattern": "^hs\\d+[A-Za-z]?_sh\\d+[A-Za-z]?$",
+      "description": "结构 ID(平台契约 §4.3,如 hs001_sh003);与所属 shot 目录名一致,冻结不回收"
+    },
+    "camera": {
+      "$ref": "pace/pillar.camera.schema.json",
+      "description": "Camera 柱:观众从哪看、怎么动(意图 + 工业精确轨)"
+    },
+    "setup": {
+      "$ref": "pace/pillar.setup.schema.json",
+      "description": "Setup 柱:谁在场、什么物、摆在哪(subjects[]/props[]/backdrop/primaryFocus)"
+    },
+    "lighting": {
+      "$ref": "pace/pillar.lighting.schema.json",
+      "description": "Lighting 柱:定性桶(柱级)+ lights[] 逐灯精确轨"
+    },
+    "events": {
+      "$ref": "pace/pillar.events.schema.json",
+      "description": "Events 柱:动作/情绪/对白(对白文本唯一真值在此)"
+    },
+    "semantics": {
+      "$ref": "pace/semantics.schema.json",
+      "description": "OMC-lite 语义层:version 血缘/task/participant/双语境"
+    }
+  },
+  "description": "不直接对应独立文件;作为 scenes/<sceneId>/shots/<shotId>/manifest.json 中 pace 字段的可复用四柱块。四柱积木(pillar.*.schema.json)共用同一套定义。owner:S1 写初版,后续按 registry 字段所有权分写。"
+}
