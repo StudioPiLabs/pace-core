@@ -7,7 +7,7 @@ proportions for ControlNet depth maps, OpenPose-style skeletons, and screen-spac
 projection in the alignment engine.
 
 Usage from another Blender python script:
-    from pailang.core.breakdown.build_characters import build_humanoid
+    from pace_core.breakdown.build_characters import build_humanoid
     build_humanoid("Subject_A", character_id="jia",  origin=(0, 0.5, 0))
     build_humanoid("Subject_B", character_id="wei",  origin=(0, -0.5, 0))
 
