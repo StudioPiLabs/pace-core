@@ -102,3 +102,23 @@ def test_the_framing_pattern_follows_the_cast_it_has():
     empty = {"id": "b6", "transition": [{"predicate": "CLOSE", "actor": "panels"}]}
     sh = bbp.to_panel(empty, {"subjects": []}, tpl, 6, "scene_20")
     assert "framing" not in sh["camera"]["creative_intent"]
+
+
+def test_a_beat_that_changes_a_state_stages_what_it_starts_from():
+    """The panel depicting a change shows the state being lost, not the one
+    being arrived at, so the change falls between two panels rather than
+    before both of them."""
+    from pace_core.breakdown.build_beat_panels import prop_states
+    smap = {"panels": ("cabin_panels", "view_screen")}
+    turns_off = {"state_before": {"panels.power": "on"},
+                 "state_after": {"panels.power": "off"}}
+    already_off = {"state_before": {"panels.power": "off"},
+                   "state_after": {"panels.power": "off"}}
+    assert prop_states(turns_off, smap) == {}
+    assert prop_states(already_off, smap) == {"cabin_panels": "powered_off",
+                                              "view_screen": "powered_off"}
+
+
+def test_a_state_with_no_recorded_before_is_staged_as_it_stands():
+    from pace_core.breakdown.build_beat_panels import prop_states
+    assert prop_states({"state_after": {"door.open": "closed"}}) == {"door": "closed"}

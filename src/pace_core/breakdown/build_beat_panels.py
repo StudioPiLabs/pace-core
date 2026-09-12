@@ -10,10 +10,12 @@ already measured:
   subjects   come from the beat's own actors. The corpus's cast lists were
              assembled from prose and rendered four people for an enumerated
              three-person scene, so the count is geometry, not a request.
-  state      comes from `state_after`, written onto the props. A prop whose
+  state      comes from the world state, written onto the props. A prop whose
              state contradicts its registry appearance is now rewritten by the
              compiler, so a beat after a blackout cannot compile a glowing
-             panel.
+             panel. The beat that causes the change stages what it starts
+             from, so the change falls between two panels rather than before
+             both of them (see `prop_states`).
   provenance every action keeps the beat and the screenplay span it came from.
 
 What the model does decide is blocking and framing, which need judgement.
@@ -120,11 +122,26 @@ def build_messages(beat: dict, cast: set[str], location: str) -> list[dict]:
 
 
 def prop_states(beat: dict, state_map: dict | None = None) -> dict[str, str]:
-    """World state -> the props that carry it, in the schema's flat form."""
+    """World state -> the props that carry it, in the schema's flat form.
+
+    A beat that CHANGES a state stages the state it starts in, not the one it
+    ends in. Taking `state_after` everywhere made the panel depicting "all the
+    panels lose power" already dark, and the next panel dark as well, so the
+    one thing the two panels existed to show -- the change -- appeared in
+    neither: a storyboard that cannot show a change is not doing its job. The
+    beat that turns the screens off therefore stages them on, and the beat
+    after it inherits them off, which is what puts the change between the two
+    frames. A beat that only inherits a state stages it as it stands.
+    """
+    before = beat.get("state_before") or {}
+    after = beat.get("state_after") or {}
     out = {}
-    for key, val in (beat.get("state_after") or {}).items():
+    for key, val in after.items():
+        was = before.get(key)
+        changed_here = key in before and str(was).lower() != str(val).lower()
+        shown = was if changed_here else val
         ent, _, attr = key.partition(".")
-        if str(val).lower() not in DARK_VALUES:
+        if str(shown).lower() not in DARK_VALUES:
             continue
         for pid in (state_map or {}).get(ent, (ent,)):
             out[pid] = "powered_off" if attr in ("power", "display") else "closed"

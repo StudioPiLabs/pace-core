@@ -82,6 +82,7 @@ else:
     # Blender's Python ignores PYTHONPATH; BlenderBox passes this package's location.
     sys.path.insert(0, os.environ.get("PACE_CORE_PATH") or str(Path(__file__).resolve().parents[2]))
 
+from pace_core.breakdown.world_state import states_for_prop
 from pace_core.pai_compat import FIXTURE_ANCHORS, resolve_prop, resolve_prop_key
 from pace_core.setup.location_shape import SHAPES, shape_from_stub, shape_maps_from_doc
 from pace_core.paths import paths_for
@@ -695,6 +696,14 @@ def _panel_fixtures(paths, setup: dict) -> list[dict]:
         # for the anchor-field reason below.
         if entry.get("rests_on"):
             out[-1]["on_subject"] = str(entry["rests_on"])
+        # A screen the panel declares powered off is dark in the frame, so the
+        # control image has to carry it: the prompt alone reached the words
+        # and not the pixels the sampler starts from. Written only when the
+        # state is declared, for the anchor-field reason below, so a panel
+        # that declares nothing keeps the anchor it already has.
+        if any(a in ("power", "display") and v == "off"
+               for a, v in states_for_prop(entry)):
+            out[-1]["dark"] = True
         # `key` and `host` are written only when they carry information, for
         # the same reason `fit` is: `fixtures` is an anchor field, and a key
         # present on every fixture restamps anchor_version across every
@@ -1688,6 +1697,10 @@ def _hair_cap(head_src, cid: str, style: dict):
 # exactly as it did.
 _TONE_ATTR = "pace_tone"
 _GREY = (0.55, 0.55, 0.56, 1.0)
+# What a surface declared powered off renders as: dark enough to read as off
+# through the init's 12-level posterisation, not black, which would read as a
+# hole in the geometry rather than an unlit panel.
+_DARK = (0.07, 0.07, 0.075, 1.0)
 
 
 def _tone_mesh(ob, rgba):
@@ -3039,15 +3052,31 @@ def _kernel_greybox(spec: dict) -> dict:
     sh.light = "STUDIO"
     sh.color_type = "SINGLE"
     sh.single_color = (0.55, 0.55, 0.56)
-    # A dressed cast carries its garment tones as a colour attribute; every
-    # other mesh gets the same attribute at the greybox's own grey, so the
-    # frame is unchanged wherever nothing was dressed.
-    if any(s.get("costume") for s in spec["subjects"]):
+    # A dressed cast carries its garment tones as a colour attribute, and a
+    # fixture the panel declares powered off carries its own; every other mesh
+    # gets the same attribute at the greybox's own grey, so the frame is
+    # unchanged wherever nothing was dressed and nothing was switched off.
+    dark_ids = [fx["id"] for fx in (spec.get("fixtures") or []) if fx.get("dark")]
+    if any(s.get("costume") for s in spec["subjects"]) or dark_ids:
         for o in bpy.data.objects:
             if o.type == "MESH":
                 if _TONE_ATTR not in o.data.color_attributes:
                     _tone_mesh(o, _GREY)
                 _use_tone(o)
+        # The dark tone goes on after the fill above, or the fill would erase
+        # it. The fixture's own mesh keeps its shape, so a screen that is off
+        # is the same screen: only what it renders as changes.
+        for fid in dark_ids:
+            # A fixture on a repeated anchor is built once per place, named
+            # `<id>_0`, `<id>_1`, so the side panels of a cabin are two objects
+            # under one declaration; matching the id alone left them lit.
+            roots = [o for o in bpy.data.objects
+                     if o.name == fid or o.name.startswith(fid + "_")]
+            for root in roots:
+                for o in [m for m in [root, *root.children_recursive]
+                          if m.type == "MESH"]:
+                    _tone_mesh(o, _DARK)
+                    _use_tone(o)
         sh.color_type = "VERTEX"
     sh.show_cavity = True
     sc.render.resolution_x, sc.render.resolution_y = spec["res"]
