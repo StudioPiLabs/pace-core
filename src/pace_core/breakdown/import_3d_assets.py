@@ -16,7 +16,7 @@ Why a helper module:
     call exactly like add_cube/add_cylinder.
 
 Usage from inside Blender python:
-    from pailang.core.breakdown.import_3d_assets import import_3d_asset
+    from pace_core.breakdown.import_3d_assets import import_3d_asset
     obj = import_3d_asset(
         name="LampPost",
         glb_path="kb/3d_models/lamp_post.glb",
