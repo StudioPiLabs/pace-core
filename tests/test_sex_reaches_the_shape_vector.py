@@ -31,6 +31,31 @@ def test_a_male_body_is_shaped_on_the_axis_that_carries_sex():
     assert betas_for_subject("ryan", KB)[4] < 0, "male shape is the negative direction"
 
 
+def test_the_male_offset_tracks_build():
+    """A fixed offset is calibrated at one build and drifts everywhere else:
+    at -2.0 the corpus's slim eighteen-year-old kept a female chest while the
+    athletic lead went concave. Build and sex act on the same tissue, so the
+    offset has to move with build -- more of it for a slim body, less for a
+    heavy one."""
+    slim = {"a": {"sex": "male", "anchor": "slender"}}
+    heavy = {"a": {"sex": "male", "anchor": "heavyset"}}
+    b_slim, b_heavy = betas_for_subject("a", slim), betas_for_subject("a", heavy)
+    assert b_slim[1] < b_heavy[1], "the fixture must actually separate the builds"
+    assert b_slim[4] < b_heavy[4], "a slimmer body needs more of the axis, not less"
+
+
+def test_a_male_body_never_has_chest_added():
+    """The clamp: past beta[1] ~ +1 the solved crossing goes positive, and a
+    positive beta[4] would put a bust back on."""
+    for anchor in ("heavyset", "stocky", "burly", "athletic build", "slender"):
+        assert betas_for_subject("a", {"a": {"sex": "male", "anchor": anchor}})[4] <= 0.0
+
+
+def test_the_offset_stays_in_the_range_the_model_was_fit_over():
+    for anchor in ("slender", "slight", "very slender"):
+        assert betas_for_subject("a", {"a": {"sex": "male", "anchor": anchor}})[4] >= -4.0
+
+
 def test_a_female_body_is_left_at_the_neutral_mean():
     """Not pushed positive: the neutral mean already reads female at the chest,
     which is why one shared proxy looked like one person for a whole cast."""
@@ -42,7 +67,12 @@ def test_an_undeclared_sex_changes_nothing():
 
 
 def test_the_declaration_is_read_case_insensitively():
-    assert betas_for_subject("sam", KB)[4] == betas_for_subject("ryan", KB)[4]
+    """Same build, sex spelled two ways: the offset must not care. Comparing
+    against Ryan would not test this any more, since the offset tracks build
+    and their builds differ."""
+    kb = {"lower": {"sex": "male", "anchor": "average build"},
+          "title": {"sex": "Male", "anchor": "average build"}}
+    assert betas_for_subject("lower", kb)[4] == betas_for_subject("title", kb)[4] < 0
 
 
 def test_sex_does_not_collide_with_age_or_build():
