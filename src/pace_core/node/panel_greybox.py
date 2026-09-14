@@ -823,6 +823,36 @@ def _unoccupied_slots(seat_count: int, occupied: list, cabin: list) -> list:
     return [slots[i] for i in free]
 
 
+def _facing_from_gaze(subs: list, places: list, i: int) -> float:
+    """Turn a body toward the subject its declared gaze names.
+
+    `facing_deg` is an offset from the location's own facing -- the assembler
+    applies `180 + facing_deg` -- so 0.0 keeps every body square to the
+    windscreen, which is the staging every panel had before this existed.
+
+    Derived only for a gaze that names another subject IN THIS PANEL. A gaze
+    at a prop or an off-frame direction leaves the seat alone: the head turns,
+    the body does not, and rotating the whole proxy for a glance would move a
+    silhouette the framing solve is fitting. Without this the eye-line clause
+    could not fail, because two subjects declared looking at each other were
+    staged facing the same way (Gaze's own docstring names eyeline-match
+    continuity as what it is for).
+    """
+    g = subs[i].get("gaze") or {}
+    if g.get("target_type") != "character":
+        return 0.0
+    j = next((k for k, s in enumerate(subs)
+              if k != i and s.get("character_id") == g.get("target_ref")), None)
+    if j is None:
+        return 0.0
+    dx, dy = places[j][0] - places[i][0], places[j][1] - places[i][1]
+    if not (dx or dy):
+        return 0.0
+    # The default body faces +Y and atan2 measures from +X, so the quarter
+    # turn between the two axes comes off the derived bearing.
+    return math.degrees(math.atan2(dy, dx)) - 90.0
+
+
 # Garment tones for the proxy, read off the registered costume. The greybox is
 # one flat grey, and denoised from it at 0.55 the sampler decides a garment
 # from the body's shape alone -- so the same declared shirt came back a
@@ -1221,7 +1251,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
                                    pose_key_for(s.get("pose"), pose),
                                    s.get("character_id") or ""),
                  "pose": pose_key_for(s.get("pose"), pose),
-                 "facing_deg": 0.0,
+                 "facing_deg": _facing_from_gaze(subs, places, i),
                  # The aim solve needs to know what each subject asked for,
                  # not just where its seat ended up.
                  "declared_x": _declared_x(s)}
