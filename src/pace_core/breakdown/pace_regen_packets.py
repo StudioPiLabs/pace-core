@@ -587,7 +587,14 @@ def betas_for_subject(ref: str, characters_kb: dict) -> list[float]:
             betas[1] = val
             break
 
-    # Sex-typical shape, on the axis that actually carries it.
+    # Sex-typical shape, on the axis that carries it WHEN THE BODY DOES NOT.
+    #
+    # This is a fallback, not the mechanism. With the gendered SMPL-X models
+    # installed the template is already male -- -9.2 mm at the chest before any
+    # coefficient -- and a consumer that has them should drop this value rather
+    # than add it, which drives a body past male instead of to it. The bake
+    # does exactly that. What is left here is for consumers with only the
+    # neutral model, the motion handoff among them.
     #
     # The gendered SMPL-X models are licence-gated separately and are often not
     # installed, so `gender="neutral"` is what a body gets built from. That is
