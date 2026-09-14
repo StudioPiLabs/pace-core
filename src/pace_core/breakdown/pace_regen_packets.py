@@ -528,7 +528,19 @@ _BUILD_BETA1 = {
 }
 
 
-_SEX_BETA4_MALE = -2.0   # measured; see betas_for_subject
+# Where beta[4] has to sit for the chest to come out flat, as a function of
+# build. A fixed offset is calibrated at one build and drifts everywhere else:
+# at -2.0 a zero-build body lands at -0.4 mm of bust protrusion, but the
+# corpus's slim eighteen-year-old kept +21.5 mm, because build and sex act on
+# the same tissue. Solving for the zero crossing across build gives a straight
+# line, residuals within 0.3 over beta[1] in [-1, 1]:
+#
+#     build b1   -1.00  -0.50   0.00   0.50   1.00
+#     b4 at 0    -3.90  -3.20  -1.90  -0.55   0.00
+#
+# Clamped at 0 because a male body should never have chest ADDED, and at -4
+# because past there the shape leaves the range the model was fit over.
+_SEX_B4_SLOPE, _SEX_B4_INTERCEPT = 2.153, -1.917
 
 
 def betas_for_subject(ref: str, characters_kb: dict) -> list[float]:
@@ -584,7 +596,7 @@ def betas_for_subject(ref: str, characters_kb: dict) -> list[float]:
     # already reads female at the chest, which is exactly why every character
     # in a corpus staged from it looked like one person.
     if str(entry.get("sex") or "").lower() == "male":
-        betas[4] = _SEX_BETA4_MALE
+        betas[4] = max(-4.0, min(0.0, _SEX_B4_SLOPE * betas[1] + _SEX_B4_INTERCEPT))
     return [round(b, 3) for b in betas]
 
 
