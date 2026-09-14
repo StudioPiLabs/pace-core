@@ -1332,6 +1332,10 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         },
         "fit_margin": margin,
         **({"ots": ots_pair} if ots_pair else {}),
+        # Present only when the panel contradicts itself, so a panel that
+        # does not keeps its anchor_version; left out of _ANCHOR_FIELDS
+        # because a note about a declaration is not geometry.
+        **({"ots_focus_conflict": ots_focus_conflict} if ots_focus_conflict else {}),
         "azimuth_deg": azimuth,
         "elevation_deg": {"low_angle": -8.0, "high_angle": 14.0}.get(
             _angle_class(extr), 5.0),
