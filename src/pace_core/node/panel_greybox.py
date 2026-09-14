@@ -450,13 +450,27 @@ _POSE_FALLBACK = {"kneeling": "sitting", "walking": "standing",
                   "reaching": "standing", "lying": "standing"}
 
 
+# Compiled once, word-bounded. Phrases ("on the ground", "holds out") work
+# the same way -- the boundary is on the phrase's outer edges.
+_POSE_PATTERNS = tuple(
+    (key, re.compile(r"\b(?:" + "|".join(re.escape(w) for w in words) + r")\b"))
+    for key, words in _POSE_WORDS
+)
+
+
 def pose_key_for(pose_text: str | None, default: str = "standing") -> str:
-    """Which shipped proxy a subject's authored pose asks for."""
+    """Which shipped proxy a subject's authored pose asks for.
+
+    Matched on word boundaries. As a substring test this read "lay" out of
+    "player", "layer" and "overlay" and "lies"/"lying" out of "flies"/
+    "flying", which put all eight of one corpus's matches on the floor --
+    among them a shot whose subject walks up to a wall, since `lying` is
+    tested before `walking` and the first bucket to match wins."""
     s = (pose_text or "").strip().lower()
     if not s:
         return default
-    for key, words in _POSE_WORDS:
-        if any(w in s for w in words):
+    for key, rx in _POSE_PATTERNS:
+        if rx.search(s):
             return key
     return default
 
