@@ -375,11 +375,17 @@ DEFAULT_SEAT_TOP = 0.45
 
 # ── host side: read the panel, measure the proxies, build the spec ────────
 
-def _mesh_for(age_state: str, meshes_dir: Path, pose: str = "sitting") -> str:
-    """Stature and pose -> which SMPL-X mesh.
+def _mesh_for(age_state: str, meshes_dir: Path, pose: str = "sitting",
+              character: str = "") -> str:
+    """Character, stature and pose -> which SMPL-X mesh.
 
-    The project ships 125 cm and 175 cm variants of each pose; an adult and an
-    18-year-old both read as the taller one.
+    A per-character mesh wins when one exists, so a cast of five is staged as
+    five bodies rather than one. Without it the lookup falls back to stature:
+    the project ships 125 cm and 175 cm variants of each pose, and an adult and
+    an 18-year-old both read as the taller one. That fallback is what every
+    panel used before per-character proxies were baked, and it is why one body
+    stood in for the whole cast in every greybox: this function was never given
+    a character to look up.
 
     A pose with no mesh on disk degrades along `_POSE_FALLBACK` rather than
     failing, because a project generated before the vocabulary grew has only
@@ -389,6 +395,17 @@ def _mesh_for(age_state: str, meshes_dir: Path, pose: str = "sitting") -> str:
     """
     young = any(t in (age_state or "") for t in ("child", "7", "kid"))
     tag = "125" if young else "175"
+    # Per-character first, walking the same pose-fallback chain as the stature
+    # proxies: a character who has a standing mesh but no kneeling one should
+    # land on their own standing body, not on somebody else's kneel.
+    if character:
+        seen, want = set(), pose or "standing"
+        while want and want not in seen:
+            seen.add(want)
+            cand = meshes_dir / f"smplx_{want}_{character}.obj"
+            if cand.is_file():
+                return str(cand)
+            want = _POSE_FALLBACK.get(want)
     seen, want = set(), pose or "standing"
     last = want
     while want and want not in seen:
@@ -1072,7 +1089,8 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         def _footprint_m(s: dict) -> float:
             if pose_key_for(s.get("pose"), pose) != "lying":
                 return SUBJECT_SPACING_M
-            mesh = Path(_mesh_for(s.get("age_state") or "", _chars, "lying"))
+            mesh = Path(_mesh_for(s.get("age_state") or "", _chars, "lying",
+                                  s.get("character_id") or ""))
             return _proxy_length_m(str(mesh)) if mesh.is_file() else 1.75
 
         n = len(subs)
@@ -1200,7 +1218,8 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # the ground.
     subjects = [{"character_id": s.get("character_id") or f"subj{i}",
                  "mesh": _mesh_for(s.get("age_state") or "", meshes_dir,
-                                   pose_key_for(s.get("pose"), pose)),
+                                   pose_key_for(s.get("pose"), pose),
+                                   s.get("character_id") or ""),
                  "pose": pose_key_for(s.get("pose"), pose),
                  "facing_deg": 0.0,
                  # The aim solve needs to know what each subject asked for,
@@ -1402,7 +1421,10 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
                           f"side the lens is on")
             else:
                 missing = [m for m in
-                           {_mesh_for(s.get("age_state") or "", meshes_dir) for s in subs}
+                           {_mesh_for(s.get("age_state") or "", meshes_dir,
+                                      pose_key_for(s.get("pose"), pose),
+                                      s.get("character_id") or "")
+                            for s in subs}
                            if not Path(m).is_file()]
                 if missing:
                     reason = f"missing proxy mesh: {', '.join(Path(m).name for m in missing)}"
