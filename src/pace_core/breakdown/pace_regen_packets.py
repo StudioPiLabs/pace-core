@@ -536,11 +536,20 @@ _BUILD_BETA1 = {
 # line, residuals within 0.3 over beta[1] in [-1, 1]:
 #
 #     build b1   -1.00  -0.50   0.00   0.50   1.00
-#     b4 at 0    -3.90  -3.20  -1.90  -0.55   0.00
+#     b4 at 0    -6.95  -3.55  -2.30  -1.05  -0.65
+#
+# Measured on what the bake WRITES, not on the raw model: the proxy is posed
+# with its arms down, transformed to Z-up and scaled to a target stature, and
+# stature scaling alone rescales every absolute millimetre. Fitting on the
+# rest-pose mesh and checking on the baked one is how an earlier version of
+# this left the slim character at +14 mm while claiming to zero him.
 #
 # Clamped at 0 because a male body should never have chest ADDED, and at -4
-# because past there the shape leaves the range the model was fit over.
-_SEX_B4_SLOPE, _SEX_B4_INTERCEPT = 2.153, -1.917
+# because past there the shape leaves the range the model was fit over. The
+# clamp binds below about build -0.6, where the true crossing runs away from
+# the line; on this corpus that is Ethan, and -4 puts him at +0.25 mm, but a
+# slimmer male than him would keep some protrusion rather than reach zero.
+_SEX_B4_SLOPE, _SEX_B4_INTERCEPT = 2.723, -2.706
 
 
 def betas_for_subject(ref: str, characters_kb: dict) -> list[float]:
