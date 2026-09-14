@@ -77,3 +77,25 @@ def test_lying_still_resolves_to_a_standing_body(tmp_path):
 def test_a_child_still_reads_as_the_short_stature_when_unbaked(tmp_path):
     lib = _lib(tmp_path, "smplx_standing_125.obj", "smplx_standing_175.obj")
     assert _mesh_for("child_08", lib, "standing", "nobody").endswith("smplx_standing_125.obj")
+
+
+def test_the_eligibility_precheck_resolves_the_same_file_the_build_would(monkeypatch, tmp_path):
+    """The precheck calls `_mesh_for` too, and it shipped referring to a name
+    that exists only in the build path.
+
+    pace-core's own suite did not catch it -- nothing here drove the precheck
+    with a real scene document -- and it surfaced as a NameError in the host
+    repo's greybox tests. The point of this test is that the two callers stay
+    reachable from the same place, so a signature change has to satisfy both.
+    """
+    import inspect
+
+    from pace_core.node import panel_greybox as pg
+
+    src = inspect.getsource(pg)
+    # Every _mesh_for call must pass a pose expression that is defined where it
+    # stands; a bare `pose` inside the precheck was not.
+    precheck = src[src.index("missing = [m for m in"):]
+    precheck = precheck[:precheck.index("if not Path(m).is_file()]")]
+    assert "loc_pose" in precheck, "the precheck must name its own pose default"
+    assert "pose_key_for" in precheck, "and still honour the subject's authored pose"

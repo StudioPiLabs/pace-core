@@ -1420,9 +1420,14 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
                 reason = (f"camera position {pos!r} needs the shell to open on the "
                           f"side the lens is on")
             else:
+                # Same default the build itself uses (line ~922): the
+                # location decides what an unposed subject does, and the
+                # precheck has to resolve the file the build would load or it
+                # names a mesh nobody was going to open.
+                loc_pose = "sitting" if shape == "subway" else "standing"
                 missing = [m for m in
                            {_mesh_for(s.get("age_state") or "", meshes_dir,
-                                      pose_key_for(s.get("pose"), pose),
+                                      pose_key_for(s.get("pose"), loc_pose),
                                       s.get("character_id") or "")
                             for s in subs}
                            if not Path(m).is_file()]
