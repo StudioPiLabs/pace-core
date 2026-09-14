@@ -1453,11 +1453,18 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
                        export_glb: str | None = None,
                        export_glb_include_bodies: bool = False,
                        camera_delta: dict | None = None,
-                       scene: dict | None = None) -> dict:
+                       scene: dict | None = None,
+                       dress: bool = False) -> dict:
     """Build one panel's control frame. Returns the kernel's result dict.
 
     `scene`: build from this scene document rather than the installed one --
     how a restage pass tries a blocking before it writes it.
+
+    `dress`: tone each proxy's garments from its registered costume. Only
+    `build_spec` took this, so anything going through here built undressed
+    bodies, and a caller that wanted the dressed ones had to reach past this
+    function -- which is how the paper's beat pilot came to be the one set of
+    greyboxes nothing could rebuild.
 
     Blender is reached through BlenderBox, which is the only host-side caller
     allowed to spawn the binary -- imported here rather than at module scope
@@ -1471,7 +1478,8 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     """
     from pace_core.node.blender_box import BlenderBox, PanelGreyboxSpec
 
-    spec = build_spec(project, scene_id, panel_id, out_png, res=res, scene=scene)
+    spec = build_spec(project, scene_id, panel_id, out_png, res=res, scene=scene,
+                      dress=dress)
     if camera_delta:
         spec["camera_delta"] = camera_delta
     missing = missing_meshes(spec)

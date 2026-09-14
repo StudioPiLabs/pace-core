@@ -528,6 +528,9 @@ _BUILD_BETA1 = {
 }
 
 
+_SEX_BETA4_MALE = -2.0   # measured; see betas_for_subject
+
+
 def betas_for_subject(ref: str, characters_kb: dict) -> list[float]:
     """Per-character body shape, constant across every panel they appear in.
 
@@ -562,6 +565,26 @@ def betas_for_subject(ref: str, characters_kb: dict) -> list[float]:
         if _re.search(rf"\b{word}\b", text):
             betas[1] = val
             break
+
+    # Sex-typical shape, on the axis that actually carries it.
+    #
+    # The gendered SMPL-X models are licence-gated separately and are often not
+    # installed, so `gender="neutral"` is what a body gets built from. That is
+    # not the same as having no sex: the neutral shape space is learned over
+    # both, and the dimorphism is in there as an unlabelled direction. Sweeping
+    # each coefficient and measuring bust protrusion (chest depth at bust height
+    # minus at underbust) and the shoulder-to-hip width ratio finds it at
+    # beta[4]: at 0 the mean body carries a 9 mm bust and a 2.61 ratio, and at
+    # -2.0 that is 0 mm and 3.05, with stature moving 2 mm, so it does not
+    # fight the stature normalisation the proxies are baked with. beta[3],
+    # beta[5] and beta[6] flatten the chest too but leave the shoulders alone;
+    # beta[0] and beta[1] are taken here by age and build.
+    #
+    # Female is left at zero rather than pushed positive: the neutral mean
+    # already reads female at the chest, which is exactly why every character
+    # in a corpus staged from it looked like one person.
+    if str(entry.get("sex") or "").lower() == "male":
+        betas[4] = _SEX_BETA4_MALE
     return [round(b, 3) for b in betas]
 
 
