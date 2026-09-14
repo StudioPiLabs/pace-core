@@ -368,6 +368,60 @@ BUILDABLE_POSITIONS = {"front": 0.0, "three_quarter": 25.0}
 # face). Face drop aims below the crown, where the eyes are.
 OTS_BEHIND_M, OTS_ACROSS_M, OTS_RISE_M, OTS_FACE_DROP_M = 1.00, 0.30, -0.15, 0.12
 OTS_CLEARANCE_M = 0.23
+# How far behind the near subject's crown the lens stands, per declared shot
+# size. An over-the-shoulder's camera is placed from the PAIR -- the near
+# shoulder and the far face -- so the fit-to-cast distance solve that every
+# other position runs is overwritten, and `creative_intent.shot_size` reached
+# the build result and nothing else: a panel switched from medium to close_up
+# reported the new size and rendered subjects the same size to four decimals.
+# The standoff is what a size means for this position, so the ladder sets it.
+# Starting values on the same footing as the gate's thresholds, read off one
+# staged pair (the far subject's head went 0.261 to 0.184 of frame height
+# across 0.80 to 1.70 m), not a corpus measurement.
+OTS_BEHIND_BY_SIZE = {
+    "extreme_close_up": 0.70, "close_up": 0.85, "medium_close_up": 1.05,
+    "medium": 1.30, "medium_full": 1.55, "full": 1.70, "wide": 1.85,
+    "master": 2.00, "establishing": 2.00,
+}
+# And how far above the crown, per declared angle, as metres per degree off
+# eye level. `extrinsics.angle` was inert here for the same reason: the spec
+# resolved it to elevation_deg (-8 / 5 / 14) and the OTS placement never read
+# it, so `overhead` and `low_angle` built byte-identical cameras. Eye level
+# maps to OTS_RISE_M exactly, so a panel that declares no angle keeps the
+# geometry it already rendered.
+OTS_RISE_M_PER_DEG = 0.011
+# A lens above the near crown sees the top of a skull and no shoulder, which
+# is not an over-the-shoulder however the angle is declared. The angle moves
+# the lens inside this band and is clamped, with the clamp recorded, at it.
+OTS_RISE_RANGE_M = (-0.35, -0.05)
+
+
+OTS_EYE_LEVEL_DEG = 5.0
+
+
+def _elevation_deg(extr: dict) -> float:
+    """The elevation an angle class declares. One table, two readers: the
+    spec's own `elevation_deg` and the over-the-shoulder rise map."""
+    return {"low_angle": -8.0, "high_angle": 14.0}.get(_angle_class(extr),
+                                                       OTS_EYE_LEVEL_DEG)
+
+
+def _ots_offsets(shot_size: str | None, elevation_deg: float) -> tuple[dict, str | None]:
+    """The standoff and height an over-the-shoulder's own declarations imply.
+
+    Returns the offsets the kernel reads and, when the declared angle asked
+    for a lens the position cannot hold, the sentence saying so.
+    """
+    behind = OTS_BEHIND_BY_SIZE.get(shot_size or "", OTS_BEHIND_BY_SIZE["medium"])
+    want = OTS_RISE_M + (elevation_deg - OTS_EYE_LEVEL_DEG) * OTS_RISE_M_PER_DEG
+    lo, hi = OTS_RISE_RANGE_M
+    rise = min(max(want, lo), hi)
+    clamped = None
+    if abs(rise - want) > 1e-9:
+        clamped = (f"elevation {elevation_deg:+.0f} deg puts the lens {want:+.2f} m "
+                   f"off the near crown, past the {lo:+.2f}..{hi:+.2f} m an "
+                   f"over-the-shoulder holds a shoulder in; staged at {rise:+.2f}")
+    return {"behind_m": behind, "rise_m": rise}, clamped
 # Fallback when no proxy mesh resolves, so a spec can still be built and the
 # caller can report the missing mesh rather than dying inside Blender.
 DEFAULT_SEAT_TOP = 0.45
@@ -1202,6 +1256,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # no pair and is refused rather than staged from a guess.
     ots_pair = None
     ots_focus_conflict = None
+    ots_rise_clamped = None
     if declared_position == "ots":
         ids = [s.get("character_id") for s in subs]
         if len(ids) < 2:
@@ -1220,6 +1275,12 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         near = max(ids, key=lambda cid: depth.get(cid, 0.0))
         far = min(ids, key=lambda cid: depth.get(cid, 0.0))
         ots_pair = {"aim_subject": far, "near_subject": near}
+        # What the panel's own size and angle mean for this position. Both
+        # were declared and neither reached the placement; the kernel has read
+        # these two keys as per-panel overrides all along and nothing wrote
+        # them, so filling them here is what connects the declarations.
+        offsets, ots_rise_clamped = _ots_offsets(shot_size, _elevation_deg(extr))
+        ots_pair.update(offsets)
         # And that can contradict the panel. `primary_focus` names the subject
         # the aim solve prefers; an OTS can only frame the one seated deeper,
         # so when the panel asks for the near subject the two declarations are
@@ -1336,9 +1397,9 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # does not keeps its anchor_version; left out of _ANCHOR_FIELDS
         # because a note about a declaration is not geometry.
         **({"ots_focus_conflict": ots_focus_conflict} if ots_focus_conflict else {}),
+        **({"ots_rise_clamped": ots_rise_clamped} if ots_rise_clamped else {}),
         "azimuth_deg": azimuth,
-        "elevation_deg": {"low_angle": -8.0, "high_angle": 14.0}.get(
-            _angle_class(extr), 5.0),
+        "elevation_deg": _elevation_deg(extr),
         # How far the kernel may move the lens to see a head past the set,
         # without leaving the declared angle class.
         "elevation_range_deg": list(ELEVATION_RANGE_DEG.get(
