@@ -53,19 +53,20 @@ def test_the_first_panel_of_a_scene_has_nothing_to_cut_from():
 def test_an_undeclared_value_is_counted_not_passed_over():
     """This is the state the corpus was in: nothing to compare, and silence
     read as agreement. The clause still passes, and says how much it could
-    not check."""
-    c = cut_continuity_clause(_decl({"abigail": None}, {"tray_table": None}),
+    not check -- null on one side and null on both alike."""
+    c = cut_continuity_clause(_decl({"abigail": None}, {"tray_table": None, "seat": None}),
                               _decl({"abigail": "abigail_costume"},
-                                    {"tray_table": "deployed"}))
+                                    {"tray_table": "deployed", "seat": None}))
     assert c.ok is True
-    assert "2 declared on one side only" in c.detail
+    assert "3 undeclared on at least one side" in c.detail
 
 
 def test_a_prop_that_only_appears_after_the_cut_is_not_a_break():
-    """Props enter and leave frame; only a prop declared on both sides can
-    disagree with itself."""
-    c = cut_continuity_clause(_decl(states={"game_device": "active"}), _decl())
+    """Props and people enter and leave frame; only what is staged on both
+    sides can disagree with itself, and an arrival is not an absence."""
+    c = cut_continuity_clause(_decl({"ryan": None}, {"game_device": "active"}), _decl())
     assert c.ok is True
+    assert c.detail == ""
 
 
 # ── reading the declarations off a staged shot ───────────────────────────

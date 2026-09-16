@@ -545,29 +545,29 @@ def cut_continuity_clause(declared: dict | None, previous: dict | None) -> Claus
     one cut of this corpus with nothing to report it.
 
     `declared` and `previous` are `{"costumes": {character_id: costume_id},
-    "prop_states": {prop_id: state}}`. Undeclared on either side is not a
-    failure; it is the absence this clause exists to make visible, counted in
-    the detail.
+    "prop_states": {prop_id: state}}`. Only a character or prop staged on both
+    sides is compared: one that enters or leaves frame at the cut, as in a
+    shot / reverse-shot, has nothing to hold. Where it is staged on both sides
+    and either value is null, that is not a failure; it is the absence this
+    clause exists to make visible, and it is counted in the detail.
     """
     name = "declared_continuity_holds_across_the_cut"
     if not previous or not declared:
         return Clause(name, None, detail="no previous panel in this scene to cut from")
     bad, unsaid = [], 0
-    for who, cid in sorted((declared.get("costumes") or {}).items()):
-        was = (previous.get("costumes") or {}).get(who)
-        if cid is None or was is None:
-            unsaid += 1
-        elif cid != was:
-            bad.append(f"{who} wears {cid} where the previous panel wore {was}")
-    for pid, st in sorted((declared.get("prop_states") or {}).items()):
-        was = (previous.get("prop_states") or {}).get(pid)
-        if st is None or was is None:
-            unsaid += 1
-        elif st != was:
-            bad.append(f"{pid} is {st} where the previous panel was {was}")
-    tail = f"; {unsaid} declared on one side only" if unsaid else ""
+    for key, verb, was_verb in (("costumes", "wears", "wore"),
+                                ("prop_states", "is", "was")):
+        here, before = declared.get(key) or {}, previous.get(key) or {}
+        for k in sorted(set(here) & set(before)):
+            now, was = here[k], before[k]
+            if now is None or was is None:
+                unsaid += 1
+            elif now != was:
+                bad.append(f"{k} {verb} {now} where the previous panel {was_verb} {was}")
+    tail = f"; {unsaid} undeclared on at least one side" if unsaid else ""
     return Clause(name, not bad, value=float(len(bad)), threshold=0.0,
                   detail=("; ".join(bad) + tail) if bad else tail.lstrip("; "))
+
 
 def declared_in_frame_clause(out: Path, declared: dict | None) -> Clause:
     """Does what the panel declares in frame (入画) match what was staged?
