@@ -184,7 +184,7 @@ wheels = [
 
 [[package]]
 name = "pace-core"
-version = "0.3.10"
+version = "0.4.1"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
@@ -208,7 +208,7 @@ usd = [
 [package.metadata]
 requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
-    { name = "pace-scene-skills", git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=v0.1.0" },
+    { name = "pace-scene-skills", git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=v0.2.0" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "scipy", marker = "extra == 'render'", specifier = ">=1.13" },
@@ -219,7 +219,7 @@ provides-extras = ["usd", "render", "dev"]
 [[package]]
 name = "pace-scene-skills"
 version = "0.1.0"
-source = { git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=v0.1.0#931ce2c4a5292b67491c40b907ed45b433ec9a9c" }
+source = { git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=v0.2.0#0f18cb130d3c92138718f17838d5070a7722549b" }
 dependencies = [
     { name = "pyyaml" },
 ]
