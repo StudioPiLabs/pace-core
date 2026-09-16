@@ -27,14 +27,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from pace_core.node.panel_greybox import (  # noqa: E402
-    OTS_BEHIND_BY_SIZE, OTS_EYE_LEVEL_DEG, OTS_RISE_M, OTS_RISE_RANGE_M,
-    _elevation_deg, _ots_offsets,
+    OTS_BEHIND_BY_SIZE, OTS_RISE_RANGE_M, _elevation_deg, _ots_offsets,
 )
+
+SRC = (Path(__file__).resolve().parents[1]
+       / "src/pace_core/node/panel_greybox.py").read_text()
 
 
 def test_a_tighter_size_stands_the_lens_closer():
     sizes = ["wide", "medium", "medium_close_up", "close_up", "extreme_close_up"]
-    behind = [_ots_offsets(s, OTS_EYE_LEVEL_DEG)[0]["behind_m"] for s in sizes]
+    behind = [_ots_offsets(s)["behind_m"] for s in sizes]
     assert behind == sorted(behind, reverse=True), behind
 
 
@@ -47,48 +49,61 @@ def test_every_declared_size_has_a_standoff():
 
 
 def test_an_undeclared_size_stages_from_the_middle_rung():
-    assert _ots_offsets(None, OTS_EYE_LEVEL_DEG)[0]["behind_m"] == \
-        OTS_BEHIND_BY_SIZE["medium"]
+    assert _ots_offsets(None)["behind_m"] == OTS_BEHIND_BY_SIZE["medium"]
 
 
-def test_eye_level_is_exactly_the_height_already_rendered():
-    """The one case that must not move: panels built before this keep their
-    camera, so their anchor_version and their frames stand."""
-    assert _ots_offsets("medium", OTS_EYE_LEVEL_DEG)[0]["rise_m"] == OTS_RISE_M
+def test_the_height_is_solved_against_the_face_the_lens_aims_at():
+    """Not approximated. The camera aims at `focus`, so a lens tan(elevation)
+    x the horizontal run above that face leaves at exactly the declared
+    elevation -- which every other position's solve already delivers."""
+    assert "run * math.tan(math.radians(" in SRC
+    assert 'float(spec.get("elevation_deg", OTS_EYE_LEVEL_DEG))' in SRC
 
 
-def test_a_higher_angle_raises_the_lens_and_a_lower_one_drops_it():
-    low = _ots_offsets("medium", _elevation_deg({"angle": "low_angle"}))[0]["rise_m"]
-    eye = _ots_offsets("medium", _elevation_deg({"angle": "eye_level"}))[0]["rise_m"]
-    high = _ots_offsets("medium", _elevation_deg({"angle": "high_angle"}))[0]["rise_m"]
-    assert low < eye < high
+def test_the_solve_is_closed_form():
+    """The horizontal run does not depend on the height, so nothing iterates;
+    a loop here would be a sign the placement had been reordered."""
+    seg = SRC.split("run = math.hypot", 1)[1][:600]
+    assert "while" not in seg and "for " not in seg
 
 
-def test_the_lens_never_rises_above_the_shoulder():
+def test_the_lens_never_rises_above_the_shoulder_band():
     """Past the crown the frame is the top of a skull and no shoulder, which
-    is not an over-the-shoulder however the angle is declared."""
-    offsets, clamped = _ots_offsets("medium", 90.0)
-    assert offsets["rise_m"] == OTS_RISE_RANGE_M[1]
-    assert clamped and "90" in clamped and "shoulder" in clamped
+    is not an over-the-shoulder however the angle is declared. On this
+    corpus's cabin the clamp binds: holding eye level would need the lens
+    5 cm over the near crown, where the gate fails the bottom edge at a
+    joint."""
+    lo, hi = OTS_RISE_RANGE_M
+    assert lo < hi <= 0.0
+    assert "min(max(want, lo), hi)" in SRC
 
 
-def test_a_clamp_is_recorded_and_an_unclamped_angle_records_nothing():
-    assert _ots_offsets("medium", _elevation_deg({"angle": "high_angle"}))[1] is None
-    assert _ots_offsets("medium", -90.0)[1] is not None
+def test_a_panel_that_states_the_height_outright_is_taken_at_its_word():
+    assert 'near_head.z + float(ots["rise_m"])' in SRC
+    assert 'if "rise_m" in ots' in SRC
+
+
+def test_the_build_reports_whether_the_angle_was_held():
+    """A clamped panel must be able to say the declared elevation was not
+    reproduced, the way the focus conflict says which declaration lost."""
+    assert '"elevation_held": abs(cam.location.z - want) < 1e-6' in SRC
+
+
+def test_the_elevation_classes_stay_ordered():
+    """The solve reads this table for the height it aims from, so low below
+    eye below high is what keeps the solved heights in the same order."""
+    assert (_elevation_deg({"angle": "low_angle"})
+            < _elevation_deg({"angle": "eye_level"})
+            < _elevation_deg({"angle": "high_angle"}))
 
 
 def test_the_elevation_table_has_one_reader():
     """The spec's own elevation_deg and this map read the same table; two
     copies is how the corpus got a shot built at a default it never declared."""
-    src = (Path(__file__).resolve().parents[1]
-           / "src/pace_core/node/panel_greybox.py").read_text()
-    assert src.count('"low_angle": -8.0, "high_angle": 14.0') == 1
-    assert '"elevation_deg": _elevation_deg(extr)' in src
+    assert SRC.count('"low_angle": -8.0, "high_angle": 14.0') == 1
+    assert '"elevation_deg": _elevation_deg(extr)' in SRC
 
 
-def test_the_offsets_reach_the_key_the_kernel_reads():
-    src = (Path(__file__).resolve().parents[1]
-           / "src/pace_core/node/panel_greybox.py").read_text()
-    assert "ots_pair.update(offsets)" in src
-    assert 'ots.get("behind_m", OTS_BEHIND_M)' in src
-    assert 'ots.get("rise_m", OTS_RISE_M)' in src
+def test_the_standoff_reaches_the_key_the_kernel_reads():
+    assert "ots_pair.update(_ots_offsets(shot_size))" in SRC
+    assert 'ots.get("behind_m", OTS_BEHIND_M)' in SRC

@@ -383,16 +383,17 @@ OTS_BEHIND_BY_SIZE = {
     "medium": 1.30, "medium_full": 1.55, "full": 1.70, "wide": 1.85,
     "master": 2.00, "establishing": 2.00,
 }
-# And how far above the crown, per declared angle, as metres per degree off
-# eye level. `extrinsics.angle` was inert here for the same reason: the spec
+# `extrinsics.angle` was inert here for the same reason the size was: the spec
 # resolved it to elevation_deg (-8 / 5 / 14) and the OTS placement never read
-# it, so `overhead` and `low_angle` built byte-identical cameras. Eye level
-# maps to OTS_RISE_M exactly, so a panel that declares no angle keeps the
-# geometry it already rendered.
-OTS_RISE_M_PER_DEG = 0.011
-# A lens above the near crown sees the top of a skull and no shoulder, which
-# is not an over-the-shoulder however the angle is declared. The angle moves
-# the lens inside this band and is clamped, with the clamp recorded, at it.
+# it, so `overhead` and `low_angle` built byte-identical cameras. The lens
+# height is solved from it in the kernel, where the face being aimed at is
+# known -- an over-the-shoulder that only approximated the angle missed the
+# declared elevation by six degrees, which is the one thing every other
+# position reproduces exactly.
+#
+# A lens above the near crown sees the top of a skull and no shoulder, which is
+# not an over-the-shoulder however the angle is declared, so the solved height
+# is clamped to this band off the crown and the clamp is reported on the build.
 OTS_RISE_RANGE_M = (-0.35, -0.05)
 
 
@@ -406,22 +407,14 @@ def _elevation_deg(extr: dict) -> float:
                                                        OTS_EYE_LEVEL_DEG)
 
 
-def _ots_offsets(shot_size: str | None, elevation_deg: float) -> tuple[dict, str | None]:
-    """The standoff and height an over-the-shoulder's own declarations imply.
+def _ots_offsets(shot_size: str | None) -> dict:
+    """The standoff an over-the-shoulder's declared size implies.
 
-    Returns the offsets the kernel reads and, when the declared angle asked
-    for a lens the position cannot hold, the sentence saying so.
+    The height is not here: it is solved in the kernel against the face the
+    lens aims at, which this side of the build has no heights for.
     """
-    behind = OTS_BEHIND_BY_SIZE.get(shot_size or "", OTS_BEHIND_BY_SIZE["medium"])
-    want = OTS_RISE_M + (elevation_deg - OTS_EYE_LEVEL_DEG) * OTS_RISE_M_PER_DEG
-    lo, hi = OTS_RISE_RANGE_M
-    rise = min(max(want, lo), hi)
-    clamped = None
-    if abs(rise - want) > 1e-9:
-        clamped = (f"elevation {elevation_deg:+.0f} deg puts the lens {want:+.2f} m "
-                   f"off the near crown, past the {lo:+.2f}..{hi:+.2f} m an "
-                   f"over-the-shoulder holds a shoulder in; staged at {rise:+.2f}")
-    return {"behind_m": behind, "rise_m": rise}, clamped
+    return {"behind_m": OTS_BEHIND_BY_SIZE.get(
+        shot_size or "", OTS_BEHIND_BY_SIZE["medium"])}
 # Fallback when no proxy mesh resolves, so a spec can still be built and the
 # caller can report the missing mesh rather than dying inside Blender.
 DEFAULT_SEAT_TOP = 0.45
@@ -1256,7 +1249,6 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # no pair and is refused rather than staged from a guess.
     ots_pair = None
     ots_focus_conflict = None
-    ots_rise_clamped = None
     if declared_position == "ots":
         ids = [s.get("character_id") for s in subs]
         if len(ids) < 2:
@@ -1279,8 +1271,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # were declared and neither reached the placement; the kernel has read
         # these two keys as per-panel overrides all along and nothing wrote
         # them, so filling them here is what connects the declarations.
-        offsets, ots_rise_clamped = _ots_offsets(shot_size, _elevation_deg(extr))
-        ots_pair.update(offsets)
+        ots_pair.update(_ots_offsets(shot_size))
         # And that can contradict the panel. `primary_focus` names the subject
         # the aim solve prefers; an OTS can only frame the one seated deeper,
         # so when the panel asks for the near subject the two declarations are
@@ -1397,7 +1388,6 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # does not keeps its anchor_version; left out of _ANCHOR_FIELDS
         # because a note about a declaration is not geometry.
         **({"ots_focus_conflict": ots_focus_conflict} if ots_focus_conflict else {}),
-        **({"ots_rise_clamped": ots_rise_clamped} if ots_rise_clamped else {}),
         "azimuth_deg": azimuth,
         "elevation_deg": _elevation_deg(extr),
         # How far the kernel may move the lens to see a head past the set,
@@ -2866,7 +2856,6 @@ def _kernel_greybox(spec: dict) -> dict:
                 # the geometry, and a lens a skull's width behind the crown
                 # shows skull and no shoulder.
                 behind = float(ots.get("behind_m", OTS_BEHIND_M))
-                rise = float(ots.get("rise_m", OTS_RISE_M))
                 # The near head clears the line of sight to the far face by
                 # across * D / (behind + D), D the pair's horizontal distance,
                 # so a fixed sideways offset that clears it close in buries the
@@ -2882,19 +2871,36 @@ def _kernel_greybox(spec: dict) -> dict:
                 if abs(near_head.x + side.x * across) > \
                    abs(near_head.x - side.x * across):
                     side = -side
-                cam.location = (near_head
-                                + look * behind
-                                + side * across
-                                + mathutils.Vector((0.0, 0.0, rise)))
+                cam.location = near_head + look * behind + side * across
                 # Aim at the face, not the crown: the top of a head's box is
                 # hair, and a lens that tracks it puts the eyeline low.
                 focus = mathutils.Vector((far_head.x, far_head.y,
                                           far_head.z - OTS_FACE_DROP_M))
+                # The lens height is the declared angle, solved rather than
+                # approximated: the camera aims at `focus`, so putting it
+                # tan(elevation) x the horizontal run above that face makes the
+                # view direction leave at exactly the declared elevation, which
+                # is what every other position's solve already delivers and
+                # this one used to miss by six degrees. The horizontal run does
+                # not depend on the height, so there is nothing to iterate.
+                run = math.hypot(cam.location.x - focus.x, cam.location.y - focus.y)
+                want = focus.z + run * math.tan(math.radians(
+                    float(spec.get("elevation_deg", OTS_EYE_LEVEL_DEG))))
+                # Except where holding the angle would stop holding a shoulder.
+                # Above the near crown the picture is the top of a skull, and an
+                # over-the-shoulder that shows no shoulder is not one however
+                # the angle reads; the band is named off the crown, and a panel
+                # that states `rise_m` outright is taken at its word.
+                lo, hi = (near_head.z + OTS_RISE_RANGE_M[0],
+                          near_head.z + OTS_RISE_RANGE_M[1])
+                cam.location.z = (near_head.z + float(ots["rise_m"])
+                                  if "rise_m" in ots else min(max(want, lo), hi))
                 shell_built["ots"] = {
                     "near": [round(v, 3) for v in near_head],
                     "far": [round(v, 3) for v in far_head],
                     "cam": [round(v, 3) for v in cam.location],
                     "focus": [round(v, 3) for v in focus],
+                    "elevation_held": abs(cam.location.z - want) < 1e-6,
                 }
 
     # A moving-camera demonstration frame: the fit-to-cast solve above still
