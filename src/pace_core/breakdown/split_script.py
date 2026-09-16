@@ -27,6 +27,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 import logging
 
+from pace_scene_skills import load as _skill
+
 logging.basicConfig(
     level=logging.INFO, # 设置级别为 INFO（低于INFO的DEBUG日志将被忽略）
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -699,31 +701,11 @@ def _join_scenes(a: dict, b: dict) -> dict:
     return out
 
 
-SYSTEM_PROMPT = """You are a script supervisor. Break the script into individual scenes.
-
-A scene = continuous action in ONE location at ONE time-of-day with ONE set of characters.
-A scene change occurs whenever location, time, OR all characters leave / enter.
-
-For each scene, return JSON with these fields:
-  scene_number       (int, 1-indexed)
-  heading            (str, "INT./EXT. LOCATION - TIME OF DAY", uppercase)
-  interior_exterior  ("INT" | "EXT")
-  location_raw       (str, location as it appears in the text)
-  time_of_day        (str, e.g. "night", "morning", "dusk", "afternoon")
-  characters_present (list of character names, lowercase)
-  summary            (str, one sentence)
-  story_beat         (str, 1-3 word arc tag like "opening" / "first connection" / "climax")
-  story_text         (str, the verbatim text passages that fall in this scene)
-  implied_shot_count (int, rough estimate of shots needed to cover the scene)
-  key_actions        (list of strings, the discrete physical actions that drive the scene)
-  era                (str|null, time period — e.g. "公元 413 年" / "5th c. CE" / "modern day" / "2099"; null if unknowable)
-  region             (str|null, place/setting — e.g. "长安·逍遥园译场" / "kucha, western regions" / "modern Shanghai"; null if unknowable)
-  culture            (str|null, short snake_case cultural/visual context tag — e.g. "later_qin_chang_an_buddhist" / "modern_urban_chinese" / "kuchean_buddhist"; null if unknowable)
-
-Infer era / region / culture from the scene's own content (period cues,
-place names, characters, props) — do NOT assume any specific film.
-
-Return ONE JSON object: {"scenes": [...]}. No prose, no markdown fences."""
+# The scene boundary rule, the field list and the key_actions definition come
+# from the skill. They were one long string constant here, so the criterion a
+# person reads in `split-into-scenes/SKILL.md` and the criterion this module
+# sends were two copies, and only one of them was ever going to be updated.
+SYSTEM_PROMPT = _skill("split-into-scenes").instructions
 
 
 def _build_user_prompt(script_text: str) -> str:

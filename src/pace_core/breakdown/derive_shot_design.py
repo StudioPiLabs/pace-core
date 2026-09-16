@@ -32,6 +32,8 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+
+from pace_scene_skills import load as _skill
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -49,39 +51,20 @@ GENERATOR_DEFAULT = "claude-opus-5-rb"
 #: inventing a label the compilers cannot read -- an unknown shot_size falls
 #: through every framing table and silently renders as whatever the sampler
 #: felt like.
-SHOT_SIZES = ("extreme_close_up", "close_up", "medium_close_up", "medium",
-              "medium_full", "full", "wide", "extreme_wide")
-ANGLES = ("eye_level", "low_angle", "high_angle", "overhead", "dutch")
+# The vocabularies and the instruction both come from the skill. They were a
+# module tuple and an f-string here, which meant the director's brief a person
+# reads in `derive-shot-design/SKILL.md` and the one this module sends were
+# two copies. Changing the brief in one of them left the other where it was.
+_SKILL = _skill("derive-shot-design")
+_VOCAB = _SKILL.reference("vocabulary.yaml")
+SHOT_SIZES = tuple(_VOCAB["shot_size"])
+ANGLES = tuple(_VOCAB["angle"])
 #: Rig behaviour lives in trajectory.gear; framing moves in movement_3d. The
 #: distinction this corpus already got wrong once, storing `handheld` where it
 #: is not a legal value and losing it to a `tripod` default.
-MOVEMENTS = ("static", "handheld", "steadicam", "crane_up", "crane_down",
-             "push_in", "pull_out", "tracking")
+MOVEMENTS = tuple(_VOCAB["camera_movement"])
 
-SYSTEM_PROMPT = f"""You are a director planning coverage for a short film.
-
-You are given the film's stated theme and world, and its scene list in order.
-Divide the scenes into 3-5 consecutive BEAT GROUPS. A group is a stretch of
-the film that should be shot the same way because it is doing the same
-dramatic work. Groups must not overlap, must cover every scene, and must keep
-the scenes in order.
-
-For each group return:
-  id                short snake_case label for what the group is doing
-  scenes            list of scene_ids, consecutive
-  intent            2-3 sentences: the dramatic function, and WHY that asks
-                    for this camera. Write about meaning, not about the
-                    picture -- this text is never used as an image prompt.
-  shot_size         one of: {', '.join(SHOT_SIZES)}
-  angle             one of: {', '.join(ANGLES)}
-  camera_movement   one of: {', '.join(MOVEMENTS)}
-  note              one line of practical staging
-
-Let the THEME drive the choices. If the theme is about a person being erased,
-the camera should say so — a group where the character still has agency and a
-group where the frame has taken it away should not be shot alike.
-
-Return ONE JSON object: {{"groups": [...]}}. No prose, no markdown fences."""
+SYSTEM_PROMPT = _SKILL.instructions
 
 
 def build_user_prompt(film, scenes: list[dict]) -> str:
