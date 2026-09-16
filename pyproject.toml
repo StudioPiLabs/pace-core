@@ -1,3 +1,8 @@
+[tool.hatch.metadata]
+# `pace-scene-skills` is pinned to a git tag, the same way this package's own
+# consumers pin it. Hatch refuses a direct reference unless told.
+allow-direct-references = true
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -14,6 +19,10 @@ authors = [{name = "Studio Π"}]
 dependencies = [
     "numpy>=1.26",
     "Pillow>=10.0",
+    # The breakdown's decomposition criteria. They are skills, not constants:
+    # the same SKILL.md an agent follows is the prompt these modules send, so
+    # a criterion cannot be changed in one place and stay put in the other.
+    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@v0.1.0",
 ]
 
 [project.optional-dependencies]

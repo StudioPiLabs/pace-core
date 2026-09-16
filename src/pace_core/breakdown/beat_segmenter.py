@@ -27,18 +27,19 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 
-# The design's weights, kept at their published values so the two can be
-# compared. `spatial_shift` is declared and never emitted; see the docstring.
-WEIGHTS = {
-    "state_change":     0.30,
-    "focus_shift":      0.20,   # design: causal_shift
-    "goal_shift":       0.15,   # adjudicated
-    "spatial_shift":    0.15,   # UNMEASURABLE from this IR
-    "reveal":           0.10,   # adjudicated
-    "importance_delta": 0.10,
-}
-MEASURABLE = ("state_change", "focus_shift", "importance_delta")
-TAU_HIGH, TAU_LOW = 0.55, 0.20
+from pace_scene_skills import load as _skill
+
+# The weights, the thresholds and the strong signals come from the skill, not
+# from here. They were module constants, which meant the numbers a person
+# reads in `segment-on-state-change/SKILL.md` and the numbers this file scores
+# with were two copies free to drift apart. `spatial_shift` keeps its weight
+# there even though nothing emits it, so the published design and this
+# implementation stay comparable; the score renormalises over what was
+# actually measured.
+_PARAMS = _skill("segment-on-state-change").reference("parameters.yaml")
+WEIGHTS: dict[str, float] = dict(_PARAMS["weights"])
+MEASURABLE = tuple(_PARAMS["measurable_from_ir"])
+TAU_HIGH, TAU_LOW = _PARAMS["thresholds"]["tau_high"], _PARAMS["thresholds"]["tau_low"]
 
 # The design states two things that do not agree, and the difference decides
 # most boundaries in a corpus like this one.
@@ -58,7 +59,7 @@ TAU_HIGH, TAU_LOW = 0.55, 0.20
 #
 # So the prose is implemented as well: a single strong signal splits on its own.
 # The sum still decides everything below these.
-STRONG_TRIGGERS = {"goal_shift": 0.7, "reveal": 0.7, "state_change": 1.0}
+STRONG_TRIGGERS: dict[str, float] = dict(_PARAMS["sufficient_alone"])
 
 
 def strong_trigger(features: dict[str, float]) -> str | None:
