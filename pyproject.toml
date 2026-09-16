@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pace-core"
-version = "0.3.8"
+version = "0.3.9"
 description = "PACE: typed storyboard specification, script breakdown, solved camera geometry and self-auditing checks."
 readme = "README.md"
 # The Blender kernels run in Blender 4.2's bundled Python 3.11.
