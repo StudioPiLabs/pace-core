@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pace-core"
-version = "0.4.0"
+version = "0.4.1"
 description = "PACE: typed storyboard specification, script breakdown, solved camera geometry and self-auditing checks."
 readme = "README.md"
 # The Blender kernels run in Blender 4.2's bundled Python 3.11.
@@ -22,7 +22,7 @@ dependencies = [
     # The breakdown's decomposition criteria. They are skills, not constants:
     # the same SKILL.md an agent follows is the prompt these modules send, so
     # a criterion cannot be changed in one place and stay put in the other.
-    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@v0.1.0",
+    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@v0.2.0",
 ]
 
 [project.optional-dependencies]
