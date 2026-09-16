@@ -958,7 +958,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # camera default never reached the staged camera and a panel could not
     # move it at all — which is the whole reason a moving shot's two panels
     # were staged from one pose.
-    from pace_core.pai_compat import resolve_shot
+    from pace_core.pai_compat import primary_focus_of as _primary_focus_of, resolve_shot
     shot = resolve_shot(scene, shot, panel)
 
     def _declared_x(s: dict) -> float:
@@ -1240,7 +1240,13 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # unresolved schema tension (a close_up sharing a frame with other
         # subjects) that a band change here would silently re-litigate.
         band = 0.15
-    focus = (setup.get("primary_focus") or {})
+    # The panel's own focus wins over the shot's, the way `primary_focus_of`
+    # has always resolved it for the regen packets and the restage pass. This
+    # read went to the shot alone, so `Panel.primary_focus` -- a declared
+    # field with a helper of its own -- reached those two consumers and never
+    # the geometry: a panel that named a different subject was staged, aimed
+    # and framed on the shot's, silently.
+    focus = _primary_focus_of(panel, shot)
     # Which shoulder, and whose face beyond it. The panel already names the
     # face -- primary_focus is the subject the aim solve prefers -- so the
     # shoulder is the nearest other declared subject, taken in declared screen
