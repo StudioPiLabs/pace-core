@@ -194,7 +194,7 @@ class CameraTrajectory:
 @dataclass
 class CameraCreativeIntent:
     """Compositional choices that shape narrative/emotional tone."""
-    shot_size:    Optional[ShotSize] = None              # 景别 — how much of subject/environment is in frame
+    shot_size:    Optional[ShotSize] = None              # jingbie (shot size) — how much of subject/environment is in frame
     framing:      Optional[Framing]  = None              # composition pattern (single/two_shot/empty/…)
     # PAI extension — aspect ratio is a real per-shot choice (2.35:1
     # anamorphic vs 16:9 for inserts) even though SCINE doesn't enumerate it.
@@ -360,8 +360,8 @@ class Backdrop:
     # era-appropriate costume / architecture / props instead of defaulting
     # to "generic Asian historical". Open-set strings: pick the
     # description that most faithfully roots the shot in its world.
-    era:         Optional[str] = None                # "公元 350 年" / "5th c. CE" / "modern_day" / "2099" — open set, human-readable
-    region:      Optional[str] = None                # "西域龟兹" / "kucha_western_regions" / "modern_shanghai" — sympathetic to location_ref
+    era:         Optional[str] = None                # "350 CE" / "5th c. CE" / "modern_day" / "2099" — open set, human-readable
+    region:      Optional[str] = None                # "kucha_western_regions" / "modern_shanghai" — sympathetic to location_ref
     culture:     Optional[str] = None                # "kuchean_buddhist" / "tang_dynasty" / "byzantine" — a coherent cultural-style frame to pull on
     # pace-0.2 setup.backdrop.{weather,season} — open-set strings (no enum upstream)
     weather:     Optional[str] = None                # open: "clear", "rain", "snow", "overcast", "sandstorm", …
@@ -374,6 +374,11 @@ class Environment:
     Organization sub-fields are all open sets (paper Table 5)."""
     negative_space: bool                 = False     # True = composition exploits emptiness (open sky / blank wall)
     density:        Optional[DensityLevel] = None    # clean vs cluttered (renamed from "positive" for clarity)
+    # Not optional in effect: every image backend compiles the mood into the
+    # prompt, so a shot without one does not render neutrally, it renders
+    # however the sampler chooses. A screenplay never states it, so it is
+    # inferred from what happens in the scene rather than quoted from it, as
+    # era, region and culture already are.
     mood:           Optional[str]        = None      # open: "serene", "ominous", "intimate", "frantic", …
     scale:          Optional[str]        = None      # open: "intimate", "monumental", "claustrophobic", …
     style:          Optional[str]        = None      # open: rendering style anchor — "sketch_bw", "inkwash_bw", "chiaroscuro", "photoreal", …
@@ -469,9 +474,9 @@ ScreenDepth = Literal["foreground", "midground", "background"]
 @dataclass
 class Gaze:
     """PAI extension — where this subject is looking. Captures eyeline so
-    the storyboard records "Nina looking at the tablet" or
-    "Omar staring off-frame right" as structured data instead of folding
-    it into the free-form `pose` string. Used by compile_flux2 to render
+    the storyboard records "Emily looking at the console" or
+    "Ryan staring off-frame right" as structured data instead of folding
+    it into the free-form `pose` string. Used by the prompt compiler to render
     "looking at X" / "gaze directed off-screen left", and by future
     eyeline-match continuity checks across shots.
 
@@ -479,7 +484,7 @@ class Gaze:
     (looking off-frame in a direction) should be set — not both. If both
     are None the subject's gaze is unspecified."""
     target_type: Optional[GazeTargetType] = None     # character / object / feature / camera — what kind of target
-    target_ref:  Optional[str]            = None     # the target's id: character_id, prop name, or feature like "tablet_screen"
+    target_ref:  Optional[str]            = None     # the target's id: character_id, prop name, or feature like "console_edge"
     direction:   Optional[GazeDirection]  = None     # off-frame direction or into-camera — use INSTEAD of target_*
     note:        Optional[str]            = None     # free-form intent: "contemplative", "challenge", "longing", …
 
@@ -522,10 +527,10 @@ class Subject:
     silhouette:  Optional[str] = None                # contour adjective: "imposing", "frail", "rigid"
     proportions: Optional[str] = None                # body type: "wiry", "broad-shouldered", "diminutive"
     # PAI extension — link back to the canonical character registry so
-    # Subject appearance can default-inherit from kb/on_scene/characters.json.
+    # Subject appearance can default-inherit from kb/characters.json.
     # Optional; setting just the open-set fields above also works.
-    character_id: Optional[str] = None               # id matching kb/on_scene/characters.json, e.g. "nina"
-    age_state:    Optional[str] = None               # which life-stage variant of that character, e.g. "adult_50", "youth_20"
+    character_id: Optional[str] = None               # id matching the project's character registry, e.g. "emily"
+    age_state:    Optional[str] = None               # which life-stage variant of that character, e.g. "adult_50", "adult_18"
     # PAI extension — eyeline + frame placement. Both Optional so existing
     # pai-1.0 files (which lack these) parse unchanged.
     gaze:            Optional[Gaze]           = None    # where this subject is looking
@@ -570,7 +575,7 @@ class TextElement:
 @dataclass
 class PrimaryFocus:
     """What dominates the frame. Kept verbatim from v0.3 — sibling of
-    Subjects, used by compile_flux2 to lock framing on a single subject."""
+    Subjects, used by the prompt compiler to lock framing on a single subject."""
     type:           Literal["character", "object", "environment", "feature"] = "character"
     # ↑ what kind of thing is the focus: a character, a prop, the location, or a body feature (like an eye)
     ref:            str = ""                          # id of the focus: character_id, prop name, location id, or feature name
@@ -594,7 +599,7 @@ class Setup:
     # On-screen text — expanded from PAI 1.0's single `Optional[str]` into a
     # list of structured elements so each text item (subtitle, sign,
     # handwritten letter, billboard) gets its own target / language /
-    # typography. compile_flux2 will render each entry as its own clause.
+    # typography. the prompt compiler renders each entry as its own clause.
     text_generation: list["TextElement"] = field(default_factory=list)
 
 
@@ -720,7 +725,7 @@ class Action:
     uncertainty:  Optional[ActionUncertainty]    = None    # probabilistic / deterministic / mixed
     # PAI extension — kept from v0.3 for back-compat. Lets the human-
     # authored beat travel alongside the SCINE classification.
-    description_zh:  str = ""                              # human-authored Chinese description, e.g. "嘴唇翕动"
+    description_zh:  str = ""                              # human-authored Chinese description, e.g. "zuichun xidong" (lips trembling)
     description_en:  str = ""                              # human-authored English description, e.g. "lips quivering"
     beat_features:   list[str] = field(default_factory=list)  # visible texture cues: ["cracked_dry_chapped_lips", "thin_elderly_lips"]
     intensity:       Optional[Literal["subtle", "medium", "dramatic"]] = None  # how strong the beat is on screen
@@ -778,7 +783,7 @@ class Events:
 @dataclass
 class PromptOverride:
     """Per-panel hand-written prompt override. Same shape as v0.3.
-    When set, compile_flux2 returns this verbatim and skips the structured
+    When set, the prompt compiler returns this verbatim and skips the structured
     composition — used to inject ad-hoc fixes without re-deriving fields."""
     positive:     str           = ""             # full positive prompt to send to the backend (non-empty wins)
     negative:     str           = ""             # full negative prompt
@@ -790,7 +795,7 @@ class PromptOverride:
 @dataclass
 class CompileHintsFlux:
     """Flux-specific compile hints (per-panel sidecar)."""
-    prompt_override: Optional[PromptOverride] = None    # hand-written prompt that bypasses compile_flux2's structured assembly
+    prompt_override: Optional[PromptOverride] = None    # hand-written prompt that bypasses the prompt compiler's structured assembly
 
 
 @dataclass
@@ -852,7 +857,7 @@ class NarrativeMeta:
     leaves narrative summary outside the 4 pillars."""
     summary:             str            = ""                  # 1-2 sentence prose summary of what happens in this scene
     characters_present:  list[str]      = field(default_factory=list)         # character_ids appearing anywhere in the scene
-    character_age_states: dict[str, str] = field(default_factory=dict)        # character_id → age_state used in THIS scene (e.g. "nina": "adult_50")
+    character_age_states: dict[str, str] = field(default_factory=dict)        # character_id → age_state used in THIS scene (e.g. "emily": "adult_50")
     key_actions:         list[str]      = field(default_factory=list)         # short prose list of main physical beats
     vo_lines:            list[dict[str, Any]] = field(default_factory=list)   # voice-over lines (off-screen narration) — [{speaker, text, …}]
     on_screen_dialogue:  list[dict[str, Any]] = field(default_factory=list)   # spoken on-screen dialogue — [{speaker, text, …}]
@@ -877,7 +882,7 @@ class NarrativeMeta:
 @dataclass
 class WorldEntity:
     """A character or prop placed in stage-frame world coordinates.
-    `ref` is a character ref ("nina@adult_50") or prop_id ("tablet")."""
+    `ref` is a character ref ("emily@adult_50") or prop_id ("car_console")."""
     ref:         str                       # character id@age OR prop_id
     world_xy:    list[float] = field(default_factory=list)  # [x, y] in meters; stage top-down
     z:           float = 0.0               # height: 0=on ground, -0.5=sitting, +1=elevated
@@ -897,7 +902,7 @@ class CameraSetup:
 
 @dataclass
 class PhysicalLayout:
-    """Scene-wide world coordinates. compile_flux2 + a future Blender
+    """Scene-wide world coordinates. The prompt compiler and a future Blender
     bridge can derive screen positions, depth ordering, and even greybox
     geometry from this single source of truth."""
     frame_of_reference: Literal["stage_top_view", "world_xy"] = "stage_top_view"
@@ -1092,6 +1097,18 @@ class SceneDoc:
 #
 # Dotted paths use `[]` to mark "every element of this list" — e.g.
 # `setup.subjects[].character_id` is required for every subject entry.
+
+# Fields a breakdown must supply by inference rather than by quotation. A
+# screenplay states none of them in words that can be located in it, and each
+# is compiled into every prompt, so returning null does not leave the field
+# blank downstream, it leaves the sampler to choose. Keyed "Schema.field", as
+# usd_map is. The paper's field specification prints the tier from here.
+INFERRED_FIELDS: frozenset[str] = frozenset({
+    "Environment.mood",
+    "Backdrop.era",
+    "Backdrop.region",
+    "Backdrop.culture",
+})
 
 FIELD_TIER: dict[str, Literal["required", "recommended", "advanced", "requiredIfPresent"]] = {
     # ── REQUIRED ─────────────────────────────────────────────────────────
