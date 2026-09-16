@@ -1318,11 +1318,15 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         if Path(sj["mesh"]).is_file():
             sj["seat_contact"] = _seat_contact_z(sj["mesh"])
     if dress:
-        from pace_core.pai_compat import costume_text
+        from pace_core.pai_compat import costume_text, wardrobe_of
         _kb = json.loads(Path(p.chars_file).read_text()) if Path(p.chars_file).is_file() else {}
         _kb = _kb.get("characters", _kb) if isinstance(_kb, dict) else {}
+        _wd = (json.loads(Path(p.props_file).read_text())
+               if Path(p.props_file).is_file() else {})
         for sj, s in zip(subjects, subs):
-            tones = garment_tones(costume_text(_kb.get(sj["character_id"]), s.get("age_state")))
+            tones = garment_tones(costume_text(
+                _kb.get(sj["character_id"]), s.get("age_state"),
+                wardrobe=wardrobe_of(_wd, s)))
             if tones:
                 sj["costume"] = tones
 

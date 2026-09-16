@@ -931,13 +931,42 @@ def in_frame_extent_phrase(p: dict) -> str:
     return f" (only {extent} visible)" if extent else " (partly cut off by the frame edge)"
 
 
-def costume_text(entry: dict | None, age_state: str | None = None) -> str | None:
-    """What a character registry entry says they wear at this age state.
+def wardrobe_of(props_kb: dict | None, subject: dict | None) -> dict | None:
+    """The library entry a shot named through `setup.subjects[].costume_id`.
+
+    Garments are props: they are sourced, they have states, and they have to
+    survive a cut. Before they had ids, a costume was a sentence on a
+    character record, and two panels could not be compared for wearing the
+    same thing.
+    """
+    cid = (subject or {}).get("costume_id")
+    if not isinstance(cid, str) or not cid.strip():
+        return None
+    props = props_kb or {}
+    if isinstance(props, dict):
+        props = props.get("props", props) or {}
+    if isinstance(props, list):
+        props = {p.get("id") or p.get("prop_id"): p
+                 for p in props if isinstance(p, dict)}
+    e = props.get(cid.strip())
+    return e if isinstance(e, dict) else None
+
+
+def costume_text(entry: dict | None, age_state: str | None = None,
+                 *, wardrobe: dict | None = None) -> str | None:
+    """What a character wears here: the shot's wardrobe entry, or the default.
 
     One reading for every consumer: the prompt compiler writes it into the
     character's description, and the greybox tones the proxy's garments from
     it, so the words and the control image cannot name two different outfits.
+
+    A `wardrobe` entry wins over the registry, because a shot that names a
+    `costume_id` has decided; the character's `costumes` map is only what they
+    wear when no shot says otherwise.
     """
+    anchor = (wardrobe or {}).get("anchor")
+    if isinstance(anchor, str) and anchor.strip():
+        return anchor.strip()
     costumes = (entry or {}).get("costumes")
     outfit = None
     if isinstance(costumes, dict):

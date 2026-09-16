@@ -49,3 +49,38 @@ def test_the_costume_follows_the_age_state_then_the_default():
     assert costume_text({"costumes": " a white shirt. "}, None) == "a white shirt."
     assert costume_text({}, "adult_50") is None
     assert costume_text(None) is None
+
+
+# ── the garment is a library entry, and the shot names it ────────────────
+def test_a_named_wardrobe_entry_beats_the_character_default():
+    """`costume_id` is what a shot says about this garment; the registry is
+    only what the character wears when no shot says anything. A field that
+    nothing preferred would be decoration."""
+    from pace_core.pai_compat import wardrobe_of
+
+    props = {"props": {"abigail_costume": {
+        "id": "abigail_costume", "category": "wearable",
+        "anchor": "a fitted slate-blue technical jacket"}}}
+    entry = {"costumes": {"default": "a grey coat"}}
+    wd = wardrobe_of(props, {"character_id": "abigail",
+                             "costume_id": "abigail_costume"})
+    assert costume_text(entry, None, wardrobe=wd) == \
+        "a fitted slate-blue technical jacket"
+    assert costume_text(entry, None, wardrobe=None) == "a grey coat"
+
+
+def test_an_unresolvable_costume_id_falls_back_rather_than_blanks():
+    """A typo in the id must not undress the character in the control image."""
+    from pace_core.pai_compat import wardrobe_of
+
+    entry = {"costumes": {"default": "a grey coat"}}
+    for subject in ({"costume_id": "no_such_costume"}, {"costume_id": "  "}, {}):
+        wd = wardrobe_of({"props": {}}, subject)
+        assert costume_text(entry, None, wardrobe=wd) == "a grey coat"
+
+
+def test_a_props_library_given_as_a_list_resolves_the_same():
+    from pace_core.pai_compat import wardrobe_of
+
+    entry = {"id": "lucas_costume", "anchor": "a soft olive sweatshirt"}
+    assert wardrobe_of([entry], {"costume_id": "lucas_costume"}) is entry

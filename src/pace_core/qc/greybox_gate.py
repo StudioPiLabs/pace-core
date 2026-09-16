@@ -533,6 +533,42 @@ def eye_line_clause(out: Path, need: set[str],
                                         f"away from {pid}")
 
 
+def cut_continuity_clause(declared: dict | None, previous: dict | None) -> Clause:
+    """Does what this panel declares still agree with the panel before it?
+
+    A cut inside one scene is continuous time: the same garment, and a prop in
+    the same state unless something in between changed it. Both are declared
+    fields, so disagreement is a fact rather than a judgement -- but only where
+    a value exists. A costume written as free text on a character record had no
+    identifier for two panels to disagree about, and a prop whose `state` is
+    null cannot contradict anything, which is why the screens went dark across
+    one cut of this corpus with nothing to report it.
+
+    `declared` and `previous` are `{"costumes": {character_id: costume_id},
+    "prop_states": {prop_id: state}}`. Undeclared on either side is not a
+    failure; it is the absence this clause exists to make visible, counted in
+    the detail.
+    """
+    name = "declared_continuity_holds_across_the_cut"
+    if not previous or not declared:
+        return Clause(name, None, detail="no previous panel in this scene to cut from")
+    bad, unsaid = [], 0
+    for who, cid in sorted((declared.get("costumes") or {}).items()):
+        was = (previous.get("costumes") or {}).get(who)
+        if cid is None or was is None:
+            unsaid += 1
+        elif cid != was:
+            bad.append(f"{who} wears {cid} where the previous panel wore {was}")
+    for pid, st in sorted((declared.get("prop_states") or {}).items()):
+        was = (previous.get("prop_states") or {}).get(pid)
+        if st is None or was is None:
+            unsaid += 1
+        elif st != was:
+            bad.append(f"{pid} is {st} where the previous panel was {was}")
+    tail = f"; {unsaid} declared on one side only" if unsaid else ""
+    return Clause(name, not bad, value=float(len(bad)), threshold=0.0,
+                  detail=("; ".join(bad) + tail) if bad else tail.lstrip("; "))
+
 def declared_in_frame_clause(out: Path, declared: dict | None) -> Clause:
     """Does what the panel declares in frame (入画) match what was staged?
 
@@ -582,7 +618,9 @@ def evaluate(spec: dict, out: str | Path, *,
              required: set[str] | None = None,
              min_area: float = MIN_SUBJECT_AREA,
              reverse_shots: list[dict] | None = None,
-             declared_in_frame: dict | None = None) -> GateReport:
+             declared_in_frame: dict | None = None,
+             declared_continuity: dict | None = None,
+             previous_continuity: dict | None = None) -> GateReport:
     """Run the gate on one built greybox.
 
     `spec` is what `panel_greybox.build_spec` produced; `out` is the beauty
@@ -731,6 +769,9 @@ def evaluate(spec: dict, out: str | Path, *,
     # 13. what the panel declares in frame, against what was staged
     clauses.append(declared_in_frame_clause(out, declared_in_frame))
 
+    # 14. what it declares against what the panel before it declared
+    clauses.append(cut_continuity_clause(declared_continuity, previous_continuity))
+
     return GateReport(panel_id=spec.get("panel_id") or out.stem,
                       anchor_version=anchor_version(spec), clauses=clauses)
 
@@ -772,9 +813,11 @@ def gate_panel(project: str, scene_id: str, panel_id: str,
 
     spec = build_spec(project, scene_id, panel_id, out)
     spec.setdefault("panel_id", panel_id)
+    here, before = continuity_across_the_cut(project, scene_id, panel_id)
     return evaluate(spec, out, reverse_shots=reverse_shot_partners(
         project, scene_id, panel_id, spec),
-        declared_in_frame=declared_in_frame_of(project, scene_id, panel_id))
+        declared_in_frame=declared_in_frame_of(project, scene_id, panel_id),
+        declared_continuity=here, previous_continuity=before)
 
 
 def reverse_shot_partners(project: str, scene_id: str, panel_id: str,
@@ -842,6 +885,53 @@ def declared_in_frame_of(project: str, scene_id: str, panel_id: str) -> dict:
                         out[(kind, e[idk])] = v
             return out
     return {}
+
+
+def _continuity_of(setup: dict) -> dict:
+    """What a staged shot declares that a cut can contradict.
+
+    Costume is read from `costume_id`, not from a character's prose: a
+    sentence describing a jacket cannot be compared with another sentence, so
+    before the field existed there was nothing here to check.
+    """
+    costumes, states = {}, {}
+    for s in setup.get("subjects") or []:
+        if s.get("character_id"):
+            costumes[s["character_id"]] = s.get("costume_id")
+    for pr in setup.get("props") or []:
+        if pr.get("prop_id"):
+            states[pr["prop_id"]] = pr.get("state")
+    return {"costumes": costumes, "prop_states": states}
+
+
+def continuity_across_the_cut(project: str, scene_id: str,
+                              panel_id: str) -> tuple[dict, dict | None]:
+    """This panel's declarations and the ones it cuts from.
+
+    Film order inside a scene is shots in order, panels in order within each
+    shot, so the panel before this one in that flattened list is the frame an
+    audience sees immediately before it. A scene's first panel cuts from
+    another scene, where a costume change is legitimate, so it has no partner.
+    """
+    from pace_core.pai_compat import resolve_shot
+    from pace_core.paths import paths_for
+
+    try:
+        scene = json.loads((Path(paths_for(project).scenes_dir)
+                            / f"{scene_id}.json").read_text())
+    except (OSError, ValueError):
+        return {}, None
+    order = [(sh, pl) for sh in scene.get("shots") or []
+             for pl in sh.get("panels") or []]
+    i = next((n for n, (_sh, pl) in enumerate(order)
+              if pl.get("id") == panel_id), None)
+    if i is None:
+        return {}, None
+    here = _continuity_of(resolve_shot(scene, *order[i]).get("setup") or {})
+    if i == 0:
+        return here, None
+    return here, _continuity_of(
+        resolve_shot(scene, *order[i - 1]).get("setup") or {})
 
 
 def gate_project(project: str, scene_id: str | None = None) -> list[GateReport]:
