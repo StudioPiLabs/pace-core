@@ -1,8 +1,8 @@
 """A prop declared away from the cast is written with its place.
 
-On one scene's second beat the only prop text was "a mechanical arm rising out of the rubble", declared in the background and staged nowhere,
-and the sampler attached the arms to the one man in frame: his hands came back
-mechanical. Written with its declared place, the prop has somewhere to be.
+When the only prop text is "a mechanical arm rising out of the rubble",
+declared in the background and staged nowhere, the sampler can attach the arm
+to the one man in frame: his hands come back mechanical. Written with its declared place, the prop has somewhere to be.
 """
 from __future__ import annotations
 
@@ -79,7 +79,7 @@ def test_a_prop_with_no_declared_place_is_left_as_written():
 
 def test_the_place_follows_the_prop_it_belongs_to():
     phrase = prop_phrase(_prop("background_midground")) + prop_placement(_prop("background_midground"))
-    assert phrase.endswith("robot arms in the background")
+    assert phrase.endswith("crane arm in the background")
 
 
 # ── a prop staged out of the camera's view ──
