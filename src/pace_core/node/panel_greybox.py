@@ -2878,8 +2878,21 @@ def _kernel_greybox(spec: dict) -> dict:
                 across = float(ots.get("across_m", max(
                     OTS_ACROSS_M, OTS_CLEARANCE_M * (behind + d) / d)))
                 side = mathutils.Vector((-look.y, look.x, 0.0))
-                if abs(near_head.x + side.x * across) > \
-                   abs(near_head.x - side.x * across):
+                # Which shoulder decides which side of frame the near subject
+                # lands on, so it is the declared screen order's choice when
+                # there is one: taking the cabin-centre shoulder regardless
+                # crossed the line on scene_11's cut into its OTS.
+                near_x = next((s.get("declared_x") for s in spec.get("subjects") or []
+                               if s.get("character_id") == ots.get("near_subject")), None)
+                if near_x is not None and abs(float(near_x) - 0.5) > 1e-6:
+                    view = far_head - (near_head + look * behind + side * across)
+                    right = mathutils.Vector((view.y, -view.x, 0.0))
+                    lands_right = (near_head - (near_head + look * behind
+                                                + side * across)).dot(right) > 0
+                    if lands_right != (float(near_x) > 0.5):
+                        side = -side
+                elif abs(near_head.x + side.x * across) > \
+                        abs(near_head.x - side.x * across):
                     side = -side
                 cam.location = near_head + look * behind + side * across
                 # Aim at the face, not the crown: the top of a head's box is
