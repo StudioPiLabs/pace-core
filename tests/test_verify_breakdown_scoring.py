@@ -28,7 +28,7 @@ def _scenes():
 def test_a_missing_event_cannot_also_have_its_roles_wrong():
     """The estimator returns role_ok=false on MISSING too, which is vacuous:
     nothing matched, so nothing swapped actor for patient. Counting those
-    turned 2 real role errors into 30."""
+    inflates the role-error count."""
     al = [{"script_scene": 6, "matches": [
         {"script_event": "e11", "match": "MISSING", "role_ok": False}]}]
     assert score(al, _scenes())["counts"]["wrong_role"] == 0

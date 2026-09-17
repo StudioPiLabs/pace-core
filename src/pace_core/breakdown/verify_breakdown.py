@@ -1,15 +1,14 @@
 """The estimator: judge a breakdown against Script IR, and price the damage.
 
-Deliberately a DIFFERENT vendor from the generator that produced the Script IR.
-Two instances of one model share a prior, so they agree on whatever is
-plausible -- and a `screen_position.x` of 0.38 is maximally
-plausible while being a lookup-table constant chosen by list index. A critic
-that shares the writer's taste rubber-stamps that. Splitting the vendors does
-not make the estimator right, but it stops the two failing the same way.
+The estimator is a different vendor from the model that produced the Script
+IR. Two instances of one model share a prior and agree on whatever is
+plausible, including a plausible value that was never read off the page;
+separate vendors do not make the estimator right, but they stop the two
+failing the same way.
 
-The division of labour follows the design doc: the model does semantic event
-matching, which needs judgement; the program computes coverage, counts and
-severity, which do not. The model never returns a score.
+The model does the semantic event matching, which needs judgement. This module
+computes coverage, counts and severity, which do not. The model never returns
+a score.
 
 Usage:
     uv run python -m pace_core.breakdown.verify_breakdown \
@@ -23,10 +22,15 @@ import pathlib
 import sys
 import time
 
-# GPT-5.6 Terra: newer than 5.5 and cheaper in both directions ($2/$12 per M
-# against $5/$30), so the check that runs on every scene is not the expensive
-# half of the pair. Deliberately a different vendor from the generator.
+# A different vendor from the Script IR generator; see the module docstring.
 ESTIMATOR_DEFAULT = "gpt-5.6-terra-rb"
+
+# Coverage credit for an event the breakdown states only in general terms.
+# A starting value, not a measured one; the paper reports it as such.
+OVER_GENERALIZED_CREDIT = 0.6
+
+# Output tokens budgeted per scene for the dry-run cost estimate.
+DRY_RUN_TOKENS_OUT_PER_SCENE = 700
 
 SYSTEM = """You align a film BREAKDOWN against GROUND-TRUTH events extracted
 from the screenplay. You are an auditor, not an author.
@@ -59,7 +63,7 @@ RULES
 1. MISSING means no breakdown action states this event. Being implied by a
    neighbouring action is not coverage.
 2. OVER_GENERALIZED means an action covers it but loses what mattered --
-   "attack the wall" for "raise ladders against the wall".
+   "they fight" for "she knocks the knife out of his hand".
 3. role_ok is false when the actor and patient are swapped or wrong. Text
    similarity is irrelevant here; who did what to whom is the fact.
 4. Separate two very different things, and do not merge them.
@@ -119,9 +123,8 @@ def score(alignments: list[dict], script_scenes: list[dict]) -> dict:
     total = matched = semantic = overgen = missing = role_bad = 0
     unsupported = over_spec = 0
     missing_events: list[dict] = []
-    # Keyed by (scene, local_id): scenes restart their ids at e1, so keying on
-    # local_id alone made every scene's e11 the same event and reported one
-    # dropped climax four times over.
+    # Keyed by (scene, local_id): every scene numbers its events from e1, so
+    # local_id alone does not identify an event across scenes.
     by_id = {(s["index"], e.get("local_id")): (s, e)
              for s in script_scenes for e in (s.get("events") or [])}
     for al in alignments:
@@ -144,15 +147,13 @@ def score(alignments: list[dict], script_scenes: list[dict]) -> dict:
                         "scene": s["index"], "predicate": e.get("predicate"),
                         "importance": e.get("importance"),
                         "words": (e.get("evidence") or {}).get("source_text")})
-            # Only a MATCHED event can have its roles wrong. The estimator
-            # returns role_ok=false on MISSING events too, which is vacuous --
-            # nothing matched, so nothing swapped actor for patient -- and
-            # counting those turned 2 real role errors into 30.
+            # Only a matched event can have its roles wrong. role_ok=false on
+            # a MISSING event is vacuous, since nothing was matched to swap.
             if m.get("role_ok") is False and k != "MISSING":
                 role_bad += 1
         unsupported += len(al.get("invented_events") or [])
         over_spec += len(al.get("over_specified") or [])
-    covered = matched + 0.6 * overgen
+    covered = matched + OVER_GENERALIZED_CREDIT * overgen
     return {
         "counts": {"script_events": total, "exact_or_semantic": matched,
                    "of_which_semantic": semantic, "over_generalized": overgen,
@@ -180,7 +181,6 @@ def main(argv=None) -> int:
     g.add_argument("--execute", action="store_true")
     a = ap.parse_args(argv)
 
-    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
     from pace_core.breakdown.extract_script_ir import load_model, estimate_tokens
 
     ir = json.loads(pathlib.Path(a.script_ir).read_text())
@@ -196,7 +196,7 @@ def main(argv=None) -> int:
 
     if a.dry_run:
         tin = sum(estimate_tokens(build_messages(s, acts)) for s, acts, _ in jobs)
-        tout = 700 * len(jobs)
+        tout = DRY_RUN_TOKENS_OUT_PER_SCENE * len(jobs)
         cost = tin / 1000 * cfg["cost_per_1k_in"] + tout / 1000 * cfg["cost_per_1k_out"]
         print(f"estimator : {a.model} -> {cfg['model_name']}")
         for s, acts, ids in jobs:
@@ -209,11 +209,9 @@ def main(argv=None) -> int:
     from pace_core.llm_client import call_model, strip_fences
     aligns, spent, failed = [], 0.0, []
     for s, acts, ids in jobs:
-        # One scene's gateway hiccup used to abandon the whole run, throwing
-        # away every scene already paid for -- a 502 on scene 6 of 8 cost the
-        # five before it and bought nothing. Retry, then skip the scene and
-        # keep what the run has, recording the gap rather than quietly
-        # scoring a partial corpus as if it were whole.
+        # A failed call is retried, then the scene is skipped and recorded, so
+        # one transient error neither discards the scenes already paid for
+        # nor lets a partial run pass for a whole one.
         raw = None
         for attempt in range(3):
             try:
@@ -251,8 +249,8 @@ def main(argv=None) -> int:
     print("\n", json.dumps(res["counts"], indent=1))
     print("coverage:", res["coverage"], f"  (${spent:.4f})")
     if failed:
-        # Coverage is a ratio over the events of the scenes that ran, so a
-        # skipped scene changes both halves and the number stays plausible.
+        # Coverage is a ratio over the scenes that ran, so a skipped scene
+        # leaves a plausible number that is not the whole corpus's.
         print(f"INCOMPLETE: {len(failed)} scene(s) never scored: {failed}. "
               f"Coverage above is over the {len(aligns)} that did.")
     if a.out:
