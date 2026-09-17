@@ -9,20 +9,20 @@ latents. Shading is appearance, so it survives the denoise alongside the
 structure and the delivered panel comes back photoreal no matter what the
 style field asked for.
 
-Across the 33 staged panels of the evaluation corpus, a greybox's own flat-region
+Across a production's staged panels, a greybox's own flat-region
 share — the fraction of pixels equal to both their right and lower neighbour,
 which separates flat storyboard fill from photographic falloff — correlates
 with the delivered panel's at r = 0.843. The control image, not the style
 field, is deciding the house style.
 
-Measured on one corpus shot, one seed, one prompt, the same ``line_art_clean``
-clause every panel in the corpus compiles. *pos* is the mean error in each
+Measured on one shot, one seed, one prompt, with a ``line_art_clean`` style
+clause. *pos* is the mean error in each
 subject's horizontal position against the mattes the kernel rendered, as a
 fraction of frame width; *top* is where each subject's head lands as a
 fraction of frame height, against the greybox's own 0.140:
 
 =============  =======  =====  =====================  =====  ================
-init           denoise  flat%  top (omar/nina/theo)  pos    delivered
+init           denoise  flat%  top (a / b / c)         pos    delivered
 =============  =======  =====  =====================  =====  ================
 clay (before)  0.65      8.7   0.189 / 0.371 / 0.189  0.015  photorealism
 clay           0.85      7.2   --                     --     unchanged

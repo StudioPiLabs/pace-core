@@ -1,8 +1,7 @@
 """A cut inside a scene must not change the clothes or the props.
 
-scene_11 of the paper's corpus cut between two angles on the same two people
-and the garments changed, the centre screens went from lit to dark, and the
-tray table left the cabin. Nothing reported any of it, because a costume was
+A cut between two angles on the same two people can change their garments,
+turn screens from lit to dark, and lose a table from the set. Nothing reported any of it, because a costume was
 prose on a character record and every prop's `state` was null: there was no
 pair of values for a check to find unequal.
 
@@ -27,21 +26,21 @@ def _decl(costumes=None, states=None):
 
 
 def test_the_same_garment_across_the_cut_passes():
-    d = _decl({"abigail": "abigail_costume"})
+    d = _decl({"alice": "alice_costume"})
     assert cut_continuity_clause(d, d).ok is True
 
 
 def test_a_changed_garment_fails_and_names_both_sides():
-    c = cut_continuity_clause(_decl({"abigail": "lucas_costume"}),
-                              _decl({"abigail": "abigail_costume"}))
+    c = cut_continuity_clause(_decl({"alice": "bob_costume"}),
+                              _decl({"alice": "alice_costume"}))
     assert c.ok is False
-    assert "abigail_costume" in c.detail and "lucas_costume" in c.detail
+    assert "alice_costume" in c.detail and "bob_costume" in c.detail
 
 
 def test_a_prop_that_changes_state_across_the_cut_fails():
-    c = cut_continuity_clause(_decl(states={"cabin_panels": "inactive"}),
-                              _decl(states={"cabin_panels": "active"}))
-    assert c.ok is False and "cabin_panels" in c.detail
+    c = cut_continuity_clause(_decl(states={"wall_panels": "inactive"}),
+                              _decl(states={"wall_panels": "active"}))
+    assert c.ok is False and "wall_panels" in c.detail
 
 
 def test_the_first_panel_of_a_scene_has_nothing_to_cut_from():
@@ -54,9 +53,9 @@ def test_an_undeclared_value_is_counted_not_passed_over():
     """This is the state the corpus was in: nothing to compare, and silence
     read as agreement. The clause still passes, and says how much it could
     not check -- null on one side and null on both alike."""
-    c = cut_continuity_clause(_decl({"abigail": None}, {"tray_table": None, "seat": None}),
-                              _decl({"abigail": "abigail_costume"},
-                                    {"tray_table": "deployed", "seat": None}))
+    c = cut_continuity_clause(_decl({"alice": None}, {"fold_table": None, "seat": None}),
+                              _decl({"alice": "alice_costume"},
+                                    {"fold_table": "deployed", "seat": None}))
     assert c.ok is True
     assert "3 undeclared on at least one side" in c.detail
 
@@ -64,17 +63,17 @@ def test_an_undeclared_value_is_counted_not_passed_over():
 def test_a_prop_that_only_appears_after_the_cut_is_not_a_break():
     """Props and people enter and leave frame; only what is staged on both
     sides can disagree with itself, and an arrival is not an absence."""
-    c = cut_continuity_clause(_decl({"ryan": None}, {"game_device": "active"}), _decl())
+    c = cut_continuity_clause(_decl({"dave": None}, {"game_device": "active"}), _decl())
     assert c.ok is True
     assert c.detail == ""
 
 
 # ── reading the declarations off a staged shot ───────────────────────────
 def test_a_staged_shot_yields_its_costumes_and_prop_states():
-    setup = {"subjects": [{"character_id": "emily", "costume_id": "emily_costume"},
-                          {"character_id": "ryan"}],
-             "props": [{"prop_id": "cabin_panels", "state": "active"},
+    setup = {"subjects": [{"character_id": "carol", "costume_id": "carol_costume"},
+                          {"character_id": "dave"}],
+             "props": [{"prop_id": "wall_panels", "state": "active"},
                        {"state": "deployed"}]}
     got = _continuity_of(setup)
-    assert got["costumes"] == {"emily": "emily_costume", "ryan": None}
-    assert got["prop_states"] == {"cabin_panels": "active"}
+    assert got["costumes"] == {"carol": "carol_costume", "dave": None}
+    assert got["prop_states"] == {"wall_panels": "active"}

@@ -29,21 +29,21 @@ def _lib(tmp_path: Path, *names: str) -> Path:
 
 
 def test_a_characters_own_mesh_wins_over_the_stature_one(tmp_path):
-    lib = _lib(tmp_path, "smplx_standing_175.obj", "smplx_standing_ryan.obj")
-    assert _mesh_for("adult_50", lib, "standing", "ryan").endswith("smplx_standing_ryan.obj")
+    lib = _lib(tmp_path, "smplx_standing_175.obj", "smplx_standing_dave.obj")
+    assert _mesh_for("adult_50", lib, "standing", "dave").endswith("smplx_standing_dave.obj")
 
 
 def test_two_characters_in_one_shot_get_two_bodies(tmp_path):
     lib = _lib(tmp_path, "smplx_standing_175.obj",
-               "smplx_standing_ryan.obj", "smplx_standing_emily.obj")
-    got = {_mesh_for("adult_50", lib, "standing", c) for c in ("ryan", "emily")}
+               "smplx_standing_dave.obj", "smplx_standing_carol.obj")
+    got = {_mesh_for("adult_50", lib, "standing", c) for c in ("dave", "carol")}
     assert len(got) == 2, "the whole point: one mesh per person, not per stature"
 
 
 def test_without_a_bake_it_is_exactly_the_old_behaviour(tmp_path):
     """The fallback is not a courtesy; it is what every existing project uses."""
     lib = _lib(tmp_path, "smplx_standing_175.obj")
-    assert _mesh_for("adult_50", lib, "standing", "ryan").endswith("smplx_standing_175.obj")
+    assert _mesh_for("adult_50", lib, "standing", "dave").endswith("smplx_standing_175.obj")
     assert _mesh_for("adult_50", lib, "standing", "").endswith("smplx_standing_175.obj")
 
 
@@ -57,21 +57,21 @@ def test_the_right_pose_beats_the_right_person(tmp_path):
     one of the two can be honoured, the kernel keeps the pose and gives up the
     person, which is the opposite of what this test first asserted."""
     lib = _lib(tmp_path, "smplx_standing_175.obj", "smplx_kneeling_175.obj",
-               "smplx_standing_ryan.obj")
-    assert _mesh_for("adult_50", lib, "kneeling", "ryan").endswith("smplx_kneeling_175.obj")
+               "smplx_standing_dave.obj")
+    assert _mesh_for("adult_50", lib, "kneeling", "dave").endswith("smplx_kneeling_175.obj")
 
 
 def test_a_persons_own_pose_chain_is_still_walked_first(tmp_path):
     """Within a person, kneeling falls back to their sitting body before it
     gives up on them: that chain is the same one the stature proxies walk."""
-    lib = _lib(tmp_path, "smplx_kneeling_175.obj", "smplx_sitting_ryan.obj")
-    assert _mesh_for("adult_50", lib, "kneeling", "ryan").endswith("smplx_sitting_ryan.obj")
+    lib = _lib(tmp_path, "smplx_kneeling_175.obj", "smplx_sitting_dave.obj")
+    assert _mesh_for("adult_50", lib, "kneeling", "dave").endswith("smplx_sitting_dave.obj")
 
 
 def test_lying_still_resolves_to_a_standing_body(tmp_path):
     """Unchanged rule: lying is orientation, and the kernel lays the body down."""
-    lib = _lib(tmp_path, "smplx_standing_175.obj", "smplx_standing_ryan.obj")
-    assert _mesh_for("adult_50", lib, "lying", "ryan").endswith("smplx_standing_ryan.obj")
+    lib = _lib(tmp_path, "smplx_standing_175.obj", "smplx_standing_dave.obj")
+    assert _mesh_for("adult_50", lib, "lying", "dave").endswith("smplx_standing_dave.obj")
 
 
 def test_a_child_still_reads_as_the_short_stature_when_unbaked(tmp_path):

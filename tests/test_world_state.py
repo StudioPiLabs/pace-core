@@ -37,7 +37,7 @@ def _ev(order, predicate, changes):
 def test_articles_and_quantifiers_do_not_split_an_entity():
     """The screenplay writes "all the panels" once and "the panels" later."""
     assert normalise_entity("all_panels") == normalise_entity("the_panels") == "panels"
-    assert normalise_entity("car_console") == "car_console"
+    assert normalise_entity("main_console") == "main_console"
 
 
 def test_a_state_persists_until_something_changes_it():
@@ -101,7 +101,7 @@ def test_a_glowing_descriptor_contradicts_a_dead_panel():
 
 
 def test_a_descriptor_about_a_different_entity_is_not_a_contradiction():
-    """`car_console` glowing says nothing about `panels`. Matching on the
+    """`main_console` glowing says nothing about `panels`. Matching on the
     phrase alone would fire on every lit object in the frame."""
     cs = contradictions("the car console glowing with interface graphics",
                         _off(), {"panels": ("screen panel",)})
@@ -121,12 +121,12 @@ def test_a_declared_state_rewrites_the_registry_appearance():
     whenever one existed -- which is always -- so `state` was resolved and
     could never take effect."""
     from pace_core.pai_compat import prop_phrase
-    kb = {"props": {"cabin_panels": {
+    kb = {"props": {"wall_panels": {
         "description": "wraparound interior screen panels lining the cabin "
                        "walls, thin bezelless displays, glowing softly"}}}
-    lit = prop_phrase({"prop_id": "cabin_panels", "count": 1, "state": "active"}, kb)
+    lit = prop_phrase({"prop_id": "wall_panels", "count": 1, "state": "active"}, kb)
     assert "glowing softly" in lit
-    dead = prop_phrase({"prop_id": "cabin_panels", "count": 1,
+    dead = prop_phrase({"prop_id": "wall_panels", "count": 1,
                         "state": "powered_off"}, kb)
     assert "glowing" not in dead
     assert "dark and unlit" in dead
@@ -134,10 +134,10 @@ def test_a_declared_state_rewrites_the_registry_appearance():
 
 def test_the_structured_state_from_the_timeline_works_too():
     from pace_core.pai_compat import prop_phrase
-    kb = {"props": {"car_console": {
+    kb = {"props": {"main_console": {
         "description": "a wide curved glass touch panel, glowing with "
                        "interface graphics"}}}
-    out = prop_phrase({"prop_id": "car_console", "count": 1,
+    out = prop_phrase({"prop_id": "main_console", "count": 1,
                        "state": {"power": "off"}}, kb)
     assert "glowing" not in out and "extinguished" in out
 
@@ -183,18 +183,18 @@ def test_a_rewritten_clause_no_longer_contradicts_its_own_state():
 def test_the_prop_audit_scopes_to_one_prop_and_does_not_cross_entities():
     """Scanning a whole prompt cannot tell which noun a word belongs to: the
     handheld device's "a single glowing screen" read as a panel
-    contradiction. Proximity does not rescue it -- on this corpus the true
-    positive sits 120 characters apart and that false positive 89 -- so the
+    contradiction. Proximity does not rescue it -- a true positive can sit
+    further apart than a false one -- so the
     audit is scoped per prop instead of guessing at the seam."""
     from pace_core.breakdown.world_state import audit_props
     kb = {"props": {
-        "cabin_panels": {"description": "wraparound screen panels, glowing softly"},
+        "wall_panels": {"description": "wraparound screen panels, glowing softly"},
         "game_device": {"description": "a handheld slab, its entire face a "
                                        "single glowing screen"}}}
     shot = {"setup": {"props": [
-        {"prop_id": "cabin_panels", "state": "powered_off"},
+        {"prop_id": "wall_panels", "state": "powered_off"},
         {"prop_id": "game_device", "state": "active"}]}}
-    # cabin_panels is rewritten by the repair, so nothing contradicts; and the
+    # wall_panels is rewritten by the repair, so nothing contradicts; and the
     # game device's own glow is never attributed to the panels.
     assert [r for r in audit_props(shot, kb) if r["kind"] == "CONTRADICTION"] == []
 
@@ -203,8 +203,8 @@ def test_the_audit_reports_a_prop_that_should_have_a_state_and_does_not():
     """The corpus's actual condition: the world state says these panels are
     dead and the prop declares nothing at all."""
     from pace_core.breakdown.world_state import audit_props
-    kb = {"props": {"cabin_panels": {"description": "screen panels, glowing softly"}}}
-    shot = {"setup": {"props": [{"prop_id": "cabin_panels"}]}}
-    rows = audit_props(shot, kb, expected={"cabin_panels": [("power", "off")]})
+    kb = {"props": {"wall_panels": {"description": "screen panels, glowing softly"}}}
+    shot = {"setup": {"props": [{"prop_id": "wall_panels"}]}}
+    rows = audit_props(shot, kb, expected={"wall_panels": [("power", "off")]})
     assert [r["kind"] for r in rows] == ["STATE_MISSING"]
     assert rows[0]["expected"] == "off"

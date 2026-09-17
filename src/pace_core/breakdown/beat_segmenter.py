@@ -49,13 +49,12 @@ TAU_HIGH, TAU_LOW = _PARAMS["thresholds"]["tau_high"], _PARAMS["thresholds"]["ta
 # REVEAL, new important entity. Its formula is a weighted sum against a single
 # threshold, which requires SEVERAL at once.
 #
-# Measured on this screenplay the two diverge sharply. Under the formula alone,
-# 40 of 41 adjudicated pairs merged: without a state change the sum tops out
-# near 0.48 against a 0.55 threshold, so pairs the adjudicator scored 0.8 for
-# goal shift ("Omar shifts from grieving Nina to actively searching") and 0.8
-# for reveal ("the arms swerve around Omar, revealing they are ignoring him")
-# were folded into a 13-event beat spanning a robot arm emerging through a car
-# being dragged away. That is not the smallest unit in which the world changes.
+# The two diverge sharply. Under the formula alone, without a state change the
+# sum tops out near 0.48 against a 0.55 threshold, so a pair scored 0.8 for a
+# goal shift (a character stops grieving and starts searching) or 0.8 for a
+# reveal is folded into its neighbour, and adjacent beats merge into one
+# spanning several distinct changes. That is not the smallest unit in which the
+# world changes.
 #
 # So the prose is implemented as well: a single strong signal splits on its own.
 # The sum still decides everything below these.

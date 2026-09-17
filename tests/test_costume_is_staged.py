@@ -58,12 +58,12 @@ def test_a_named_wardrobe_entry_beats_the_character_default():
     nothing preferred would be decoration."""
     from pace_core.pai_compat import wardrobe_of
 
-    props = {"props": {"abigail_costume": {
-        "id": "abigail_costume", "category": "wearable",
+    props = {"props": {"alice_costume": {
+        "id": "alice_costume", "category": "wearable",
         "anchor": "a fitted slate-blue technical jacket"}}}
     entry = {"costumes": {"default": "a grey coat"}}
-    wd = wardrobe_of(props, {"character_id": "abigail",
-                             "costume_id": "abigail_costume"})
+    wd = wardrobe_of(props, {"character_id": "alice",
+                             "costume_id": "alice_costume"})
     assert costume_text(entry, None, wardrobe=wd) == \
         "a fitted slate-blue technical jacket"
     assert costume_text(entry, None, wardrobe=None) == "a grey coat"
@@ -82,15 +82,15 @@ def test_an_unresolvable_costume_id_falls_back_rather_than_blanks():
 def test_a_props_library_given_as_a_list_resolves_the_same():
     from pace_core.pai_compat import wardrobe_of
 
-    entry = {"id": "lucas_costume", "anchor": "a soft olive sweatshirt"}
-    assert wardrobe_of([entry], {"costume_id": "lucas_costume"}) is entry
+    entry = {"id": "bob_costume", "anchor": "a soft olive sweatshirt"}
+    assert wardrobe_of([entry], {"costume_id": "bob_costume"}) is entry
 
 
 # ── hair, from the same description the prompt reads ─────────────────────
 def test_any_named_hair_is_capped():
     """A lens behind a bald proxy delivers a bald back of the head under a
     prompt that names hair: short, curly or shoulder-length. A reverse shot
-    over Abigail's shoulder came back as a helmet before long hair had a
+    over Alice's shoulder came back as a helmet before long hair had a
     shell."""
     from pace_core.node.panel_greybox import HAIR_STYLES, hair_style
 
@@ -107,9 +107,9 @@ def test_a_garment_named_by_hue_gets_a_tone():
     """An olive sweatshirt and a slate-blue jacket were read as no garment
     and a white tee respectively: the hue was unknown, and the tee under
     the jacket was the first garment with a colour it recognised."""
-    lucas = garment_tones("a soft olive crew-neck sweatshirt and charcoal tapered trousers")
-    assert lucas["top"]["sleeve"] == "long" and 0.3 < lucas["top"]["tone"] < 0.5
-    abigail = garment_tones("a fitted slate-blue technical jacket with a standing "
+    bob = garment_tones("a soft olive crew-neck sweatshirt and charcoal tapered trousers")
+    assert bob["top"]["sleeve"] == "long" and 0.3 < bob["top"]["tone"] < 0.5
+    alice = garment_tones("a fitted slate-blue technical jacket with a standing "
                             "collar over a white tee, and dark tapered trousers")
-    assert abigail["top"] == {"tone": 0.38, "sleeve": "long"}
+    assert alice["top"] == {"tone": 0.38, "sleeve": "long"}
     assert garment_tones("a faded graphic t-shirt and dark jeans")["top"]["sleeve"] == "short"

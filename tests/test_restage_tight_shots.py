@@ -119,5 +119,5 @@ def test_split_gives_each_subject_a_single_numbered_like_the_studio():
 
 
 def test_reaction_without_a_gaze_target_says_so():
-    act = reaction_action({"character_id": "omar", "pose": None}, {})
-    assert act["description_en"] == "Omar reacts." or act["description_en"] == "omar reacts."
+    act = reaction_action({"character_id": "gus", "pose": None}, {})
+    assert act["description_en"] == "Gus reacts." or act["description_en"] == "gus reacts."

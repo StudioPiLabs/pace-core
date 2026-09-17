@@ -225,8 +225,8 @@ def build_character_anchors(project_root: Path, chars: dict[str, Any], images: l
                 rp = rel_project_path(project_root, registered)
                 if rp:
                     refs.append(rp)
-            # Token overlap alone is not identity. "emily@adult_30" tokenizes
-            # to {emily, adult, 30}, and "lucas_adult_30_identity_plate.png"
+            # Token overlap alone is not identity. "alice@adult_30" tokenizes
+            # to {alice, adult, 30}, and "bob_adult_30_identity_plate.png"
             # matches two of those three — so a character's reference set
             # quietly acquired other people's identity plates, and the redux
             # channel conditioned a three-person panel on four adults from
@@ -315,7 +315,7 @@ def build_location_anchors(project_root: Path, loc_stubs: dict[str, Any], images
     storyboard_images = [p for p in images if "/storyboards/" in str(p)]
     # Location anchors must be actual environment/location images. Character
     # sheets, LoRA portraits, and prop texture maps are not valid location
-    # anchors even when words like "kucha" or "lamp" happen to match.
+    # anchors even when words like a region name or "lamp" happen to match.
     location_images = [
         p for p in images
         if any(part in str(p).lower() for part in (
@@ -366,7 +366,7 @@ def build_location_anchors(project_root: Path, loc_stubs: dict[str, Any], images
 # Free-text fields an action can be described in. Serialising the whole
 # events object instead would put schema keys and enum values into the text
 # the pose classifier reads, and one of them collides: "intensity" contains
-# "sit", which classified every subject in this corpus as seated.
+# "sit", which classified every subject with an intensity as seated.
 _ACTION_TEXT_FIELDS = ("standalone", "description_en", "description_zh",
                        "description", "text", "label", "beat", "summary")
 
@@ -547,8 +547,8 @@ _BUILD_BETA1 = {
 # Clamped at 0 because a male body should never have chest ADDED, and at -4
 # because past there the shape leaves the range the model was fit over. The
 # clamp binds below about build -0.6, where the true crossing runs away from
-# the line; on this corpus that is Ethan, and -4 puts him at +0.25 mm, but a
-# slimmer male than him would keep some protrusion rather than reach zero.
+# the line; for a heavy-build male proxy -4 lands at +0.25 mm, but a
+# slimmer one would keep some protrusion rather than reach zero.
 _SEX_B4_SLOPE, _SEX_B4_INTERCEPT = 2.723, -2.706
 
 
@@ -1093,7 +1093,7 @@ def render_summary(bundle: dict[str, Any]) -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--project", default="kumarajiva")
+    ap.add_argument("--project", required=True)
     ap.add_argument("--base-model", default=None)
     ap.add_argument("--out-dir", default=None)
     args = ap.parse_args()

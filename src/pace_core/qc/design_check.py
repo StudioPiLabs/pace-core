@@ -17,33 +17,30 @@ plus era/region/culture, which every scene that names that location copies
 into its own `shot_defaults`. Five stubs became eleven copies, and a copy can
 drift from its source in silence.
 
-Six rules, each from a divergence this corpus actually carries:
+Six rules, each from a divergence a production actually carried:
 
   shot_size / angle    the shot's own value disagrees with its beat group's.
-                       4 of AutomaticDrive's 27 shots.
   movement_absent      the group asks for a movement no shot carries. The
-                       design asks for handheld across seven scenes; the
-                       corpus has `gear: tripod` on 23 of 27 and handheld
-                       nowhere. It was there once -- stored inside
+                       design asks for handheld; the shots carry
+                       `gear: tripod` and handheld nowhere. It was there once -- stored inside
                        `movement_3d`, where it is not a legal value (see
                        densify_panels) -- and the cleanup that moved it into
                        `gear` normalised it to tripod instead.
   movement_conflict    a shot whose trajectory says it moves while the DSL
                        beside it says hold. All four crane shots.
   world_drift          a shot's backdrop CONTRADICTS the stub of the location
-                       it names. 3 of AutomaticDrive's 27, all on scene_01,
-                       whose shots name `family_car` while carrying the
-                       highway's region and culture.
+                       it names: a shot naming a car interior while
+                       carrying the highway's region and culture.
   world_unresolved     the stub knows a field and the shot does not carry it,
                        so the prompt is compiled without it.
   prop_link_unhonoured a prop's own `linked_scenes` names this scene and no
-                       shot in it declares the prop. 14 of Zheng's 15 props,
+                       shot in it declares the prop,
                        including the DJ deck in the one scene it can appear
                        in. (`linked_shots` is filled on 0 of 15 -- a second
                        field the registry declares and nothing writes.)
   location_ref_drift   `narrative_meta.location_ref` names a different
-                       location than the backdrop does. scene_01 is headed
-                       EXT. FUTURISTIC SUPER-HIGHWAY and refs `family_car`.
+                       location than the backdrop does: a scene headed
+                       EXT. SUPER-HIGHWAY that refs a car interior.
 
     uv run python -m pace_core.qc.design_check --project <slug>
     uv run python -m pace_core.qc.design_check --project <slug> --strict
@@ -67,7 +64,7 @@ from pace_core.paths import PAI_PROJECTS_ROOT               # noqa: E402
 
 #: Rig behaviour. Describes how the camera is held, not where the frame goes,
 #: and so lives in `trajectory.gear` -- the distinction densify_panels.py
-#: documents, and the one this corpus got wrong.
+#: documents, and one a breakdown has got wrong.
 _GEAR_MOVES = {"handheld", "steadicam"}
 
 #: Framing moves, in the schema's own vocabulary. The design writes a
@@ -80,13 +77,12 @@ _FRAME_MOVES = {
 
 #: The world fields a scene copies from the location stub it names, compared
 #: strictly. `setting` is deliberately NOT among them: a shot is entitled to
-#: specialise its location's prose, and Zheng's enrichment writes a per-shot
-#: setting for every shot, so comparing it flagged 78 of 78. The one on
-#: AutomaticDrive that looked like drift was the same thing -- scene_09's
-#: shot prose says the wrecked car "must not be drawn overlapping the
-#: subject", which is later and better than the stub, not a divergence from
-#: it. The typed fields have no such licence: a shot naming `family_car`
-#: while carrying the highway's region is simply wrong.
+#: specialise its location's prose, and an enrichment that writes a per-shot
+#: setting for every shot would be flagged on every shot. A shot's prose that
+#: adds "the wreck must not overlap the subject" is later and better than the
+#: stub, not a divergence from it. The typed fields have no such licence: a
+#: shot naming a car interior while carrying the highway's region is simply
+#: wrong.
 _WORLD_FIELDS = ("era", "region", "culture")
 
 
@@ -156,19 +152,17 @@ def check_props(props: dict, scene: dict) -> list[tuple[str, str, str]]:
     own record names this scene while no shot in it declares the prop is a
     gap the registry proves rather than one a heuristic guesses at.
 
-    On Zheng this is 14 of 15 props. The DJ deck names scene_04 -- the
-    nightclub flashback, the only place it can appear -- and no shot there
-    declares it; the padlocked door names the two scenes the film ends on,
-    the executive desk the scene shot under it. These are not background
-    dressing the location bible already covers; they are the object the beat
-    is about.
+    A prop that names the only scene it can appear in -- a DJ deck in a
+    nightclub flashback -- while no shot there declares it is not background
+    dressing the location bible already covers; it is the object the beat is
+    about.
     """
     sid = scene.get("scene_id")
     # Resolved to registry keys, not compared as spelled. The enrichment
     # invents an identifier per shot -- `computer_monitor`, `u_pan` -- so a
     # raw comparison reports the monitor unhonoured in all four scenes that
     # declare one. This rule was written to find exactly that kind of gap and
-    # was making it: 23 of Zheng's 45 findings were the checker's own.
+    # was making it: half its findings were the checker's own.
     declared = set()
     for sh in scene.get("shots") or []:
         for p in ((resolve_shot(scene, sh).get("setup") or {}).get("props") or []):

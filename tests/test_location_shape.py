@@ -61,7 +61,7 @@ def test_shape_is_read_from_the_project_kb(tmp_path, monkeypatch):
     kb = tmp_path / "kb"
     kb.mkdir()
     (kb / "location_stubs.json").write_text(json.dumps({"stubs": {
-        "family_car": {"environment_type": "vehicle_interior"},
+        "sedan_interior": {"environment_type": "vehicle_interior"},
         "the_beach": {"environment_type": "exterior_shoreline"},
         "unlabelled": {},
     }}))
@@ -74,7 +74,7 @@ def test_shape_is_read_from_the_project_kb(tmp_path, monkeypatch):
     import pace_core.paths as _paths
     monkeypatch.setattr(_paths, "paths_for", lambda p: _P())
 
-    assert location_shape_for("family_car", "proj") == "subway"
+    assert location_shape_for("sedan_interior", "proj") == "subway"
     assert location_shape_for("the_beach", "proj") == "outdoor"
     assert location_shape_for("unlabelled", "proj") is None
     # A location the KB has never heard of resolves to nothing, rather than to
@@ -84,7 +84,7 @@ def test_shape_is_read_from_the_project_kb(tmp_path, monkeypatch):
 
 
 def test_no_project_means_no_guess():
-    assert location_shape_for("family_car", None) is None
+    assert location_shape_for("sedan_interior", None) is None
 
 
 # ── the mapping is a default, not a definition ───────────────────────────
