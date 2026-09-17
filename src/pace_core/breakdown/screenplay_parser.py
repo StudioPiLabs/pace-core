@@ -21,7 +21,7 @@ and context rather than by column:
     transition      FADE IN:, CUT TO:, DISSOLVE TO:, FADE OUT.
     super           SUPER: 2035
     character       an all-caps short line that is followed by speech
-    parenthetical   (singing), (to the image of Theo)
+    parenthetical   (singing), (to the photo of Bob)
     dialogue        the lines under a character cue
     action          everything else
 """
@@ -37,7 +37,7 @@ SUPER_RE = re.compile(r"^(SUPER|TITLE|CAPTION)\s*:", re.I)
 PAREN_RE = re.compile(r"^\(.*\)?$")
 # A page number the PDF left behind: "2." or "12" alone on a line.
 PAGE_RE = re.compile(r"^\d{1,3}\.?$")
-# (CONT'D), (V.O.), (O.S.), (to the image of Theo) trailing a cue.
+# (CONT'D), (V.O.), (O.S.), (to the photo of Bob) trailing a cue.
 CUE_SUFFIX_RE = re.compile(r"\s*\((CONT'?D|V\.?O\.?|O\.?S\.?|O\.?C\.?)\)\s*$", re.I)
 
 
@@ -66,7 +66,7 @@ def _is_cue(line: str) -> bool:
         return False
     if not re.search(r"[A-Z一-鿿]", s):
         return False
-    # Allow a name plus a parenthetical age note: "NINA and OMAR(50's)"
+    # Allow a name plus a parenthetical age note: "ALICE and BOB(50's)"
     core = re.sub(r"\([^)]*\)", "", s)
     letters = [c for c in core if c.isalpha()]
     if not letters:

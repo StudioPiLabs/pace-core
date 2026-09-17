@@ -28,12 +28,12 @@ def _scene():
                 "_design": {"intent": "a director's note"},
             },
             "setup": {
-                "backdrop": {"location": "family_car", "setting": "INT car", "era": "2035"},
+                "backdrop": {"location": "sedan_interior", "setting": "INT car", "era": "2035"},
                 "environment": {"lighting": "hard sun", "density": "crowded_crash_site",
                                 "style": "photoreal"},
                 "space": {"scale_meters": [2.0, 3.2, 1.5]},
                 "subjects": [{
-                    "character_id": "nina", "age_state": "middle_aged",
+                    "character_id": "fay", "age_state": "middle_aged",
                     "continuity_anchor": "young adult, slender build",
                     "costume": "a cream t-shirt", "hair": "long brown hair",
                     "pose": "seated",
@@ -41,7 +41,7 @@ def _scene():
                 }],
                 "props": [{"prop_id": "p1", "name": "tray table", "state": "active",
                            "screen_position": {"zone": "center"}}],
-                "primary_focus": {"ref": "nina", "type": "character", "coverage_pct": 55},
+                "primary_focus": {"ref": "fay", "type": "character", "coverage_pct": 55},
             },
             "events": {"actions": [{"description_en": "she looks up",
                                     "intensity": "dramatic", "foreground": "focal"}]},
@@ -84,7 +84,7 @@ def test_character_registry_supplies_the_identity_the_scene_lacks(monkeypatch, t
     from pace_core import paths as paths_mod
     chars_file = tmp_path / "characters.json"
     chars_file.write_text(_json.dumps({
-        "nina": {"trigger": "nina_female",
+        "fay": {"trigger": "fay_female",
                   "anchor": "slender build, with long brown hair",
                   "costumes": {"default": "a plain cream cotton t-shirt"},
                   "lora": {"path": None}},
@@ -95,7 +95,7 @@ def test_character_registry_supplies_the_identity_the_scene_lacks(monkeypatch, t
     monkeypatch.setattr(ppmod, "paths_for", lambda proj: fake_paths)
 
     scene = _scene()
-    scene["shots"][0]["setup"]["subjects"][0]["character_id"] = "nina"
+    scene["shots"][0]["setup"]["subjects"][0]["character_id"] = "fay"
     scene["shots"][0]["setup"]["subjects"][0]["age_state"] = "adult"
     shot = project_scene(scene, project="proj")["shots"][0]
 
@@ -103,8 +103,8 @@ def test_character_registry_supplies_the_identity_the_scene_lacks(monkeypatch, t
     assert "cream cotton t-shirt" in subj["descriptor"]
     assert "long brown hair" in subj["descriptor"]
     # the trigger is context, never prose
-    assert shot["input_only"]["character_trigger_words"] == ["nina_female"]
-    assert "nina_female" not in _json.dumps(shot["write"])
+    assert shot["input_only"]["character_trigger_words"] == ["fay_female"]
+    assert "fay_female" not in _json.dumps(shot["write"])
 
 
 def test_input_only_is_visible_but_never_writable():

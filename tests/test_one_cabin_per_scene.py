@@ -1,9 +1,8 @@
 """Every panel of a scene is built inside one cabin.
 
 The vehicle shell is stretched to contain each panel's camera, so sized per
-panel it followed the lens: scene_11's wide and the over-the-shoulders after it
-were built 4.25 m and 4.10 m across and 6.5 m and 4.0 m long, and the walls
-moved at every cut. make_scene_greyboxes builds each panel once to learn the
+panel it followed the lens: a wide and the over-the-shoulders after it were
+built at different widths and lengths, and the walls moved at every cut. make_scene_greyboxes builds each panel once to learn the
 shell it needs and again inside the union.
 """
 from __future__ import annotations

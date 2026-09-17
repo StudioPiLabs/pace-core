@@ -143,11 +143,10 @@ KB: dict[str, MovementEntry] = {
         "rather than a participant — exactly the reading a scene wants "
         "when the point is that the cast is being watched, not accompanied.",
         Evidence.MEASURED,
-        "AutomaticDrive scene_01's own camera._design.intent: 'the camera "
-        "is fixed and objective, watching them like a surveillance feed, "
-        "which implies the system has been watching all along' — an "
-        "authored intent this project already declared, not invented for "
-        "this table.",
+        "An authored shot design asking for a fixed, objective camera "
+        "that watches the cast rather than accompanies it is this entry's "
+        "source: a directorial intent a production declared, not one "
+        "invented for this table.",
         counter="Do not apply to a scene whose _design.intent names "
                 "participation or subjectivity instead of observation; the "
                 "static hold is doing narrative work only for the reading "

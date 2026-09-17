@@ -361,7 +361,7 @@ class Backdrop:
     # to "generic Asian historical". Open-set strings: pick the
     # description that most faithfully roots the shot in its world.
     era:         Optional[str] = None                # "350 CE" / "5th c. CE" / "modern_day" / "2099" — open set, human-readable
-    region:      Optional[str] = None                # "kucha_western_regions" / "modern_shanghai" — sympathetic to location_ref
+    region:      Optional[str] = None                # "silk_road_oasis" / "modern_shanghai" — sympathetic to location_ref
     culture:     Optional[str] = None                # "kuchean_buddhist" / "tang_dynasty" / "byzantine" — a coherent cultural-style frame to pull on
     # pace-0.2 setup.backdrop.{weather,season} — open-set strings (no enum upstream)
     weather:     Optional[str] = None                # open: "clear", "rain", "snow", "overcast", "sandstorm", …
@@ -430,7 +430,7 @@ class Prop:
     color:       Optional[str]             = None    # open set: "deep_crimson", "soot_black", "celadon_green"
     size:        Optional[PropSize]        = None    # relative scale — palm_sized / human_scale / monumental / …
     held_by:     Optional[str]             = None    # character ref (id@age form, see pai_compat.id_age_to_ref)
-    rests_on:    Optional[str]             = None    # character_id the prop lies on ("the car falls on top of him")
+    rests_on:    Optional[str]             = None    # character_id the prop lies on ("the shelf collapses onto him")
     screen_position: Optional["ScreenPosition"] = None  # reuse Subject's frame-placement spec
     count:       int                       = 1       # multiplicity for batches of same prop (a stack of wooden tablets)
     in_frame:    Optional[InFrame]         = None    # in the picture this panel, not just in the scene (see InFrame)
@@ -474,8 +474,8 @@ ScreenDepth = Literal["foreground", "midground", "background"]
 @dataclass
 class Gaze:
     """PAI extension — where this subject is looking. Captures eyeline so
-    the storyboard records "Emily looking at the console" or
-    "Ryan staring off-frame right" as structured data instead of folding
+    the storyboard records "Alice looking at the console" or
+    "Bob staring off-frame right" as structured data instead of folding
     it into the free-form `pose` string. Used by the prompt compiler to render
     "looking at X" / "gaze directed off-screen left", and by future
     eyeline-match continuity checks across shots.
@@ -517,10 +517,9 @@ class Subject:
     # PAI extension — the wardrobe entry this costume IS, so a garment is a
     # library object with an id and states rather than a sentence retyped per
     # shot. Free text cannot be compared across a cut: one panel said "a
-    # fitted slate-blue technical jacket" and the next delivered a white
-    # tunic, and nothing could report it, because there was no identifier for
+    # fitted grey-blue jacket" and the next delivered a white tunic, and nothing could report it, because there was no identifier for
     # the two to disagree about. Resolves in kb/props.json like any prop_id.
-    costume_id:  Optional[str] = None                # wardrobe entry id, e.g. "abigail_costume"
+    costume_id:  Optional[str] = None                # wardrobe entry id, e.g. "alice_costume"
     hair:        Optional[str] = None                # "shaved head", "long black braid", "wild grey beard"
     makeup:      Optional[str] = None                # "kohl-rimmed eyes", "war paint", "soot smudges"
     pose:        Optional[str] = None                # body posture: "kneeling, hands clasped", "leaning against doorframe"
@@ -529,7 +528,7 @@ class Subject:
     # PAI extension — link back to the canonical character registry so
     # Subject appearance can default-inherit from kb/characters.json.
     # Optional; setting just the open-set fields above also works.
-    character_id: Optional[str] = None               # id matching the project's character registry, e.g. "emily"
+    character_id: Optional[str] = None               # id matching the project's character registry, e.g. "alice"
     age_state:    Optional[str] = None               # which life-stage variant of that character, e.g. "adult_50", "adult_18"
     # PAI extension — eyeline + frame placement. Both Optional so existing
     # pai-1.0 files (which lack these) parse unchanged.
@@ -857,7 +856,7 @@ class NarrativeMeta:
     leaves narrative summary outside the 4 pillars."""
     summary:             str            = ""                  # 1-2 sentence prose summary of what happens in this scene
     characters_present:  list[str]      = field(default_factory=list)         # character_ids appearing anywhere in the scene
-    character_age_states: dict[str, str] = field(default_factory=dict)        # character_id → age_state used in THIS scene (e.g. "emily": "adult_50")
+    character_age_states: dict[str, str] = field(default_factory=dict)        # character_id → age_state used in THIS scene (e.g. "alice": "adult_50")
     key_actions:         list[str]      = field(default_factory=list)         # short prose list of main physical beats
     vo_lines:            list[dict[str, Any]] = field(default_factory=list)   # voice-over lines (off-screen narration) — [{speaker, text, …}]
     on_screen_dialogue:  list[dict[str, Any]] = field(default_factory=list)   # spoken on-screen dialogue — [{speaker, text, …}]
@@ -882,7 +881,7 @@ class NarrativeMeta:
 @dataclass
 class WorldEntity:
     """A character or prop placed in stage-frame world coordinates.
-    `ref` is a character ref ("emily@adult_50") or prop_id ("car_console")."""
+    `ref` is a character ref ("alice@adult_50") or prop_id ("main_console")."""
     ref:         str                       # character id@age OR prop_id
     world_xy:    list[float] = field(default_factory=list)  # [x, y] in meters; stage top-down
     z:           float = 0.0               # height: 0=on ground, -0.5=sitting, +1=elevated

@@ -127,8 +127,8 @@ def generate_bible(location_id: str, scenes_in_loc: list[dict],
         data = json.loads(raw)
     except json.JSONDecodeError as e:
         # The call happened and was billed. Carry the cost on the exception so
-        # a location that fails to parse is still counted -- scene_09 of Zheng
-        # cost $0.1276 and was reported in a total that did not include it.
+        # a location that fails to parse is still counted, not left out of a
+        # reported total that claims to include it.
         err = BibleParseError(
             f"LLM did not return valid JSON for {location_id}: {e}\n"
             f"first 500 chars: {raw[:500]}")

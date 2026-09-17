@@ -81,8 +81,8 @@ RULES
 2. screen_x is where the subject sits across the frame, 0 at frame left. Give
    distinct values; two people do not occupy one position.
 3. `pose` describes the body, not the mood. "kneeling" not "grief-stricken".
-4. action_en describes the image. "The car falls on top of him", not "He
-   dies tragically".
+4. action_en describes the image. "He lies still under the collapsed shelf",
+   not "He dies tragically".
 5. Choose framing for LEGIBILITY of the beat's own event, not for drama.
 """
 
@@ -125,11 +125,11 @@ def prop_states(beat: dict, state_map: dict | None = None) -> dict[str, str]:
     """World state -> the props that carry it, in the schema's flat form.
 
     A beat that CHANGES a state stages the state it starts in, not the one it
-    ends in. Taking `state_after` everywhere made the panel depicting "all the
-    panels lose power" already dark, and the next panel dark as well, so the
+    ends in. Taking `state_after` everywhere made the panel depicting "the
+    lamps go out" already dark, and the next panel dark as well, so the
     one thing the two panels existed to show -- the change -- appeared in
     neither: a storyboard that cannot show a change is not doing its job. The
-    beat that turns the screens off therefore stages them on, and the beat
+    beat that turns the lamps off therefore stages them on, and the beat
     after it inherits them off, which is what puts the change between the two
     frames. A beat that only inherits a state stages it as it stands.
     """

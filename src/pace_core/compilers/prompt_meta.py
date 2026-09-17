@@ -62,8 +62,8 @@ Each shot carries `write` and `input_only`.
   write        material you may put into the prompt.
   input_only   context to judge by, never to say. A director's note explaining \
 why a shot exists is reasoning, not a description of the frame; written out, \
-"watching them like a surveillance feed" produces a picture of a surveillance \
-feed. Let it steer tone and word choice. Never quote it, never paraphrase it.
+"the camera keeps its distance, like a stranger at the window" produces a \
+picture of a stranger at a window. Let it steer tone and word choice. Never quote it, never paraphrase it.
 
 RULES THAT COME FROM MEASUREMENT
 
@@ -137,8 +137,7 @@ how the same person and place stay the same across a film. Never fold a \
 momentary state into one.
 
 14. Snake_case values are identifiers, not English. Render them as language: \
-`near_future_autonomous_mobility` becomes "a near-future city built around \
-autonomous transport".
+`coastal_fishing_village` becomes "a coastal fishing village".
 
 15. Assume no text, signage or lettering appears in frame unless a panel \
 explicitly calls for it.

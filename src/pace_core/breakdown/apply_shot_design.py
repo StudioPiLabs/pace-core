@@ -16,12 +16,12 @@ this shot was built for, and it is never compiled into a prompt.
 
 The typed values are applied only where the shot holds the SPLITTER'S
 FALLBACK. `split_script` returns "medium" when no shot size can be parsed from
-the action text and "eye_level" when no angle can; on Zheng that is 78 of 78
-shots for both, because a Chinese shooting script does not name its coverage.
+the action text and "eye_level" when no angle can; on a shooting script that
+never names its coverage that is every shot, for both.
 A fallback is the absence of a decision, so replacing it with the director's
 is strictly better. A value the action text actually produced is a decision,
-and is left alone -- three of Zheng's shots carry a `pull_out` or an `arc`
-read off their own prose, and the group's movement does not overwrite them.
+and is left alone -- a shot that carries a `pull_out` or an `arc` read off
+its own prose keeps it, and the group's movement does not overwrite them.
 
     uv run python -m pace_core.breakdown.apply_shot_design --project <slug>
     uv run python -m pace_core.breakdown.apply_shot_design --project <slug> --write
@@ -77,7 +77,7 @@ def apply_to_scene(scene: dict, group: dict) -> tuple[dict, list[str]]:
         has_move = bool(traj.get("movement_3d") or traj.get("movement_2d"))
         if want_move in _GEAR_MOVES:
             # Rig behaviour, not a framing change: it belongs in `gear`, which
-            # is where this corpus family lost `handheld` once already by
+            # is where a breakdown has lost `handheld` before by
             # putting it in movement_3d, where it is not a legal value.
             if traj.get("gear") != want_move:
                 traj["gear"] = want_move

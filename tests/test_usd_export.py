@@ -29,7 +29,7 @@ from pace_core.usd_map import verdict_for  # noqa: E402
 
 SCENE = {
     "scene_id": "scene_t",
-    "narrative_meta": {"characters_present": ["nina"]},
+    "narrative_meta": {"characters_present": ["fay"]},
     "shots": [{
         "shot_id": "shot_01",
         "camera": {
@@ -39,7 +39,7 @@ SCENE = {
         },
         "setup": {
             "space": {"scale_meters": [3.2, 2.1, 1.6]},
-            "subjects": [{"character_id": "nina", "pose": "seated",
+            "subjects": [{"character_id": "fay", "pose": "seated",
                           "screen_position": {"zone": "center", "x": 0.5, "y": 0.52}}],
             "props": [{"prop_id": "game_device"}],
         },
@@ -115,7 +115,7 @@ def test_subjects_carry_declaration_but_no_invented_transform(stage):
     """PACE states a *screen* position. Writing a world transform here would put
     a number into an interchange file that no PACE field authorises."""
     from pxr import UsdGeom
-    prim = stage.GetPrimAtPath("/World/Subjects/shot_01_nina")
+    prim = stage.GetPrimAtPath("/World/Subjects/shot_01_fay")
     assert prim.IsValid()
     assert prim.GetAttribute("pace:Subject:pose").Get() == "seated"
     assert json.loads(prim.GetAttribute("pace:ScreenPosition:target").Get())["x"] == 0.5

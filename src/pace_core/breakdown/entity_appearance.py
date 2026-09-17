@@ -1,8 +1,8 @@
 """What to ask a detector to look for, given an entity the screenplay named.
 
-The verification questions were being generated against entity IDS -- `ryan`,
+The verification questions were being generated against entity IDS -- `alice`,
 `the_car`, `all_panels`, `computer_voice`. An open-vocabulary detector does not
-know who Ryan is; it knows what a man looks like. Sending it an id gets a
+know who Alice is; it knows what a woman looks like. Sending it an id gets a
 confident answer to a prompt that means nothing, which is worse than no answer.
 
 Three things this decides.
@@ -17,8 +17,8 @@ extractor and is a voice: it has no body in any frame. A LOCATION or an
 ENVIRONMENT is not an object in the picture either -- it IS the picture. These
 get no detection prompt and must generate no question.
 
-WHAT A DETECTION DOES NOT SETTLE. "man" matches Ryan and Ethan both. Presence
-is a detection problem; WHICH man this is, is an identity problem, and the two
+WHAT A DETECTION DOES NOT SETTLE. "woman" matches Alice and Carol both. Presence
+is a detection problem; WHICH woman this is, is an identity problem, and the two
 are kept apart here so a verifier cannot quietly read one as the other.
 """
 from __future__ import annotations

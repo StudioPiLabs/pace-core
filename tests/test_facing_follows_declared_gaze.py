@@ -2,7 +2,7 @@
 
 `facing_deg` is in the schema and the assembler applies it, but the compiler
 between them wrote 0.0 for every subject in every panel -- so a corpus that
-declares `lucas -> abigail` and `abigail -> lucas` staged both of them square
+declares `bob -> alice` and `alice -> bob` staged both of them square
 to the windscreen, and the eye-line clause could not fail because no two
 bodies ever disagreed. `Gaze`'s own docstring names eyeline-match continuity
 across shots as what the field is for.
@@ -29,8 +29,8 @@ def _at(cid: str) -> dict:
 
 
 def test_mutual_gaze_stages_two_bodies_180_apart() -> None:
-    subs = [{"character_id": "abigail", "gaze": _at("lucas")},
-            {"character_id": "lucas", "gaze": _at("abigail")}]
+    subs = [{"character_id": "alice", "gaze": _at("bob")},
+            {"character_id": "bob", "gaze": _at("alice")}]
     places = [(0.22, -0.63), (0.0, 0.22)]
     a = _facing_from_gaze(subs, places, 0)
     b = _facing_from_gaze(subs, places, 1)
@@ -45,7 +45,7 @@ def test_subject_directly_ahead_needs_no_turn() -> None:
 
 def test_gaze_at_a_prop_leaves_the_seat_alone() -> None:
     subs = [{"character_id": "a",
-             "gaze": {"target_type": "object", "target_ref": "car_console"}},
+             "gaze": {"target_type": "object", "target_ref": "main_console"}},
             {"character_id": "b"}]
     assert _facing_from_gaze(subs, [(0.0, 0.0), (1.0, 1.0)], 0) == 0.0
 

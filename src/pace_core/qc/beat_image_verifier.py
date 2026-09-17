@@ -70,14 +70,14 @@ def anchor_margin(greybox: np.ndarray, delivered: np.ndarray,
 #
 # A detector returns boxes with no idea who is in them. Sorting them
 # left-to-right and zipping against the staged order looks like an answer and
-# is not one: on scene_02 the detector returned 4 and 5 boxes for 3 subjects
+# is not one: a detector can return 4 or 5 boxes for 3 subjects
 # (a car interior shows people on its screens and in its glass), so position
 # order silently paired a subject with a reflection and widened the measured
 # spread.
 #
 # Binding by overlap with the staged silhouette fixes that AND is what makes a
 # per-subject identity check possible at all: the greybox knows which body is
-# ryan, so a box bound to ryan's matte is the region an identity check should
+# which subject, so a box bound to that subject's matte is the region an identity check should
 # run on. Presence, position and identity stay three separate claims.
 
 

@@ -10,9 +10,9 @@ has no second target to check against.
 What counts as "moving" is the schema's own vocabulary, not a guess. Movement2D
 (pan/tilt/zoom) and Movement3D (push_in, tracking, crane, ...) change framing.
 Gear does not: `handheld` and `steadicam` describe how the rig behaves, not
-where the frame goes. This matters in practice -- the evaluation corpus stores
-`handheld` inside `movement_3d`, where it is not a legal value, and 16 of its
-27 shots therefore look like moving shots while holding frame.
+where the frame goes. This matters in practice -- a breakdown that stores
+`handheld` inside `movement_3d`, where it is not a legal value, makes every
+such shot look like a moving shot while it holds frame.
 
 The end panel is a clone of the start, which encodes a *reframing* move: the
 subject stays at the same screen position while the camera travels, so the
@@ -120,8 +120,7 @@ def end_shot_size(start: str | None, moves: list[str]) -> str | None:
 _ANGLE_LADDER: tuple[str, ...] = ("ground", "low", "eye_level", "high",
                                   "overhead", "aerial")
 # The documents on disk spell two of these rungs with a suffix the Angle
-# Literal does not have: 5 shots say `low_angle` and 4 say `high_angle` across
-# this corpus. Read them rather than fail to recognise the angle a shot plainly
+# Literal does not have: breakdowns write `low_angle` and `high_angle`. Read them rather than fail to recognise the angle a shot plainly
 # declares; the schema spelling is what gets written back.
 _ANGLE_ALIASES = {"low_angle": "low", "high_angle": "high",
                   "eye": "eye_level", "eyelevel": "eye_level"}
@@ -180,7 +179,7 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
         # the panel it would add is a second framing for a shot that says it
         # has only one.
         #
-        # That is not hypothetical. Every 2-panel shot in the evaluation corpus came
+        # That is not hypothetical. 2-panel shots have come
         # from exactly this pair of statements — 4 shots declaring static
         # alongside a crane, and 0 shots genuinely moving — and their panels
         # rendered identically because there was no second framing to state.
@@ -246,8 +245,8 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
 
 
 # No LLM beat pass lives here, and that is deliberate. split_script.py already
-# runs a model over the screenplay and extracts its beats -- in the evaluation corpus,
-# 27 key_actions became 27 shots, exactly 1:1 in every scene. A second pass
+# runs a model over the screenplay and extracts its beats, and its key_actions become
+# shots 1:1 in every scene. A second pass
 # asking a model for "more visual beats" either restates what the first already
 # captured or invents action the screenplay does not contain. If beat density
 # is ever genuinely too coarse, the fix belongs in the splitter, not in a

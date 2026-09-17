@@ -5,8 +5,8 @@ Nothing has ever written this file. Every reference to it in the source is a
 read -- the three prompt compilers, `panel_greybox`, `render_storyboard`, the
 studio's compile context, `design_check` -- and the only writers are test
 fixtures and `mesh_builder`, which attaches a mesh record to a stub that must
-already exist. AutomaticDrive's was authored by hand; the seven
-`location_stubs.json.pre-*.bak` files beside it are one person tuning belt,
+already exist. Where one was authored by hand, the
+`location_stubs.json.pre-*.bak` files beside it are a person tuning belt,
 seating, tray and wheel a field at a time. So the automated breakdown stops at
 `kb/locations/*.bible.json`, and the step to the file that gates everything 3D
 was manual. `panel_greybox` builds its shell from `scale_meters`, which only
@@ -19,8 +19,8 @@ name, anchor and metric size, and the scenes supply era, region and culture.
 groups by `location_ref`, and `scenes_kb.load_all_scenes` synthesises that
 field from the FILENAME when the scene does not carry one -- so a project
 whose splitter left `narrative_meta.location_ref` null gets one bible per
-scene rather than one per place. Zheng did: six scenes play in 公司办公区 and
-it was imagined twice over, 24x18 m in scene_03 and 16x11 m in scene_09. The
+scene rather than one per place. One office played in six scenes was
+imagined twice over that way, once at 24x18 m and once at 16x11 m. The
 same room in two sizes is the continuity break this pipeline exists to stop,
 and it is invisible while each scene owns its own bible.
 
@@ -100,7 +100,7 @@ _OFFICE_WORDS = ("office", "open-plan", "open plan", "workstation", "cubicle",
                  "desk", "办公区", "工位")
 
 #: Spaces that sit BESIDE an office and are not one. They match the office
-#: words -- "Chairman's Office Doorway", "公司办公区 · 会议室外走廊" -- and an
+#: words -- "Chairman's Office Doorway", "写字楼办公区 · 会议室外走廊" -- and an
 #: open-plan shell is the wrong geometry for a corridor or a threshold, so a
 #: name carrying one of these is left unclassified rather than guessed.
 _NOT_A_ROOM = ("corridor", "doorway", "threshold", "lobby", "reception",
@@ -187,15 +187,15 @@ def build(scenes: list[dict], bibles: list[dict]) -> tuple[dict, list[str]]:
             "name": _first([b.get("name") for b in bs]) or key,
             "scene_refs": [s.get("scene_id") for s in group],
             "anchor": _first([b.get("anchor") for b in bs]) or "",
-            # The stub's `setting` is its prose description, and for four of
-            # AutomaticDrive's five it is the anchor verbatim.
+            # The stub's `setting` is its prose description, which for a
+            # hand-authored stub is usually the anchor verbatim.
             "setting": _first([b.get("anchor") for b in bs]) or "",
             "era": _first([b.get("era") for b in bds]),
             "region": _first([b.get("region") for b in bds]),
             "culture": _first([b.get("culture") for b in bds]),
             # NOT the bible's raw INT/EXT: that is not the environment
             # vocabulary `shape_from_stub` reads, and writing it there made
-            # every Zheng location unclassified while looking populated.
+            # every location unclassified while looking populated.
             "shape": _first([shape_of(b) for b in bs]),
             "lighting": _first([(b.get("lighting_plan") or {}).get("key") for b in bs]),
             "_derived_from": [b.get("id") for b in bs],
@@ -238,8 +238,8 @@ def run(*, project: str, write: bool = False,
                         .get("stubs") or {})
         except (OSError, json.JSONDecodeError):
             existing = {}
-    # Hand edits win. AutomaticDrive's stubs have seven hand-edit backups
-    # beside them; regenerating over that would discard real work.
+    # Hand edits win. Stubs with hand-edit backups beside them record real
+    # work, and regenerating over them would discard it.
     kept = sorted(set(existing) & set(stubs))
     for k in kept:
         doc["stubs"][k] = existing[k]
