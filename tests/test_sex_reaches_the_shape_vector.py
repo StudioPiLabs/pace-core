@@ -20,15 +20,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from pace_core.breakdown.pace_regen_packets import betas_for_subject  # noqa: E402
 
 KB = {
-    "ryan": {"sex": "male", "anchor": "athletic build"},
-    "emily": {"sex": "female", "anchor": "slender"},
+    "dave": {"sex": "male", "anchor": "athletic build"},
+    "carol": {"sex": "female", "anchor": "slender"},
     "pat": {"anchor": "average build"},                 # sex not declared
     "sam": {"sex": "Male", "anchor": "average build"},  # declared oddly
 }
 
 
 def test_a_male_body_is_shaped_on_the_axis_that_carries_sex():
-    assert betas_for_subject("ryan", KB)[4] < 0, "male shape is the negative direction"
+    assert betas_for_subject("dave", KB)[4] < 0, "male shape is the negative direction"
 
 
 def test_the_male_offset_tracks_build():
@@ -59,7 +59,7 @@ def test_the_offset_stays_in_the_range_the_model_was_fit_over():
 def test_a_female_body_is_left_at_the_neutral_mean():
     """Not pushed positive: the neutral mean already reads female at the chest,
     which is why one shared proxy looked like one person for a whole cast."""
-    assert betas_for_subject("emily", KB)[4] == 0.0
+    assert betas_for_subject("carol", KB)[4] == 0.0
 
 
 def test_an_undeclared_sex_changes_nothing():
@@ -68,7 +68,7 @@ def test_an_undeclared_sex_changes_nothing():
 
 def test_the_declaration_is_read_case_insensitively():
     """Same build, sex spelled two ways: the offset must not care. Comparing
-    against Ryan would not test this any more, since the offset tracks build
+    against Dave would not test this any more, since the offset tracks build
     and their builds differ."""
     kb = {"lower": {"sex": "male", "anchor": "average build"},
           "title": {"sex": "Male", "anchor": "average build"}}
@@ -77,6 +77,6 @@ def test_the_declaration_is_read_case_insensitively():
 
 def test_sex_does_not_collide_with_age_or_build():
     """betas[0] is age and betas[1] is build; sex must not overwrite either."""
-    ryan, emily = betas_for_subject("ryan", KB), betas_for_subject("emily", KB)
-    assert ryan[1] != 0.0 and emily[1] != 0.0, "build still reaches the vector"
-    assert ryan[1] != emily[1], "and still separates these two"
+    dave, carol = betas_for_subject("dave", KB), betas_for_subject("carol", KB)
+    assert dave[1] != 0.0 and carol[1] != 0.0, "build still reaches the vector"
+    assert dave[1] != carol[1], "and still separates these two"

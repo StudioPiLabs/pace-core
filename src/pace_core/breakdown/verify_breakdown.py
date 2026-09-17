@@ -2,7 +2,7 @@
 
 Deliberately a DIFFERENT vendor from the generator that produced the Script IR.
 Two instances of one model share a prior, so they agree on whatever is
-plausible -- and this corpus's `screen_position.x` of 0.38 is maximally
+plausible -- and a `screen_position.x` of 0.38 is maximally
 plausible while being a lookup-table constant chosen by list index. A critic
 that shares the writer's taste rubber-stamps that. Splitting the vendors does
 not make the estimator right, but it stops the two failing the same way.

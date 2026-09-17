@@ -216,17 +216,17 @@ def _props_record(out, rec):
 
 def test_a_prop_declared_in_frame_but_staged_out_of_it_fails(tmp_path):
     out = _frame(tmp_path)
-    _props_record(out, {"car_console": {"in_frame": False, "frame_share": 0.04, "shown": 0.007}})
-    c = gg.declared_in_frame_clause(out, {("prop", "car_console"): "yes"})
-    assert c.ok is False and "car_console declared yes, staged no" in c.detail
+    _props_record(out, {"main_console": {"in_frame": False, "frame_share": 0.04, "shown": 0.007}})
+    c = gg.declared_in_frame_clause(out, {("prop", "main_console"): "yes"})
+    assert c.ok is False and "main_console declared yes, staged no" in c.detail
 
 
 def test_a_partial_declaration_matches_a_prop_the_frame_cuts(tmp_path):
     out = _frame(tmp_path)
-    _props_record(out, {"car_console": {"in_frame": True, "frame_share": 0.2, "shown": 0.4}})
-    assert gg.declared_in_frame_clause(out, {("prop", "car_console"): "partial"}).ok is True
-    assert gg.declared_in_frame_clause(out, {("prop", "car_console"): "yes"}).ok is True
-    assert gg.declared_in_frame_clause(out, {("prop", "car_console"): "no"}).ok is False
+    _props_record(out, {"main_console": {"in_frame": True, "frame_share": 0.2, "shown": 0.4}})
+    assert gg.declared_in_frame_clause(out, {("prop", "main_console"): "partial"}).ok is True
+    assert gg.declared_in_frame_clause(out, {("prop", "main_console"): "yes"}).ok is True
+    assert gg.declared_in_frame_clause(out, {("prop", "main_console"): "no"}).ok is False
 
 
 def test_a_subject_declared_out_of_frame_but_staged_fails(tmp_path):
@@ -237,8 +237,8 @@ def test_a_subject_declared_out_of_frame_but_staged_fails(tmp_path):
 
 
 def test_to_be_confirmed_is_reported_not_passed(tmp_path):
-    c = gg.declared_in_frame_clause(_frame(tmp_path), {("prop", "car_console"): "tbd"})
-    assert c.ok is None and "car_console" in c.detail
+    c = gg.declared_in_frame_clause(_frame(tmp_path), {("prop", "main_console"): "tbd"})
+    assert c.ok is None and "main_console" in c.detail
 
 
 def test_a_panel_that_declares_nothing_is_unmeasured(tmp_path):

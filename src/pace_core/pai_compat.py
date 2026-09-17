@@ -194,8 +194,8 @@ def subjects_of(shot: dict) -> tuple[list[str], dict[str, str]]:
 def ref_to_id_age(ref: str | None) -> tuple[str, str | None]:
     """Parse a canonical character reference.
 
-    >>> ref_to_id_age("nina@adult_50")
-    ('nina', 'adult_50')
+    >>> ref_to_id_age("alice@adult_50")
+    ('alice', 'adult_50')
     >>> ref_to_id_age("modern_office_man")
     ('modern_office_man', None)
     >>> ref_to_id_age("") == ref_to_id_age(None) == ("", None)
@@ -212,8 +212,8 @@ def ref_to_id_age(ref: str | None) -> tuple[str, str | None]:
 def id_age_to_ref(character_id: str, age_state: str | None) -> str:
     """Inverse of ref_to_id_age — assemble the canonical string form.
 
-    >>> id_age_to_ref("nina", "adult_50")
-    'nina@adult_50'
+    >>> id_age_to_ref("alice", "adult_50")
+    'alice@adult_50'
     >>> id_age_to_ref("modern_office_man", None)
     'modern_office_man'
     """
@@ -393,10 +393,10 @@ def gaze_clauses_of(shot: dict, offscreen: frozenset[str] | set[str] = frozenset
     at the car console" asks for a console the frame does not hold.
 
     Examples produced:
-      "nina looking at omar"
-      "theo gazing at the tablet"
-      "omar looking off-frame right"
-      "nina looking directly into camera"
+      "alice looking at bob"
+      "carol gazing at the tablet"
+      "bob looking off-frame right"
+      "alice looking directly into camera"
     """
     out: list[str] = []
     for sub in (dig(shot, "setup", "subjects") or []):

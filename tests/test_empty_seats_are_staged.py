@@ -3,7 +3,7 @@
 Seats were staged one per SUBJECT, so a two-person shot in a four-seat car put
 two chairs on the floor and left the rest of it bare. Bare floor in a control
 image is an invitation rather than a constraint: measured on
-scene_10/shot_02_panel_0002, the greybox staged two seats and the delivered
+one panel, the greybox staged two seats and the delivered
 panel came back with a third chair and a wraparound console invented into the
 empty half of the cabin — while the two SUBJECTS landed inside their staged
 mattes, so the bodies followed the greybox and only the set did not.

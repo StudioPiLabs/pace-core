@@ -103,14 +103,14 @@ def _cabin_scene():
         "shot_id": "shot_01",
         "setup": {
             "backdrop": {"setting": "int", "location": "inside a small car", "time_of_day": "day"},
-            "subjects": [{"character_id": "nina",
-                          "gaze": {"target_type": "object", "target_ref": "car_console"}}],
-            "primary_focus": {"type": "character", "ref": "nina"},
-            "props": [{"prop_id": "car_console"}, {"prop_id": "game_device"}],
+            "subjects": [{"character_id": "fay",
+                          "gaze": {"target_type": "object", "target_ref": "main_console"}}],
+            "primary_focus": {"type": "character", "ref": "fay"},
+            "props": [{"prop_id": "main_console"}, {"prop_id": "game_device"}],
         },
         "camera": {"extrinsics": {"angle": "eye_level"},
                    "creative_intent": {"shot_size": "medium"}},
-        "events": {"actions": [{"description_en": "nina stares ahead"}]},
+        "events": {"actions": [{"description_en": "fay stares ahead"}]},
         "panels": [{"id": "scene_01_shot_01_panel_0001", "panel_number": 1}],
     }
     return {"scene_id": "scene_01", "shots": [shot]}, shot
@@ -121,9 +121,9 @@ def _record(tmp_path, rec):
 
 
 def test_the_build_record_says_which_staged_props_are_out_of_frame(tmp_path):
-    _record(tmp_path, {"car_console": {"in_frame": False, "frame_share": 0.0},
-                       "cabin_panels": {"in_frame": True, "frame_share": 0.41}})
-    assert props_out_of_frame(tmp_path, "scene_01_shot_01_panel_0001") == {"car_console"}
+    _record(tmp_path, {"main_console": {"in_frame": False, "frame_share": 0.0},
+                       "wall_panels": {"in_frame": True, "frame_share": 0.41}})
+    assert props_out_of_frame(tmp_path, "scene_01_shot_01_panel_0001") == {"main_console"}
 
 
 def test_with_no_build_record_nothing_is_left_out(tmp_path):
@@ -133,13 +133,13 @@ def test_with_no_build_record_nothing_is_left_out(tmp_path):
 
 def test_an_eyeline_to_a_prop_out_of_frame_does_not_name_it():
     _scene, shot = _cabin_scene()
-    assert gaze_clauses_of(shot) == ["nina gazing at the car console"]
-    assert gaze_clauses_of(shot, {"car_console"}) == ["nina gazing at something out of frame"]
+    assert gaze_clauses_of(shot) == ["fay gazing at the main console"]
+    assert gaze_clauses_of(shot, {"main_console"}) == ["fay gazing at something out of frame"]
 
 
 def test_a_prop_staged_behind_the_lens_is_not_named(tmp_path):
     scene, shot = _cabin_scene()
-    _record(tmp_path, {"car_console": {"in_frame": False, "frame_share": 0.0},
+    _record(tmp_path, {"main_console": {"in_frame": False, "frame_share": 0.0},
                        "game_device": {"in_frame": True, "frame_share": 0.02}})
     pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(greyboxes_dir=tmp_path))
     assert "console" not in pos
@@ -149,7 +149,7 @@ def test_a_prop_staged_behind_the_lens_is_not_named(tmp_path):
 def test_the_same_prop_is_named_when_the_build_has_not_said(tmp_path):
     scene, shot = _cabin_scene()
     pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(greyboxes_dir=tmp_path))
-    assert "car console" in pos
+    assert "main console" in pos
 
 
 # ── what the panel declares in frame outranks the build's record ──
@@ -161,10 +161,10 @@ def _compile(tmp_path, shot, scene):
 
 def test_a_declaration_in_frame_outranks_the_build_record(tmp_path):
     scene, shot = _cabin_scene()
-    _record(tmp_path, {"car_console": {"in_frame": False, "frame_share": 0.0}})
+    _record(tmp_path, {"main_console": {"in_frame": False, "frame_share": 0.0}})
     shot["setup"]["props"][0]["in_frame"] = "yes"
     pos = _compile(tmp_path, shot, scene)
-    assert "car console" in pos and "gazing at the car console" in pos
+    assert "main console" in pos and "gazing at the main console" in pos
 
 
 def test_a_prop_declared_out_of_frame_is_not_named_without_a_build(tmp_path):
@@ -178,11 +178,11 @@ def test_a_partly_framed_prop_says_how_much_of_it_is_seen(tmp_path):
     scene, shot = _cabin_scene()
     shot["setup"]["props"][0].update(in_frame="partial",
                                      in_frame_extent="its right end at the bottom edge")
-    assert "car console (only its right end at the bottom edge visible)" in _compile(tmp_path, shot, scene)
+    assert "main console (only its right end at the bottom edge visible)" in _compile(tmp_path, shot, scene)
 
 
 def test_to_be_confirmed_defers_to_the_build_record(tmp_path):
     scene, shot = _cabin_scene()
-    _record(tmp_path, {"car_console": {"in_frame": False, "frame_share": 0.0}})
+    _record(tmp_path, {"main_console": {"in_frame": False, "frame_share": 0.0}})
     shot["setup"]["props"][0]["in_frame"] = "tbd"
     assert "console" not in _compile(tmp_path, shot, scene)

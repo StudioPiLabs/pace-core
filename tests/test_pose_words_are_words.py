@@ -25,12 +25,12 @@ def test_flying_and_flies_are_not_lying_and_lies():
 
 def test_a_real_verb_still_wins_over_a_substring_in_the_same_line():
     """`lying` is tried before `walking`; a spurious hit used to take the shot."""
-    assert pose_key_for("Ryan approaches the wall; a floating warning: RESTRICTED LAYER") == "walking"
-    assert pose_key_for("Ryan reluctantly reaches out; it flies along his gesture") == "reaching"
+    assert pose_key_for("Dave approaches the wall; a floating warning: RESTRICTED LAYER") == "walking"
+    assert pose_key_for("Dave reluctantly reaches out; it flies along his gesture") == "reaching"
 
 
 def test_the_poses_that_were_meant_still_match():
-    assert pose_key_for("Ryan kneels on one knee, gasping") == "kneeling"
+    assert pose_key_for("Dave kneels on one knee, gasping") == "kneeling"
     assert pose_key_for("she lies motionless on the floor") == "lying"
     assert pose_key_for("the body lay on the ground") == "lying"
     assert pose_key_for("he sits at the table") == "sitting"

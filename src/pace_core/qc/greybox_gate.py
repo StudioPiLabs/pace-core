@@ -41,8 +41,8 @@ cannot compute it.
                                MEASURED. Depth and the mattes must come from
                                the build that produced the beauty frame; one
                                written BEFORE its own frame came from an
-                               earlier build of a different staging. It finds
-                               nothing on this corpus today, which is the
+                               earlier build of a different staging. It may find
+                               nothing on a given production, which is the
                                result and not a reason to drop it: it is the
                                guard against a caller re-rendering one pass on
                                its own, and passing is what it should report
@@ -59,7 +59,7 @@ cannot compute it.
                                bodies are near each other, and then report
                                that as whether an action reads.
 
-Thresholds come from the corpus, not from preference; see the constants.
+Thresholds come from measurement, not from preference; see the constants.
 
     uv run python -m pace_core.qc.greybox_gate --project <slug>
     uv run python -m pace_core.qc.greybox_gate --project <slug> --strict
@@ -72,9 +72,9 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Measured over the evaluation corpus's 81 staged bodies across 37 panels: the
+# Measured over 81 staged bodies across 37 panels of one production: the
 # smallest any subject has ever projected is 0.0231 of the frame and the 5th
-# percentile is 0.0359. So 0.01 passes every body in the corpus today. That is
+# percentile is 0.0359. So 0.01 passes every body measured. That is
 # deliberate -- this is a floor against a subject VANISHING (staged outside the
 # frustum, occluded to nothing by the shell), not a tuning knob for framing.
 # A discriminating threshold would have to be argued from what reads at
@@ -89,8 +89,8 @@ ALPHA_ON = 0.5
 #
 # The mattes are rendered one body at a time, so each is the silhouette that
 # body WOULD have alone; where two overlap, the further one is that much
-# hidden. Measured on this corpus the spread is not subtle: a front-facing
-# three-hander overlaps 17%, while scene 2's three-quarter azimuth stacks two
+# hidden. The spread is not subtle: a front-facing
+# three-hander overlaps 17%, while a three-quarter azimuth can stack two
 # subjects on one sight line at 57% and 67%. Both passed every other clause,
 # which is how a panel that renders a declared subject as a sliver of forehead
 # was called an anchor.
@@ -110,7 +110,7 @@ MAX_SUBJECT_OVERLAP = 0.35
 # isolated head matte -- no extra render, and it is the fraction that decides
 # whether a panel has a read point at all.
 #
-# Measured over the corpus's 76 staged subjects the answer is bimodal and not
+# Measured over 76 staged subjects the answer is bimodal and not
 # close: 72 heads are 100% visible and 4 are 0%, with nothing between. The
 # threshold is therefore not doing subtle work; it separates "there is a head
 # to compose around" from "there is not".
@@ -118,7 +118,7 @@ MIN_READ_POINT_VISIBLE = 0.5
 
 # A control is stale when it predates its own beauty frame. Within one build
 # the kernel writes the frame first and the derived passes after, so positive
-# skew is normal and large (p95 = 30 s across the corpus, the mattes being
+# skew is normal and large (p95 = 30 s measured, the mattes being
 # one render each). Negative skew is not: it means the file on disk was
 # written by an earlier build. Five seconds absorbs filesystem timestamp
 # noise without absorbing a rebuild.
@@ -131,8 +131,8 @@ STALE_TOLERANCE_S = 5.0
 # It is what the sampler actually starts from, so an init from an older build
 # would mean the generator began from a picture of a different staging than
 # the depth and the mattes describe -- exactly the failure this clause exists
-# for. 23 of the evaluation corpus's 33 built panels have one on disk, the oldest 41
-# hours older than its own frame. None of them can reach a render: the init is
+# for. Most built panels of a measured production had one on disk, the
+# oldest 41 hours older than its own frame. None of them can reach a render: the init is
 # derived lazily by `structure_init.structure_init_for`, which rebuilds it
 # whenever the greybox is newer, and that is the only path any consumer takes
 # to reach one. Checking it here would report 23 failures for a hazard another
@@ -287,7 +287,7 @@ def screen_order_agreement(declared: list[tuple[str, float]],
     """Fraction of declared left-to-right pairs the render actually delivered.
 
     Pairwise rather than a rank correlation so the failures name themselves:
-    a report saying "theo renders left of omar, declared right" is actionable
+    a report saying "carol renders left of bob, declared right" is actionable
     where a coefficient is not. Pairs that declare the same x are skipped --
     they assert no order, so the geometry cannot violate one.
     """
@@ -541,8 +541,8 @@ def cut_continuity_clause(declared: dict | None, previous: dict | None) -> Claus
     fields, so disagreement is a fact rather than a judgement -- but only where
     a value exists. A costume written as free text on a character record had no
     identifier for two panels to disagree about, and a prop whose `state` is
-    null cannot contradict anything, which is why the screens went dark across
-    one cut of this corpus with nothing to report it.
+    null cannot contradict anything, which is how screens can go dark across a
+    cut with nothing to report it.
 
     `declared` and `previous` are `{"costumes": {character_id: costume_id},
     "prop_states": {prop_id: state}}`. Only a character or prop staged on both

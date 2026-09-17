@@ -90,8 +90,8 @@ from pace_core.paths import paths_for
 DEFAULT_RES = (1280, 544)
 # The shell this builds is a cabin: a floor, a roof, two side walls with
 # window bays, and no front wall to look in through. That is right for a
-# vehicle interior and wrong for everything else -- on the evaluation corpus, 22 of
-# 36 panels are vehicle_interior and the other 14 are a highway and a crash
+# vehicle interior and wrong for everything else -- a production
+# set partly in a car also stages a highway and a crash
 # site, where a cabin would be an invention rather than a proxy. A batch has
 # to know the difference, so eligibility is a question that can be asked
 # without building anything.
@@ -192,8 +192,8 @@ DEFAULT_FRAMING = SHOT_SIZE_FRAMING["wide"]
 # two positions, so somebody's declared position is going to be wrong; this
 # says whose. At 0 the aim minimises the SUM of the errors, which sounds
 # neutral and is not: a sum cannot tell "everyone slightly off" from "one
-# subject exact and one ruined", and it reliably picks the second -- measured
-# on this corpus, minimising the sum reproduces the old focus-centred aim
+# subject exact and one ruined", and it reliably picks the second -- measured,
+# minimising the sum reproduces the old focus-centred aim
 # almost exactly (7.66% vs 7.78% mean error) and loses the same 7 subjects off
 # frame. At 1 the aim equalises the errors and singles nobody out.
 #
@@ -204,12 +204,12 @@ DEFAULT_FRAMING = SHOT_SIZE_FRAMING["wide"]
 # throughout and delivered body height moves under 0.2%, so the trade is paid
 # for in absolute placement only. The frontier is flat above 0.30.
 #
-# It is a constant here because this corpus has one answer, but it is the kind
+# It is a constant here because one answer has served so far, but it is the kind
 # of decision a production would want to set per panel, and it is deliberately
 # a named, documented number rather than a rule buried in the solve.
 AIM_ARBITRATION_W = 0.5
 # Half a metre either side of the fit's own aim, at 1 cm resolution. Wider than
-# any offset the solve actually chooses on this corpus.
+# any offset the solve has been measured to choose.
 _AIM_SEARCH_M, _AIM_STEP_M = 1.6, 0.01
 
 # ── seeing past the set ──────────────────────────────────────────────────
@@ -484,11 +484,11 @@ def _mesh_for(age_state: str, meshes_dir: Path, pose: str = "sitting",
 _POSE_WORDS = (
     # Order is precedence, most specific first. `kneeling` used to live inside
     # the sitting bucket -- the comment said a seated proxy "reads as someone
-    # kneeling in traffic" -- so every authored kneel in the corpus staged as
+    # kneeling in traffic" -- so every authored kneel staged as
     # somebody sitting down. It has its own mesh now, so it is tested first.
     # "motionless" was here and describes STILLNESS, not posture: a body can
     # be motionless standing, sitting or lying. It only ever looked right
-    # because the corpus that taught this table wrote "lying motionless",
+    # because the breakdown that taught this table wrote "lying motionless",
     # where "lying" already matches. On another production it put 10 subjects on the floor,
     # including "standing tall, motionless, watching building".
     ("lying",    ("lying", "lies", "lay", "prone", "supine",
@@ -594,7 +594,7 @@ PROP_FILLS_FRAME = 0.25
 # `on_surface` is measured against another fixture rather than against the
 # shell, because that is how the object is actually described: a monitor is on
 # a desk, and it is on that desk wherever in the room the desk is. Every other
-# anchor answers to the shell, which is why this corpus could stage a console
+# anchor answers to the shell, which is why a vehicle could stage a console
 # spanning a cabin but not a keyboard -- and why an office film had fifteen
 # props and no staged furniture at all.
 #
@@ -640,14 +640,14 @@ def fit_scale(ext, size, policy=_FIT_DEFAULT):
     is a fact about the disagreement and not about how we settled it. A
     fixture reported at 14x was not modelled for the slot it is standing in.
 
-    Measured in-build on the evaluation corpus's cabin under the old unconditional
-    per-axis fit: car_console 2.29x, cabin_panels 14.60x -- the wall lining
+    Measured in-build on a vehicle cabin under the old unconditional
+    per-axis fit: a console 2.29x, a wraparound wall lining 14.60x -- the lining
     squeezed to 3.9% of its own width to reach a 7 cm door-card slot.
 
     Read it in-build and not from the file. Blender's glTF importer applies
     the Y-up to Z-up conversion, so measuring the same GLB's raw vertices
     outside Blender returns a PERMUTED extent and a different, wrong
-    anisotropy -- 3.90x for cabin_panels rather than 14.60x.
+    anisotropy -- 3.90x for that lining rather than 14.60x.
     """
     per = [(size[i] / ext[i]) if ext[i] > 1e-6 else 1.0 for i in range(3)]
     lo, hi = min(per), max(per)
@@ -705,17 +705,17 @@ def _record_surface(surfaces: dict, fx: dict, pos, size) -> None:
 #   records what happened when that was violated: a white border with an
 #   invented fourth person, and the picture squeezed into a narrow centre box).
 #   An arbitrary closed mesh at arbitrary scale with no open camera side is
-#   that failure by construction -- reproduced with cabin_panels, whose
-#   wraparound became a tub between lens and cast.
+#   that failure by construction -- reproduced with a wraparound wall
+#   lining, which became a tub between lens and cast.
 #
-#   And what image-to-3D returns for a location is not a room. All four
-#   the evaluation corpus's locations were run through it: two collapsed (a hairline,
+#   And what image-to-3D returns for a location is not a room. Four
+#   locations were run through it: two collapsed (a hairline,
 #   a blob), and the two that worked came back as car EXTERIORS -- the tool
 #   reconstructs a silhouette, the inverse of a space that contains a camera.
 #
 # The deleted `_mesh_is_substantial` also carried a warning worth keeping: every
 # location in this KB declares a `location_mesh` pointing at an 8-vertex box
-# written by the library proxy step, and modelling family_car from its PACE
+# written by the library proxy step, and modelling a car from its PACE
 # anchor card produced a flat pictogram. Any future attempt to feed a mesh in
 # here has to prove it is an interior, not merely that it is geometry.
 
@@ -917,8 +917,8 @@ _GARMENT_TONES = (("black", 0.12), ("charcoal", 0.22), ("navy", 0.25), ("dark", 
                   ("faded", 0.72), ("light", 0.72), ("pale", 0.75), ("cream", 0.82),
                   ("white", 0.88),
                   # Hues, at the grey each reads as in a greyscale control
-                  # image. Without them a costume named only by hue -- an
-                  # olive sweatshirt, a slate-blue jacket -- got no tone, and
+                  # image. Without them a costume named only by hue -- a
+                  # green sweatshirt, a grey-blue jacket -- got no tone, and
                   # the sampler chose a different garment at every angle.
                   ("burgundy", 0.25), ("maroon", 0.25), ("brown", 0.32),
                   ("purple", 0.32), ("slate", 0.38), ("red", 0.38), ("teal", 0.38),
@@ -932,7 +932,7 @@ def garment_tones(costume: str | None) -> dict:
     out: dict = {}
     for phrase in re.split(r",| and | with ", (costume or "").lower()):
         words = re.findall(r"[a-z-]+", phrase)
-        # "slate-blue" names its colour in its parts; "t-shirt" names its
+        # "grey-blue" names its colour in its parts; "t-shirt" names its
         # garment whole. Both are looked up.
         parts = [q for w in words for q in (w, *w.split("-"))]
         tone = next((t for w in parts for name, t in _GARMENT_TONES if w == name), None)
@@ -1003,9 +1003,9 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         and the seat layout used to ignore it completely: distance from camera
         came from which slot a subject's screen x sorted it into. A cabin puts
         its middle seat at the BACK, so a subject declared foreground was
-        staged furthest away whenever the blocking put them centre -- measured
-        on this corpus, the declared-foreground subject projected larger in
-        only 23 of 43 mixed-depth pairs, which is chance, and 8 of the 22
+        staged furthest away whenever the blocking put them centre -- measured,
+        the declared-foreground subject projected larger in about half of
+        the mixed-depth pairs, which is chance, and 8 of the 22
         shots declaring mixed depth staged both subjects at exactly the same
         distance.
         """
@@ -1076,7 +1076,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
             # close together are still two people, and interpolating them onto
             # the same patch of bench renders them interpenetrating. The
             # interpolation above, shipped without this floor, did that to
-            # EVERY two-subject seated shot in the corpus -- all eight declare
+            # every two-subject seated shot declared at
             # 0.38/0.50, which lands them 0.18--0.20 m apart inside a 0.95 m
             # body. The binary pick it replaced never collided, because +-fx is
             # always a seat apart; the centring it bought had quietly been paid
@@ -1091,7 +1091,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
             # subjects declare the same x.
             #
             # The floor is not free, and the cost lands on the pushed subject's
-            # declared position: enforcing it moved this corpus's two-subject
+            # declared position: enforcing it moved a production's two-subject
             # placement error from 5.7% of frame width to 9.2% (max 29.9% to
             # 32.2%). That is the correct trade and worth stating plainly --
             # a cabin narrower than two declared positions cannot satisfy both
@@ -1099,9 +1099,8 @@ def build_spec(project: str, scene_id: str, panel_id: str,
             # seat, and of the two, only one is negotiable.
             #
             # Since distance from camera follows the declared depth (below),
-            # all eight of those shots declare one subject foreground and sit
-            # the pair in two rows, so on this corpus the floor no longer
-            # binds; it still decides a pair the declaration puts in one row.
+            # shots that declare one subject foreground sit the pair in two
+            # rows, where the floor no longer binds; it still decides a pair the declaration puts in one row.
             xs = [fx - _declared_x(s) * 2 * fx for s in subs]
             if abs(xs[0] - xs[1]) < SUBJECT_SPACING_M:
                 keep = min(range(2), key=lambda i: abs(_declared_x(subs[i]) - 0.5))
@@ -1871,7 +1870,7 @@ def _render_depth_twin(sc, spec: dict) -> str:
 
 # Hair on the bald SMPL-X proxy, per style, in metres: shell thickness, grain
 # size, grain depth. Opt-in per spec subject (`hair`), so a panel that names
-# none renders exactly as before -- the corpus's own panels included.
+# none renders exactly as before -- existing panels included.
 HAIR_STYLES = {
     "short": {"thickness": 0.010, "grain": 0.010, "depth": 0.004},
     "curly": {"thickness": 0.022, "grain": 0.014, "depth": 0.012},
@@ -2239,7 +2238,7 @@ def _kernel_greybox(spec: dict) -> dict:
 
         The generic fallback used to be two boxes, a cube and a slab, which
         reads as a plinth. The alternative was whatever mesh the KB carried,
-        and the evaluation corpus's `swivel_seat.glb` is a single-view Hunyuan3D
+        and a seat mesh from a single-view Hunyuan3D
         generation whose own vertex profile is an egg: 0.24 x 0.09 at the
         floor, widest 0.78 x 0.82 at mid-height, tapering to a point. Fitted
         into the seat slot it stages a pod, and the delivered panel drew a pod,
@@ -2787,8 +2786,8 @@ def _kernel_greybox(spec: dict) -> dict:
     # framed extent VERTICALLY; when the pattern puts several bodies in frame,
     # the group's WIDTH is what the camera has to clear, and the band stops
     # binding at all. That is why a declared extreme close-up on a three-person
-    # crowd stages looser than a declared wide on a two-shot -- measured across
-    # this corpus, median staged body height did not order by declared size.
+    # crowd stages looser than a declared wide on a two-shot -- measured,
+    # median staged body height did not order by declared size.
     #
     # It is not fixable by pulling in: the panel also declares who is in frame,
     # and honouring the tighter size would crop out cast the prompt enumerates.
@@ -3005,7 +3004,7 @@ def _kernel_greybox(spec: dict) -> dict:
                 # Which shoulder decides which side of frame the near subject
                 # lands on, so it is the declared screen order's choice when
                 # there is one: taking the cabin-centre shoulder regardless
-                # crossed the line on scene_11's cut into its OTS.
+                # crossed the line at a cut from a wide into an OTS.
                 near_x = next((s.get("declared_x") for s in spec.get("subjects") or []
                                if s.get("character_id") == ots.get("near_subject")), None)
                 if near_x is not None and abs(float(near_x) - 0.5) > 1e-6:
@@ -3097,8 +3096,8 @@ def _kernel_greybox(spec: dict) -> dict:
     # and which ones went is reported.
     #
     # And the second way the two disagree: nobody stands inside furniture. The
-    # cast is placed from declared screen positions, which this corpus solves
-    # to within 1.8% and must not be moved to dodge a desk, so it is the desk
+    # cast is placed from declared screen positions, which the solve meets
+    # to within a few percent and must not be moved to dodge a desk, so it is the desk
     # that goes. Footprint containment, not bounding-box overlap: a subject
     # standing AT a desk overlaps it -- that is what standing at a desk is --
     # while a subject whose feet are inside its footprint is buried in it.
@@ -3157,7 +3156,7 @@ def _kernel_greybox(spec: dict) -> dict:
             back_y = min(back_y, cam_y - pad)
             front_y = max(front_y, cam_y + pad)
         # NOT the KB's cabin: stretched until it contains the camera and the
-        # cast plus 1.4 m of clearance. family_car declares 1.45 m across --
+        # cast plus 1.4 m of clearance. A family car declares 1.45 m across --
         # the Civic's SAE shoulder room W3 of 1448 mm -- and is built here at
         # 5.7 m, so no vehicle in any project is ever the width it declares,
         # which is also why narrowing scale_meters changes nothing visible.
@@ -3213,7 +3212,7 @@ def _kernel_greybox(spec: dict) -> dict:
         for j, (ex, ey) in enumerate(spec.get("empty_seats") or []):
             seat_geometry(f"seat_empty_{j}", ex, ey, seat_top, 0.62, 0.62)
 
-        # A per_seat fixture (e.g. swivel_seat) already IS the seat -- drawing
+        # A per_seat fixture (e.g. a swivel seat prop) already IS the seat -- drawing
         # the generic box on top of it is not a fallback, it is a second,
         # conflicting chair occupying the same space. The KB's own mesh is
         # what "the chair should look regular" is asking for; the box beneath
@@ -3234,7 +3233,7 @@ def _kernel_greybox(spec: dict) -> dict:
         # film's set dressing living in code every other project also runs,
         # which is the thing the comment above this block objects to. A film
         # that wants tray tables declares a prop with a `per_seat` placement,
-        # the same way swivel_seat is staged.
+        # the same way a seat prop is staged.
 
         shell_built.update(style="vehicle", width=round(half_w * 2, 4),
                            depth=round(depth, 4), height=round(top_z, 4),

@@ -87,7 +87,7 @@ LOCATIONS_MESH_DIR = "production/3d/locations"
 def default_mesh_path(kind: Literal["prop", "character", "location"], stem: str,
                       ext: str = "glb") -> str:
     """Return the conventional relative path for a fresh mesh.
-    `stem` is the entity id (e.g. "oil_lamp", "kumarajiva", "translation_hall").
+    `stem` is the entity id (e.g. "oil_lamp", "alice", "great_hall").
     """
     base = {
         "prop": PROPS_MESH_DIR,

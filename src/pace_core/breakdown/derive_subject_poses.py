@@ -1,9 +1,8 @@
 """Give each subject in a shot the posture its own beat implies.
 
 `setup.subjects[].pose` is a per-subject field that was being written once per
-shot: 22 of AutomaticDrive's multi-subject shots and 65 of kumarajiva's hand
-every subject the identical string, and exactly one shot across both films
-varies it. So a beat that reads "the man kneels on the road beside the woman
+shot: multi-subject shots handed every subject the identical string, and
+almost none varied it. So a beat that reads "the man kneels on the road beside the woman
 lying motionless" stored "kneeling or crouched grief pose" three times, and the
 woman who is the point of the shot was staged kneeling like everyone else.
 

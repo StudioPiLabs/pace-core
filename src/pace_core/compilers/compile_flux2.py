@@ -642,7 +642,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
             setting_bits.append("in " + ", ".join(place_bits))
         env = (shot.get("setup") or {}).get("environment") or {}
         # A panel that declares no atmosphere used to render with whichever
-        # one the sampler chose -- 8 of this corpus's 36. The film's genre is
+        # one the sampler chose. The film's genre is
         # the floor under that: coarser than a declared mood and never a
         # substitute for one, but it is what the treatment says the picture
         # is, and it beats an unstated adjective.

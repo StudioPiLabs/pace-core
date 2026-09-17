@@ -286,7 +286,7 @@ def camera_brief(shot: dict, scene: Optional[dict] = None,
     if motion:
         parts.append(motion)
         # A tripod under a moving camera is the data contradicting itself —
-        # every crane shot in the evaluation corpus declares gear "tripod" too.
+        # crane shots have been found declaring gear "tripod" too.
         # The move is the more specific claim, so the rig stays quiet rather
         # than asking a language model to reconcile the two.
         if gear == "tripod":

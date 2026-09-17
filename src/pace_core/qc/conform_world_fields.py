@@ -2,14 +2,14 @@
 
 `design_check` reports `world_drift` and refuses to resolve it, correctly: which
 side of a divergence is right is a directorial decision. This is the case where
-there is no decision to make. Zheng's 公司办公区 is one room, and its shots tell
-the generator three different things about it:
+there is no decision to make. One office played across several scenes is one
+room, and its shots can tell the generator three different things about it:
 
-    scene_03  modern day / near future, 中国都市写字楼办公区,
+    scene A   modern day / near future, 中国都市写字楼办公区,
               modern urban chinese corporate
-    scene_09  modern day, modern chinese city office building,
+    scene B   modern day, modern chinese city office building,
               modern urban chinese office supernatural
-    scene_13  modern day, 现代都市写字楼, modern urban chinese office
+    scene C   modern day, 现代都市写字楼, modern urban chinese office
 
 These are the same world in different words, and in two languages, written into
 an English prompt. Nothing here is choosing between competing designs; it is

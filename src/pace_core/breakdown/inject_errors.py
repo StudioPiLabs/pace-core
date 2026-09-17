@@ -183,7 +183,7 @@ def swap_names(text: str, a: str, b: str) -> str:
 
     Each name is put back in the SURFACE form the text used, not in the script
     IR's canonical form. The IR spells characters in screenplay caps, so
-    substituting it directly produced "wreckage limps toward the OMAR" -- a
+    substituting it directly produced "wreckage limps toward the BOB" -- a
     sentence carrying a second, louder signal than the role swap being tested,
     and a mutation that is obvious for the wrong reason measures the wrong
     thing.
@@ -264,8 +264,8 @@ def plan(baseline: dict, script_ir: list[dict], actions: dict[str, str],
             # there, and the first run learned this the expensive way: all
             # four SpecializePredicate targets were already flagged, so the
             # kind scored 0.00 recall while the estimator had in fact done
-            # nothing wrong. On this corpus that is nearly every action --
-            # 23 of 27 -- which is itself the finding: a breakdown already
+            # nothing wrong. On a breakdown rich in craft detail that is nearly
+            # every action, which is itself the finding: a breakdown already
             # saturated with craft detail leaves no headroom to inject more.
             if ("OVERSPEC", si, aid) not in baseline_signals:
                 pool.append(Mutation("SpecializePredicate", si, bscenes[0], aid,
@@ -290,8 +290,8 @@ def plan(baseline: dict, script_ir: list[dict], actions: dict[str, str],
     # At most one mutation per SHOT. Two edits to one text fight over it, and
     # a DeleteEvent renumbers every later action in its shot, which would
     # silently repoint both the manifest and the baseline alignment at a
-    # different action than the one mutated. Every shot in this corpus carries
-    # exactly one action, so this is also one mutation per action.
+    # different action than the one mutated. Where every shot carries exactly one
+    # action, this is also one mutation per action.
     by_kind: dict[str, list[Mutation]] = {}
     for m in out:
         by_kind.setdefault(m.kind, []).append(m)
@@ -434,8 +434,8 @@ def score_detection(baseline: dict, mutated: dict,
     """Precision and recall of the verifier against known injected errors.
 
     Scored on the DELTA between the two runs, not on the mutated run alone.
-    The baseline breakdown already contains real errors -- 48 genuinely missing
-    events in the corpus one -- so an absolute count would credit the verifier
+    The baseline breakdown already contains real errors -- genuinely missing
+    events -- so an absolute count would credit the verifier
     for finding faults nobody injected. What an injected error must do is make
     a signal APPEAR that was not there before.
 

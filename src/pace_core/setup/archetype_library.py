@@ -90,7 +90,7 @@ _AGE_DECADE = re.compile(r"\b(?:(early|mid|late)\s*)?(\d0)s\b", re.I)
 
 
 def age_years_from_text(text: str):
-    """Recover an age in years from the prose forms this corpus actually uses.
+    """Recover an age in years from the prose forms breakdowns actually use.
 
     Registries written by hand say "7-year-old", "17-18 year old", "late
     30s-40s" — none of which a keyword table matches. Returning the number
