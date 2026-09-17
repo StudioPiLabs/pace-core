@@ -87,16 +87,29 @@ def test_a_props_library_given_as_a_list_resolves_the_same():
 
 
 # ── hair, from the same description the prompt reads ─────────────────────
-def test_short_hair_is_capped_and_long_hair_is_not():
+def test_any_named_hair_is_capped():
     """A lens behind a bald proxy delivers a bald back of the head under a
-    prompt that names short hair; a shell for long hair would be wrong in
-    shape, so it is left alone."""
+    prompt that names hair: short, curly or shoulder-length. A reverse shot
+    over Abigail's shoulder came back as a helmet before long hair had a
+    shell."""
     from pace_core.node.panel_greybox import HAIR_STYLES, hair_style
 
     assert hair_style("average build, Hispanic, with short black hair flecked "
                       "with grey and a relaxed demeanor.") == "short"
     assert hair_style("slim, with tight curly hair and a wide smile") == "curly"
     assert hair_style("average build, Caucasian, with shoulder-length blonde "
-                      "hair and a thoughtful expression") is None
+                      "hair and a thoughtful expression") == "long"
     assert hair_style("a bald man") is None and hair_style(None) is None
     assert set(filter(None, (hair_style("short hair"), hair_style("curly hair")))) <= set(HAIR_STYLES)
+
+
+def test_a_garment_named_by_hue_gets_a_tone():
+    """An olive sweatshirt and a slate-blue jacket were read as no garment
+    and a white tee respectively: the hue was unknown, and the tee under
+    the jacket was the first garment with a colour it recognised."""
+    lucas = garment_tones("a soft olive crew-neck sweatshirt and charcoal tapered trousers")
+    assert lucas["top"]["sleeve"] == "long" and 0.3 < lucas["top"]["tone"] < 0.5
+    abigail = garment_tones("a fitted slate-blue technical jacket with a standing "
+                            "collar over a white tee, and dark tapered trousers")
+    assert abigail["top"] == {"tone": 0.38, "sleeve": "long"}
+    assert garment_tones("a faded graphic t-shirt and dark jeans")["top"]["sleeve"] == "short"
