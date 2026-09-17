@@ -1,7 +1,6 @@
 """A prop declared away from the cast is written with its place.
 
-On one scene's second beat the only prop text was "mechanical robotic arms
-emerging from the wreckage", declared in the background and staged nowhere,
+On one scene's second beat the only prop text was "a mechanical arm rising out of the rubble", declared in the background and staged nowhere,
 and the sampler attached the arms to the one man in frame: his hands came back
 mechanical. Written with its declared place, the prop has somewhere to be.
 """
@@ -17,19 +16,19 @@ from pace_core.pai_compat import (  # noqa: E402
 )
 
 KB = {
-    "robot_arms": {"id": "robot_arms", "physical_attributes": {"size_m": [1.5, 0.5, 0.5]}},
-    "wrecked_car": {"placement": {"anchor": "ground", "span": [4.3, 1.85, 1.45]}},
+    "crane_arm": {"id": "crane_arm", "physical_attributes": {"size_m": [1.5, 0.5, 0.5]}},
+    "fallen_crate": {"placement": {"anchor": "ground", "span": [4.3, 1.85, 1.45]}},
     "game_device": {"id": "game_device", "physical_attributes": {"size_m": [0.2, 0.1, 0.01]}},
 }
 
 
 def test_a_large_unstaged_prop_away_from_the_cast_is_not_named():
-    arms = {"prop_id": "robot_arms", "screen_position": {"zone": "background_midground"}}
+    arms = {"prop_id": "crane_arm", "screen_position": {"zone": "background_midground"}}
     assert prop_left_unstaged_away_from_cast(arms, KB)
 
 
 def test_a_prop_the_greybox_stages_is_named():
-    car = {"prop_id": "wrecked_car", "screen_position": {"zone": "background_midground"}}
+    car = {"prop_id": "fallen_crate", "screen_position": {"zone": "background_midground"}}
     assert not prop_left_unstaged_away_from_cast(car, KB)
 
 
@@ -39,19 +38,19 @@ def test_a_small_prop_is_named_wherever_it_is():
 
 
 def test_a_prop_on_the_cast_is_named_however_large():
-    held = {"prop_id": "robot_arms", "screen_position": {"zone": "hands", "depth": "foreground"}}
+    held = {"prop_id": "crane_arm", "screen_position": {"zone": "hands", "depth": "foreground"}}
     assert not prop_left_unstaged_away_from_cast(held, KB)
-    assert not prop_left_unstaged_away_from_cast({"prop_id": "robot_arms"}, KB)
+    assert not prop_left_unstaged_away_from_cast({"prop_id": "crane_arm"}, KB)
 
 
 def test_declared_vehicle_scale_counts_as_large_without_a_registry():
-    arms = {"prop_id": "robot_arms", "size": "vehicle_scale",
+    arms = {"prop_id": "crane_arm", "size": "vehicle_scale",
             "screen_position": {"zone": "background_midground"}}
     assert prop_left_unstaged_away_from_cast(arms, None)
 
 
 def _prop(zone: str | None = None, depth: str | None = None) -> dict:
-    p = {"prop_id": "robot_arms", "cls": "mechanical_system"}
+    p = {"prop_id": "crane_arm", "cls": "mechanical_system"}
     if zone or depth:
         p["screen_position"] = {k: v for k, v in (("zone", zone), ("depth", depth)) if v}
     return p
@@ -75,7 +74,7 @@ def test_a_prop_in_the_hands_or_foreground_is_left_as_written():
 
 def test_a_prop_with_no_declared_place_is_left_as_written():
     assert prop_placement(_prop()) == ""
-    assert prop_placement({"prop_id": "robot_arms", "screen_position": None}) == ""
+    assert prop_placement({"prop_id": "crane_arm", "screen_position": None}) == ""
 
 
 def test_the_place_follows_the_prop_it_belongs_to():

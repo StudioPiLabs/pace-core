@@ -22,7 +22,7 @@ coverage; with it, it is a reading of a stated intent.
 What is deliberately NOT derived: the intent prose is written into
 `camera._design.intent` and is never compiled into a prompt. The projection
 already measures why -- writing a director's note produces a picture OF the
-note, and "watching them like a surveillance feed" draws a surveillance feed.
+note, and "like a stranger at the window" draws a stranger at a window.
 
     uv run python -m pace_core.breakdown.derive_shot_design --project <slug>
     uv run python -m pace_core.breakdown.derive_shot_design --project <slug> --execute

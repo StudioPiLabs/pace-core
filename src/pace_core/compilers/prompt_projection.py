@@ -109,10 +109,10 @@ FIELDS: dict[str, Rule] = {
         "inert — the model's default eye already sits there — so the "
         "meta-prompt drops it rather than spending a clause on it.", "measured"),
     "camera._design.intent": Rule(
-        Mode.INPUT_ONLY, "A director's note ('watching them like a surveillance "
-        "feed, which implies the system has been watching all along'). It "
+        Mode.INPUT_ONLY, "A director's note ('the camera keeps its distance, like a "
+        "stranger at the window'). It "
         "explains why the shot is built as it is; it is not a description of "
-        "the frame, and writing it produces a picture of a surveillance feed."),
+        "the frame, and writing it produces a picture of a stranger at a window."),
     "camera_brief": Rule(
         Mode.INPUT_ONLY, "Prose written for a human reader about the camera. "
         "Same reasoning as _design.intent."),
@@ -189,8 +189,8 @@ FIELDS: dict[str, Rule] = {
     "film.theme": Rule(
         Mode.INPUT_ONLY, "核心主题. A theme is abstract by definition. Writing "
         "one produces a picture OF it, the failure already measured on "
-        "camera._design.intent -- 'watching them like a surveillance feed' "
-        "draws a surveillance feed."),
+        "camera._design.intent -- 'like a stranger at the window' "
+        "draws a stranger at a window."),
     "film.worldview.design_language": Rule(
         Mode.WITHHELD, "The world anchor is a constant this pipeline owns, "
         "appended by the compilers next to the style anchor and for the same "

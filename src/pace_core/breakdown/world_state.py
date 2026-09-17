@@ -1,8 +1,8 @@
 """A world state that survives the event that changed it.
 
 PACE carries static entity descriptors and per-shot transient events, and
-nothing in between. So a beat can assert "all the panels lose power" while the
-prop registry keeps saying "glowing with interface graphics", and the compiler
+nothing in between. So a beat can assert "the lamps go out" while the
+prop registry keeps saying "casting warm light", and the compiler
 concatenates both into one prompt: the assembled text states its own beat and
 contradicts it in the same paragraph. That defect took a render campaign and a
 figure to find.

@@ -430,7 +430,7 @@ class Prop:
     color:       Optional[str]             = None    # open set: "deep_crimson", "soot_black", "celadon_green"
     size:        Optional[PropSize]        = None    # relative scale — palm_sized / human_scale / monumental / …
     held_by:     Optional[str]             = None    # character ref (id@age form, see pai_compat.id_age_to_ref)
-    rests_on:    Optional[str]             = None    # character_id the prop lies on ("the car falls on top of him")
+    rests_on:    Optional[str]             = None    # character_id the prop lies on ("the shelf collapses onto him")
     screen_position: Optional["ScreenPosition"] = None  # reuse Subject's frame-placement spec
     count:       int                       = 1       # multiplicity for batches of same prop (a stack of wooden tablets)
     in_frame:    Optional[InFrame]         = None    # in the picture this panel, not just in the scene (see InFrame)

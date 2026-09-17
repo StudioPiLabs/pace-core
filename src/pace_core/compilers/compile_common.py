@@ -119,8 +119,8 @@ class Film:
       theme            NOT compiled. A theme is abstract by definition, and
                        prompt_projection has the measurement: writing a
                        director's intent produces a picture OF the intent --
-                       "watching them like a surveillance feed" draws a
-                       surveillance feed.
+                       "like a stranger at the window" draws a stranger
+                       at a window.
       source           NOT compiled. Provenance. Writing 《山海经》 into a
                        prompt draws a book.
     """

@@ -811,9 +811,9 @@ def prop_phrase(p: dict, props_kb: dict | None = None) -> str:
 
 # Where a prop declares itself in the frame, in words -- only for the zones that
 # put it away from the cast. A prop described with no place is attached by the
-# sampler to whatever in frame matches its words: one scene's "mechanical
-# robotic arms emerging from the wreckage", declared in the background, came
-# back as the hands of the man in the foreground. A prop held in the hands or
+# sampler to whatever in frame matches its words: a "mechanical arm
+# rising out of the rubble", declared in the background, can come back as the
+# hands of the man in the foreground. A prop held in the hands or
 # set in the foreground is left as written; its place is the cast's.
 _PROP_ZONE_WORDS = {
     "background": "in the background",
@@ -847,9 +847,9 @@ def prop_left_unstaged_away_from_cast(p: dict, props_kb: dict | None = None) -> 
     does not stage -- one the prompt should not name.
 
     Such a prop has nothing in the control image to be drawn on, so the
-    sampler draws it on what is there. On one scene's second beat, "mechanical
-    robotic arms emerging from the wreckage" (1.5 m, declared in the
-    background, no placement) came back as the hands of the one man in frame,
+    sampler draws it on what is there. A "mechanical
+    arm rising out of the rubble" (1.5 m, declared in the
+    background, no placement) has come back as the hands of the one man in frame,
     with or without its place written after it; the same render without the
     words gave him human hands. A prop held or worn is not affected: its place
     is the cast's, and it is drawn on the cast by design.

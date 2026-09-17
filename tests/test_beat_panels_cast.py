@@ -15,11 +15,11 @@ CAST = {"gus", "hal"}
 CLIMAX = {"id": "b5", "source_event_ids": [], "evidence": [], "transition": [
     {"predicate": "FALL_ON_TOP_OF", "actor": "the_car", "patient": "gus", "target": None},
     {"predicate": "FADE_SCREAMS", "actor": "hal", "patient": None, "target": None}]}
-TEMPLATE = {"setup": {"props": [{"prop_id": "wrecked_car"}, {"prop_id": "robot_arms"}],
+TEMPLATE = {"setup": {"props": [{"prop_id": "fallen_crate"}, {"prop_id": "crane_arm"}],
                       "subjects": []},
             "camera": {}, "lighting": {}, "_ages": {"gus": "adult_50", "hal": "adult_18"}}
 # The project's map from the beat's event actors to registry prop ids.
-PROP_MAP = {"event": {"the_car": ["wrecked_car"]}}
+PROP_MAP = {"event": {"the_car": ["fallen_crate"]}}
 
 
 def test_an_actor_who_only_makes_a_sound_is_heard_not_shown():
@@ -54,8 +54,8 @@ def test_the_panel_drops_a_subject_the_beat_does_not_show():
 def test_a_prop_that_falls_on_someone_rests_on_them():
     sh = _panel({"subjects": [{"character_id": "gus", "pose": "lying"}]})
     props = {p["prop_id"]: p for p in sh["setup"]["props"]}
-    assert props["wrecked_car"]["rests_on"] == "gus"
-    assert "rests_on" not in props["robot_arms"]
+    assert props["fallen_crate"]["rests_on"] == "gus"
+    assert "rests_on" not in props["crane_arm"]
     assert "rests_on" not in TEMPLATE["setup"]["props"][0]      # template untouched
 
 
@@ -71,7 +71,7 @@ def test_an_entity_with_no_map_entry_is_taken_as_a_prop_id():
 
 
 def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
-    kb = {"wrecked_car": {"placement": {"anchor": "ground", "span": [4.3, 1.85, 1.45],
+    kb = {"fallen_crate": {"placement": {"anchor": "ground", "span": [4.3, 1.85, 1.45],
                                         "offset": [0.35, -1.7, 0.0]}}}
     (tmp_path / "props.json").write_text(json.dumps(kb))
 
@@ -79,11 +79,11 @@ def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
         props_file = tmp_path / "props.json"
         storage = tmp_path
 
-    on = pg._panel_fixtures(P, {"props": [{"prop_id": "wrecked_car", "rests_on": "gus"}]})
+    on = pg._panel_fixtures(P, {"props": [{"prop_id": "fallen_crate", "rests_on": "gus"}]})
     assert on[0]["on_subject"] == "gus"
     # Absent unless set: `fixtures` is an anchor field, so a key on every
     # fixture would restamp every panel's anchor for geometry that did not move.
-    plain = pg._panel_fixtures(P, {"props": [{"prop_id": "wrecked_car"}]})
+    plain = pg._panel_fixtures(P, {"props": [{"prop_id": "fallen_crate"}]})
     assert "on_subject" not in plain[0]
 
 

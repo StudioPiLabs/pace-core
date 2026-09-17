@@ -585,8 +585,8 @@ _FIXTURE_ANCHORS = FIXTURE_ANCHORS
 # the camera stands ahead of the windscreen, the console runs across the
 # cabin just below the frame, and two stubs of it at the bottom corners are
 # not the full-width panel the prompt would describe. The third keeps a prop
-# too close to be framed whole -- the wreck beside the cast in scene 7, most
-# of whose box lies outside a frame it still fills.
+# too close to be framed whole -- a large object beside the cast, most of
+# whose box lies outside a frame it still fills.
 PROP_IN_FRAME_MIN = 0.005
 PROP_SHOWN_MIN = 0.25
 PROP_FILLS_FRAME = 0.25
@@ -1177,11 +1177,11 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # lookup below indexed subs[0] of an empty list and died with a bare
         # IndexError. `eligible_panels` screens these out upstream, but a
         # caller reaching build_spec directly deserves the reason rather than
-        # a stack trace -- an environment beat with no cast (vehicles hovering,
-        # a panel closing) is a legitimate panel this stage simply cannot
+        # a stack trace -- an environment beat with no cast (an empty street,
+        # a door swinging shut) is a legitimate panel this stage simply cannot
         # stage, because the camera is solved by fitting the cast.
-        # An ENVIRONMENT beat declares no cast -- the waiting vehicles hovering
-        # motionless, the road panel closing over the wreck. It is a real beat
+        # An ENVIRONMENT beat declares no cast -- an empty street, a door
+        # swinging shut. It is a real beat
         # and a real image; there is simply nobody to seat. `max(1, len(subs))`
         # used to force range(n) == [0] here and index subs[0] of an empty
         # list, which died with a bare IndexError.
@@ -1554,8 +1554,8 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
             pos = (((sh.get("camera") or {}).get("extrinsics") or {})
                    .get("position") or "front")
             reason = None
-            # A cast-less panel is an ENVIRONMENT beat, not a mistake: the
-            # waiting vehicles hovering, the road panel closing over the wreck.
+            # A cast-less panel is an ENVIRONMENT beat, not a mistake: an
+            # empty street, a door swinging shut.
             # It stages the space and its fixtures, with the camera fitted to
             # the location's own declared extent rather than to a cast. It
             # still needs a buildable location, so the checks below apply.
@@ -2731,8 +2731,8 @@ def _kernel_greybox(spec: dict) -> dict:
         pts.extend(kept or bc)
     pts = pts or corners
     # A prop the beat leaves lying on a subject is part of what the frame is
-    # about: "the car falls on top of him" framed to the man alone cropped the
-    # car to a slab across the top edge. Its box joins the fitted extent --
+    # about: a shelf collapsing onto a man, framed to the man alone, cropped the
+    # shelf to a slab across the top edge. Its box joins the fitted extent --
     # outdoors, where a span is already metres, in world axes, before any
     # shell exists to scale it. Only in a shot wide enough to hold a body
     # whole: a close-up cuts anything the size of a car at the frame edge,
@@ -3307,9 +3307,9 @@ def _kernel_greybox(spec: dict) -> dict:
         # The set dressing an exterior declares, staged like any other fixture.
         # place_fixtures used to be called only from the cabin branch, so a
         # prop outdoors could not be staged however its placement was written:
-        # one scene declares robot_arms "emerging from the wreckage" and the
-        # greybox held two bodies and open ground, so the model invented both
-        # the wreck and the arms and put them where the composition had room —
+        # a scene can declare a machine "rising out of the rubble" and the
+        # greybox hold two bodies and open ground, so the model invents both
+        # the rubble and the machine and put them where the composition had room —
         # across the chest of the subject in the middle. Metres, not fractions
         # of a shell, because out here there is no shell to take a fraction of.
         place_fixtures(W=1.0, D=1.0, H=1.0, base_z=0.0,

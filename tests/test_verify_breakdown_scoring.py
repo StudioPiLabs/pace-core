@@ -18,7 +18,7 @@ def _scenes():
     return [
         {"index": 6, "events": [
             {"local_id": "e11", "predicate": "FALL_ON_TOP_OF", "importance": 1.0,
-             "evidence": {"source_text": "The car falls on top of him."}}]},
+             "evidence": {"source_text": "The shelf collapses onto him."}}]},
         {"index": 7, "events": [
             {"local_id": "e11", "predicate": "LOSE_POWER", "importance": 1.0,
              "evidence": {"source_text": "All the panels lose power."}}]},

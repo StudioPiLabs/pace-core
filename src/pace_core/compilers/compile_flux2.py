@@ -601,11 +601,11 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
         # anchor still mentions), not an additional fact, so the generic
         # anchor clause is dropped in favour of it below rather than
         # stacked alongside it -- stacking produced a self-contradictory
-        # prompt (one clause placing a wrecked car in frame, the "backed
+        # prompt (one clause placing an object in frame, the "backed
         # by" clause explicitly excluding it) for a close-up whose
         # shot-level override had been corrected without touching the
-        # location anchor its accident_scene location shares with two
-        # other scenes. A background naming a DIFFERENT scope (the ext.
+        # location anchor its location shares with other
+        # scenes. A background naming a DIFFERENT scope (the ext.
         # view through this int. cabin's own windows) is genuinely
         # additive and both clauses are kept, unchanged from before.
         loc_superseded = bool(

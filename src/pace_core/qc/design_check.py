@@ -5,9 +5,8 @@ Two documents state things about a film that no scene file can state for
 itself, and until now nothing read either of them.
 
 `kb/shot_design.json` is the director's 核心主题 -- the theme, written as four
-beat groups with an `intent` paragraph each ("the camera is fixed and
-objective, watching them like a surveillance feed, which implies the system
-has been watching all along"). A person read it once and hand-applied its
+beat groups with an `intent` paragraph each ("the camera keeps its
+distance, like a stranger at the window"). A person read it once and hand-applied its
 (shot size, angle, movement) triples into the scene documents. After that the
 theme left the machine: nothing could check that a shot still served it, and a
 regenerated shot could not rederive it.
@@ -35,7 +34,7 @@ Six rules, each from a divergence a production actually carried:
                        so the prompt is compiled without it.
   prop_link_unhonoured a prop's own `linked_scenes` names this scene and no
                        shot in it declares the prop,
-                       including the DJ deck in the one scene it can appear
+                       including a prop with only one scene it can appear
                        in. (`linked_shots` is filled on 0 of 15 -- a second
                        field the registry declares and nothing writes.)
   location_ref_drift   `narrative_meta.location_ref` names a different
@@ -152,8 +151,8 @@ def check_props(props: dict, scene: dict) -> list[tuple[str, str, str]]:
     own record names this scene while no shot in it declares the prop is a
     gap the registry proves rather than one a heuristic guesses at.
 
-    A prop that names the only scene it can appear in -- a DJ deck in a
-    nightclub flashback -- while no shot there declares it is not background
+    A prop that names the only scene it can appear in while no shot there
+    declares it is not background
     dressing the location bible already covers; it is the object the beat is
     about.
     """
