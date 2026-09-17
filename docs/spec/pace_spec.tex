@@ -1,0 +1,43 @@
+% Standalone companion document: the full Studio π field specification.
+% Build: docs/spec/build.sh. The body is spec_appendix.tex, which is
+% generated from the schema source; this file only supplies a preamble.
+\documentclass[11pt]{article}
+\setcounter{secnumdepth}{3}
+\usepackage[margin=1in]{geometry}
+\usepackage{times}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\newcolumntype{R}[1]{>{\raggedright\arraybackslash}p{#1}}
+\PassOptionsToPackage{hyphens}{url}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage[T1]{fontenc}
+\usepackage{microtype}
+\usepackage{xspace}
+\usepackage{float}
+\hypersetup{colorlinks=true, linkcolor=blue!50!black, citecolor=blue!50!black,
+            urlcolor=blue!50!black}
+\newcommand{\pai}{\texorpdfstring{Studio $\pi$}{Studio pi}\xspace}
+\newcommand{\pace}{\textsc{Pace}\xspace}
+\newcommand{\scine}{\textsc{Scine}\xspace}
+\title{\textbf{\pai{} Field Specification} \\
+\large Companion to \emph{PACE: Precise AI Cinematic Expression}}
+\author{Studio $\pi$}
+\date{\today}
+\begin{document}
+\maketitle
+
+\noindent This document is the complete field-level specification of the
+\pai{} schema that the \pace{} paper reports on. The paper describes the
+schema's authoring view and counts its fields; the tables here
+list every sub-schema and field with its type and meaning, generated from the
+schema source rather than transcribed, so the two cannot drift apart by
+omission. Field names, enumerations and defaults are the ones a document
+actually carries.
+
+\input{spec_appendix}
+
+\end{document}

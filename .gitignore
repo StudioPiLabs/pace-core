@@ -4,3 +4,9 @@ __pycache__/
 .pytest_cache/
 dist/
 *.egg-info/
+
+# typeset output of docs/spec
+docs/spec/*.pdf
+docs/spec/*.aux
+docs/spec/*.log
+docs/spec/*.out
