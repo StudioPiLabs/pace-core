@@ -1,0 +1,641 @@
+\section{The full field specification}
+\label{app:spec}
+
+The table below is generated from the schema source: 42 sub-schemas, 259 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
+
+\subsection*{\texttt{CameraIntrinsics}}
+\noindent Optical /\allowbreak{} exposure parameters. SCINE encodes them as 3-bucket categoricals (wide/\allowbreak{}medium/\allowbreak{}narrow for aperture, etc.); the exact-value fields below let real-capture metadata travel alongside without conflict, but compilers should read the categorical fields.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{lens\_\allowbreak size} & LensSize, optional & focal-length CLASS (see LensSize) \\
+\texttt{depth\_\allowbreak of\_\allowbreak field} & DepthOfField, optional & focus behavior ---\allowbreak{} shallow/\allowbreak{}deep/\allowbreak{}rack/\allowbreak{}etc \\
+\texttt{aperture} & Aperture, optional & wide/\allowbreak{}medium/\allowbreak{}narrow f-stop bucket \\
+\texttt{shutter\_\allowbreak speed} & ShutterSpeed, optional & slow/\allowbreak{}medium/\allowbreak{}fast bucket ---\allowbreak{} affects motion blur \\
+\texttt{iso} & ISOLevel, optional & low/\allowbreak{}medium/\allowbreak{}high sensor sensitivity bucket \\
+\texttt{focal\_\allowbreak length\_\allowbreak mm} & number, optional & exact lens length, e.g. 35.0 \\
+\texttt{aperture\_\allowbreak f} & number, optional & f-stop number, e.g. 2.8 \\
+\texttt{t\_\allowbreak stop} & number, optional & cinema lens T-stop (after light loss) \\
+\texttt{shutter\_\allowbreak angle\_\allowbreak deg} & number, optional & 180$^\circ$ = cinema standard; 90$^\circ$ = sharp; 360$^\circ$ = motion-blurred \\
+\texttt{iso\_\allowbreak value} & integer, optional & exact ISO, e.g. 800 \\
+\texttt{sensor\_\allowbreak mm} & list of number, optional & pace-0.2 camera.intrinsics.sensor\_\allowbreak mm ---\allowbreak{} physical gate [w,h] in mm (default 36$\times$24 full-frame). Resolves the focal-length$\to$FOV ambiguity. [w, h] e.g. [36.0, 24.0]; both > 0 \\
+\texttt{focus\_\allowbreak distance\_\allowbreak m} & number, optional & pace-0.2 camera.intrinsics.focus\_\allowbreak distance\_\allowbreak m ---\allowbreak{} focus plane distance (m), > 0 e.g. 2.5 \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CameraExtrinsics}}
+\noindent Camera placement /\allowbreak{} orientation.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{angle} & Angle, optional & vertical tilt: eye\_\allowbreak level /\allowbreak{} low /\allowbreak{} high /\allowbreak{} overhead /\allowbreak{} dutch /\allowbreak{} \ldots{} \\
+\texttt{roll\_\allowbreak deg} & number, optional & canted horizon about the optical axis, + = clockwise; "dutch" alone implies 15 \\
+\texttt{position} & Literal["front", \allowbreak "three\_\allowbreak quarter", \allowbreak "profile", \allowbreak "ots", \allowbreak "behind"], optional & PAI extension ---\allowbreak{} relative position to subject (front /\allowbreak{} 3-4 /\allowbreak{} profile /\allowbreak{} ots /\allowbreak{} behind). Terms.md \S{}6.2 covers this even though SCINE Table 3 only lists `angle`; we keep it because it's a real distinction in the data (e.g. reverse-shot vs front-on). \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CameraTrajectory}}
+\noindent Camera motion. SCINE splits movement by gear-capability: Static (no motion), 2D (planar ---\allowbreak{} pan/\allowbreak{}tilt/\allowbreak{}zoom), 3D (full spatial). Composite moves are allowed ---\allowbreak{} list both ["push\_\allowbreak in", "tilt\_\allowbreak up"] when the camera dollies in AND tilts at once.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{static} & true/\allowbreak{}false & True $\Rightarrow$ locked-off, ignore all movement fields \\
+\texttt{movement\_\allowbreak 2d} & list of Movement2D & planar moves (pan/\allowbreak{}tilt/\allowbreak{}zoom) \\
+\texttt{movement\_\allowbreak 3d} & list of Movement3D & spatial moves (dolly/\allowbreak{}track/\allowbreak{}crane/\allowbreak{}arc/\allowbreak{}\ldots{}) \\
+\texttt{gear} & Gear, optional & rig used ---\allowbreak{} affects steadiness + motion character \\
+\texttt{easing} & Easing & PAI extension ---\allowbreak{} temporal sampling curve between start/\allowbreak{}end keyframes. acceleration profile of the move \\
+\texttt{camera\_\allowbreak path} & text, optional & pace-0.2 camera.trajectory.camera\_\allowbreak path ---\allowbreak{} artifact ref (assets:/\allowbreak{}/\allowbreak{} URI) to the computed 6-DoF keyframe JSON (the PRODUCT of camera.program's LAMP recipe). 6-DoF keyframe JSON artifact reference \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CameraCreativeIntent}}
+\noindent Compositional choices that shape narrative/\allowbreak{}emotional tone.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{shot\_\allowbreak size} & ShotSize, optional & jingbie (shot size) ---\allowbreak{} how much of subject/\allowbreak{}environment is in frame \\
+\texttt{framing} & Framing, optional & composition pattern (single/\allowbreak{}two\_\allowbreak shot/\allowbreak{}empty/\allowbreak{}\ldots{}) \\
+\texttt{aspect\_\allowbreak ratio} & text & PAI extension ---\allowbreak{} aspect ratio is a real per-shot choice (2.35:1 anamorphic vs 16:9 for inserts) even though SCINE doesn't enumerate it. e.g. "2.35:1", "16:9", "1.85:1", "4:3" \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{FrameRate}}
+\noindent pace-0.2 camera.fps ---\allowbreak{} rational frame rate \{num/\allowbreak{}denom\}. Rational, NOT float: 23.976 fps must be 24000/\allowbreak{}1001 exactly (floats are banned to keep cut-list /\allowbreak{} timecode math exact). Both terms > 0.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{num} & integer & numerator, e.g. 24000 \\
+\texttt{denom} & integer & denominator, e.g. 1001 (24fps = 24/\allowbreak{}1) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CameraProgram}}
+\noindent pace-0.2 camera.program ---\allowbreak{} the *recipe* that produces the camera trajectory (truth), as opposed to trajectory.camera\_\allowbreak path which is the computed 6-DoF keyframe artifact (product). Originated as PAILang's own studio field, absorbed into the standard. Schema allows extra keys.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{lamp\_\allowbreak dsl} & text, optional & 24-token LAMP motion DSL $\to$ compiled to 6-DoF track \\
+\texttt{source} & ProgramSource, optional & rule /\allowbreak{} llm /\allowbreak{} human ---\allowbreak{} how the DSL was authored \\
+\texttt{narrative} & text, optional & natural-language intent that produced the DSL (reproducible input) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Camera}}
+\noindent SCINE Pillar 1 ---\allowbreak{} every control related to camera configuration.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{intrinsics} & CameraIntrinsics & lens + exposure \\
+\texttt{extrinsics} & CameraExtrinsics & angle + position \\
+\texttt{trajectory} & CameraTrajectory & motion + easing \\
+\texttt{creative\_\allowbreak intent} & CameraCreativeIntent & shot\_\allowbreak size /\allowbreak{} framing /\allowbreak{} aspect \\
+\texttt{fps} & FrameRate, optional & pace-0.2 timing/\allowbreak{}program layer (all Optional ---\allowbreak{} purely additive) rational frame rate \{num,denom\} \\
+\texttt{frame\_\allowbreak range} & list of integer, optional & [start, end] inclusive frame indices, both >= 0 \\
+\texttt{program} & CameraProgram, optional & camera-motion recipe (lamp\_\allowbreak dsl/\allowbreak{}source/\allowbreak{}narrative) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{SceneTexture}}
+\noindent Setup $\to$ Scene $\to$ Texture (Table 5 first block). All optional ---\allowbreak{} fill only when the look is intentional, not implicit.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{contrast} & Contrast, optional & low (muted) /\allowbreak{} high (stark) \\
+\texttt{blur} & BlurKind, optional & if a soft/\allowbreak{}motion/\allowbreak{}radial blur is part of the look \\
+\texttt{noise} & NoiseKind, optional & film-grain or noise pattern \\
+\texttt{film\_\allowbreak grain} & text, optional & open set: stock id, e.g. "kodak\_\allowbreak vision3\_\allowbreak 500t" \\
+\texttt{color\_\allowbreak palette} & text, optional & open set: "warm", "teal\_\allowbreak orange", "monochrome\_\allowbreak grey", \ldots{} \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{SceneGeometry}}
+\noindent Setup $\to$ Scene $\to$ Geometry. Spatial Location is split into two open-set sub-fields per the paper (Positional Accuracy + Relative Positioning). Free-text ---\allowbreak{} use `subject.screen\_\allowbreak position` for the machine-readable per-subject placement instead.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{lines} & LineDirection, optional & dominant line direction in composition \\
+\texttt{regular\_\allowbreak shapes} & RegularShape, optional & if a regular shape dominates (square/\allowbreak{}circle/\allowbreak{}triangle) \\
+\texttt{natural\_\allowbreak shapes} & NaturalShape, optional & organic shape language \\
+\texttt{frame\_\allowbreak balance} & FrameBalance, optional & mass distribution: thirds /\allowbreak{} symmetry /\allowbreak{} right\_\allowbreak heavy /\allowbreak{} left\_\allowbreak heavy \\
+\texttt{positional\_\allowbreak accuracy} & text, optional & free text: "subject in left third, eyes on upper third line" \\
+\texttt{relative\_\allowbreak positioning} & text, optional & free text: "A in front, B behind" ---\allowbreak{} prefer Subject.screen\_\allowbreak position when possible \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{SceneSpace}}
+\noindent Setup $\to$ Scene $\to$ Space. SCINE Table 5 lists only Depth as a discrete leaf; Figure 2a additionally shows class/\allowbreak{}material/\allowbreak{}pattern/\allowbreak{} utility under Space, but the table assigns those to Props. We follow the table (Props own material/\allowbreak{}pattern/\allowbreak{}utility) and keep Space minimal.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{depth} & Depth, optional & spatial depth feel ---\allowbreak{} deep /\allowbreak{} flat /\allowbreak{} limited /\allowbreak{} ambiguous \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Backdrop}}
+\noindent Setup $\to$ Set Design $\to$ Backdrop. Macro context of the set.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{setting} & Setting, optional & int (interior) /\allowbreak{} ext (exterior) \\
+\texttt{time\_\allowbreak of\_\allowbreak day} & TimeOfDay, optional & 11-value enum ---\allowbreak{} see TimeOfDay \\
+\texttt{location} & text, optional & open set: "changan\_\allowbreak 5th\_\allowbreak c\_\allowbreak palace\_\allowbreak bedroom", "desert\_\allowbreak caves" ---\allowbreak{} used to look up location bibles \\
+\texttt{era} & text, \emph{inferred} & PAI extension ---\allowbreak{} period + region + culture. Lets the renderer pick era-appropriate costume /\allowbreak{} architecture /\allowbreak{} props instead of defaulting to "generic Asian historical". Open-set strings: pick the description that most faithfully roots the shot in its world. "350 CE" /\allowbreak{} "5th c. CE" /\allowbreak{} "modern\_\allowbreak day" /\allowbreak{} "2099" ---\allowbreak{} open set, human-readable \\
+\texttt{region} & text, \emph{inferred} & "silk\_\allowbreak road\_\allowbreak oasis" /\allowbreak{} "modern\_\allowbreak shanghai" ---\allowbreak{} sympathetic to location\_\allowbreak ref \\
+\texttt{culture} & text, \emph{inferred} & "kuchean\_\allowbreak buddhist" /\allowbreak{} "tang\_\allowbreak dynasty" /\allowbreak{} "byzantine" ---\allowbreak{} a coherent cultural-style frame to pull on \\
+\texttt{weather} & text, optional & pace-0.2 setup.backdrop.\{weather,season\} ---\allowbreak{} open-set strings (no enum upstream) open: "clear", "rain", "snow", "overcast", "sandstorm", \ldots{} \\
+\texttt{season} & text, optional & open: "spring", "summer", "autumn", "winter", \ldots{} \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Environment}}
+\noindent Setup $\to$ Set Design $\to$ Environment. The "feel" of the place; Organization sub-fields are all open sets (paper Table 5).
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{negative\_\allowbreak space} & true/\allowbreak{}false & True = composition exploits emptiness (open sky /\allowbreak{} blank wall) \\
+\texttt{density} & DensityLevel, optional & clean vs cluttered (renamed from "positive" for clarity) \\
+\texttt{mood} & text, \emph{inferred} & Not optional in effect: every image backend compiles the mood into the prompt, so a shot without one does not render neutrally, it renders however the sampler chooses. A screenplay never states it, so it is inferred from what happens in the scene rather than quoted from it, as era, region and culture already are. open: "serene", "ominous", "intimate", "frantic", \ldots{} \\
+\texttt{scale} & text, optional & open: "intimate", "monumental", "claustrophobic", \ldots{} \\
+\texttt{style} & text, optional & open: rendering style anchor ---\allowbreak{} "sketch\_\allowbreak bw", "inkwash\_\allowbreak bw", "chiaroscuro", "photoreal", \ldots{} \\
+\texttt{background} & text, optional & open: backdrop description, e.g. "endless desert dunes at sunset" \\
+\texttt{elements} & list of Element & weather/\allowbreak{}atmosphere: rain /\allowbreak{} fog /\allowbreak{} dust /\allowbreak{} smoke /\allowbreak{} \ldots{} \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Prop}}
+\noindent Setup $\to$ Set Design $\to$ Props. One prop per dataclass instance; props[] holds all of them on the shot. For props that recur across shots, set a stable `prop\_\allowbreak id` so downstream consumers can keep their appearance + state consistent.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{description} & text, optional & human-readable: "lacquered tea bowl with chip on rim" \\
+\texttt{cls} & text, optional & open category: "weapon", "scroll", "tea\_\allowbreak bowl", "candle" \\
+\texttt{material} & PropMaterial, optional & wood/\allowbreak{}glass/\allowbreak{}gold/\allowbreak{}paper/\allowbreak{}plastic \\
+\texttt{pattern} & PropPattern, optional & surface pattern if any \\
+\texttt{utility} & PropUtility, optional & decorative (set dressing) vs functional (used by characters) \\
+\texttt{prop\_\allowbreak id} & text, optional & stable id for cross-shot continuity ("and\'uril\_\allowbreak the\_\allowbreak sword") \\
+\texttt{state} & PropState, optional & current physical state ---\allowbreak{} pristine /\allowbreak{} weathered /\allowbreak{} broken /\allowbreak{} burning /\allowbreak{} \ldots{} \\
+\texttt{color} & text, optional & open set: "deep\_\allowbreak crimson", "soot\_\allowbreak black", "celadon\_\allowbreak green" \\
+\texttt{size} & PropSize, optional & relative scale ---\allowbreak{} palm\_\allowbreak sized /\allowbreak{} human\_\allowbreak scale /\allowbreak{} monumental /\allowbreak{} \ldots{} \\
+\texttt{held\_\allowbreak by} & text, optional & character ref (id@age form, see pai\_\allowbreak compat.id\_\allowbreak age\_\allowbreak to\_\allowbreak ref) \\
+\texttt{rests\_\allowbreak on} & text, optional & character\_\allowbreak id the prop lies on ("the shelf collapses onto him") \\
+\texttt{screen\_\allowbreak position} & ScreenPosition, optional & reuse Subject's frame-placement spec \\
+\texttt{count} & integer & multiplicity for batches of same prop (a stack of wooden tablets) \\
+\texttt{in\_\allowbreak frame} & InFrame, optional & in the picture this panel, not just in the scene (see InFrame) \\
+\texttt{in\_\allowbreak frame\_\allowbreak extent} & text, optional & for "partial": what the frame shows, "its right end at the bottom edge" \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Gaze}}
+\noindent PAI extension ---\allowbreak{} where this subject is looking. Captures eyeline so the storyboard records "Alice looking at the console" or "Bob staring off-frame right" as structured data instead of folding it into the free-form `pose` string. Used by the prompt compiler to render "looking at X" /\allowbreak{} "gaze directed off-screen left", and by future eyeline-match continuity checks across shots. Either `target` (looking at something IN frame) or `direction` (looking off-frame in a direction) should be set ---\allowbreak{} not both. If both are None the subject's gaze is unspecified.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{target\_\allowbreak type} & GazeTargetType, optional & character /\allowbreak{} object /\allowbreak{} feature /\allowbreak{} camera ---\allowbreak{} what kind of target \\
+\texttt{target\_\allowbreak ref} & text, optional & the target's id: character\_\allowbreak id, prop name, or feature like "console\_\allowbreak edge" \\
+\texttt{direction} & GazeDirection, optional & off-frame direction or into-camera ---\allowbreak{} use INSTEAD of target\_\allowbreak * \\
+\texttt{note} & text, optional & free-form intent: "contemplative", "challenge", "longing", \ldots{} \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{ScreenPosition}}
+\noindent PAI extension ---\allowbreak{} where this subject sits in the frame. Spec'd here so multi-subject compositions can be machine-read (and later fed to ControlNet pose /\allowbreak{} spatial prompting) instead of relying on SceneGeometry.relative\_\allowbreak positioning's free-text string. Two coordinate systems supported ---\allowbreak{} pick whichever you actually know: - `zone`: rule-of-thirds zone keyword (coarse but human-friendly) - `(x, y)`: normalized frame coords, 0..1 (precise; for pose rigs) `depth` is orthogonal ---\allowbreak{} applies to either.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{zone} & ScreenZone, optional & rule-of-thirds zone (coarse, human-readable) \\
+\texttt{x} & number, optional & 0.0 = left edge of frame, 1.0 = right edge (precise) \\
+\texttt{y} & number, optional & 0.0 = top edge of frame, 1.0 = bottom edge (precise) \\
+\texttt{depth} & ScreenDepth, optional & foreground /\allowbreak{} midground /\allowbreak{} background \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Subject}}
+\noindent Setup $\to$ Subjects. The focal characters /\allowbreak{} creatures in the shot. All fields are open sets ---\allowbreak{} captures the visual specifics that a Subject LoRA /\allowbreak{} PuLID reference would later identity-lock.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{cls} & text, optional & subject category, open: "young\_\allowbreak woman", "elderly\_\allowbreak man", "tabby\_\allowbreak cat" \\
+\texttt{accessories} & text, optional & what they're wearing/\allowbreak{}holding: "prayer beads, walking staff" \\
+\texttt{costume} & text, optional & garments: "saffron robe", "dust-stained tunic" \\
+\texttt{costume\_\allowbreak id} & text, optional & PAI extension ---\allowbreak{} the wardrobe entry this costume IS, so a garment is a library object with an id and states rather than a sentence retyped per shot. Free text cannot be compared across a cut: one panel said "a fitted grey-blue jacket" and the next delivered a white tunic, and nothing could report it, because there was no identifier for the two to disagree about. Resolves in kb/\allowbreak{}props.json like any prop\_\allowbreak id. wardrobe entry id, e.g. "alice\_\allowbreak costume" \\
+\texttt{hair} & text, optional & "shaved head", "long black braid", "wild grey beard" \\
+\texttt{makeup} & text, optional & "kohl-rimmed eyes", "war paint", "soot smudges" \\
+\texttt{pose} & text, optional & body posture: "kneeling, hands clasped", "leaning against doorframe" \\
+\texttt{silhouette} & text, optional & contour adjective: "imposing", "frail", "rigid" \\
+\texttt{proportions} & text, optional & body type: "wiry", "broad-shouldered", "diminutive" \\
+\texttt{character\_\allowbreak id} & text, optional & PAI extension ---\allowbreak{} link back to the canonical character registry so Subject appearance can default-inherit from kb/\allowbreak{}characters.json. Optional; setting just the open-set fields above also works. id matching the project's character registry, e.g. "alice" \\
+\texttt{age\_\allowbreak state} & text, optional & which life-stage variant of that character, e.g. "adult\_\allowbreak 50", "adult\_\allowbreak 18" \\
+\texttt{gaze} & Gaze, optional & PAI extension ---\allowbreak{} eyeline + frame placement. Both Optional so existing pai-1.0 files (which lack these) parse unchanged. where this subject is looking \\
+\texttt{screen\_\allowbreak position} & ScreenPosition, optional & where this subject sits in the frame \\
+\texttt{in\_\allowbreak frame} & InFrame, optional & in the picture this panel (see InFrame) \\
+\texttt{in\_\allowbreak frame\_\allowbreak extent} & text, optional & for "partial": "right shoulder in the foreground" \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{TextElement}}
+\noindent One piece of on-screen text the renderer must draw inside the frame.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{target} & TextTarget, optional & surface that carries the text (phone screen /\allowbreak{} billboard /\allowbreak{} letter /\allowbreak{} \ldots{}) \\
+\texttt{content} & text, optional & the literal text content (the words on the screen) \\
+\texttt{language} & text, optional & ISO-ish: "zh" /\allowbreak{} "en" /\allowbreak{} "sa" (Sanskrit) /\allowbreak{} "kha" (Kharo\d{s}\d{t}h\={\i}) ---\allowbreak{} open set \\
+\texttt{style} & TextStyle, optional & typography style ---\allowbreak{} handwritten /\allowbreak{} printed /\allowbreak{} calligraphy /\allowbreak{} \ldots{} \\
+\texttt{layout} & TextLayout, optional & text layout pattern ---\allowbreak{} single\_\allowbreak bubble /\allowbreak{} headline\_\allowbreak only /\allowbreak{} two\_\allowbreak column /\allowbreak{} \ldots{} \\
+\texttt{count} & integer & number of identical text instances (a row of identical posters) \\
+\texttt{note} & text, optional & free-form: "partially faded", "obscured by reflection" \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{PrimaryFocus}}
+\noindent What dominates the frame. Kept verbatim from v0.3 ---\allowbreak{} sibling of Subjects, used by the prompt compiler to lock framing on a single subject.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{type} & Literal["character", \allowbreak "object", \allowbreak "environment", \allowbreak "feature"] &  \\
+\texttt{ref} & text & $\uparrow$ what kind of thing is the focus: a character, a prop, the location, or a body feature (like an eye) id of the focus: character\_\allowbreak id, prop name, location id, or feature name \\
+\texttt{of\_\allowbreak character} & text, optional & when type="feature", which character does the feature belong to (character\_\allowbreak id) \\
+\texttt{coverage\_\allowbreak pct} & integer, optional & how much of the frame area the focus should occupy (0-100) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Setup}}
+\noindent SCINE Pillar 2 ---\allowbreak{} every visible element within the frame.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{texture} & SceneTexture & contrast/\allowbreak{}blur/\allowbreak{}noise/\allowbreak{}film\_\allowbreak grain/\allowbreak{}palette \\
+\texttt{geometry} & SceneGeometry & composition geometry (lines, balance) \\
+\texttt{space} & SceneSpace & spatial depth feel \\
+\texttt{backdrop} & Backdrop & int/\allowbreak{}ext + time + location id \\
+\texttt{environment} & Environment & mood/\allowbreak{}style/\allowbreak{}atmosphere/\allowbreak{}elements \\
+\texttt{props} & list of Prop & one entry per visible prop \\
+\texttt{subjects} & list of Subject & focal characters/\allowbreak{}creatures in this shot \\
+\texttt{primary\_\allowbreak focus} & PrimaryFocus & what dominates the frame \\
+\texttt{secondary\_\allowbreak subjects} & list of text & character refs (id@age form), present but not the focus ---\allowbreak{} see pai\_\allowbreak compat.ref\_\allowbreak to\_\allowbreak id\_\allowbreak age \\
+\texttt{excluded} & list of text & things NOT to render ---\allowbreak{} fed into the negative prompt \\
+\texttt{text\_\allowbreak generation} & list of TextElement & On-screen text ---\allowbreak{} expanded from PAI 1.0's single `Optional[str]` into a list of structured elements so each text item (subtitle, sign, handwritten letter, billboard) gets its own target /\allowbreak{} language /\allowbreak{} typography. the prompt compiler renders each entry as its own clause. \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Lighting}}
+\noindent SCINE Pillar 3 ---\allowbreak{} illumination of the shot.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{natural} & list of NaturalLight & sun/\allowbreak{}moon/\allowbreak{}firelight present in the scene \\
+\texttt{practicals} & list of PracticalsKind & man-made lamps visible (or simulated as visible) \\
+\texttt{color\_\allowbreak temperature} & ColorTempBand, optional & overall warm/\allowbreak{}cool/\allowbreak{}cold band \\
+\texttt{condition} & LightingCondition, optional & genre keyword (candlelight /\allowbreak{} golden\_\allowbreak hour /\allowbreak{} overcast /\allowbreak{} \ldots{}) \\
+\texttt{soft\_\allowbreak shadows} & SoftShadow, optional & how soft shadows arise (diffused /\allowbreak{} high\_\allowbreak key /\allowbreak{} reflectors) \\
+\texttt{hard\_\allowbreak shadows} & HardShadow, optional & how hard shadows arise (direct /\allowbreak{} low\_\allowbreak key) \\
+\texttt{reflection} & text, optional & free-form: "pool of water reflects sky", "mirror in BG" \\
+\texttt{position} & LightingPosition, optional & primary 3-point position of the key light \\
+\texttt{motion} & LightingMotion, optional & flickering (firelight) /\allowbreak{} pulsing (sirens, screens) \\
+\texttt{color\_\allowbreak gels} & text, optional & free-form: "warm amber on key, cyan on fill" \\
+\texttt{color\_\allowbreak temp\_\allowbreak k} & integer, optional & PAI extension ---\allowbreak{} exact Kelvin if known from real capture. exact Kelvin, e.g. 3200 \\
+\texttt{notes} & text, optional & free-form: anything else about the light \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Action}}
+\noindent One action beat. SCINE Table 6 splits actions into Standalone vs Interactive (orthogonal open sets); typical usage is to fill one or the other for any given Action instance.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{standalone} & text, optional & solo physical action (open set): "lips quivering", "raising a cup" \\
+\texttt{interactive} & text, optional & action ON another entity (open set): "handing scroll to disciple" \\
+\texttt{temporal} & ActionTemporal, optional & atomic /\allowbreak{} sequential /\allowbreak{} causal /\allowbreak{} cyclic /\allowbreak{} \ldots{} \\
+\texttt{foreground} & ActionForeground, optional & focal (is the primary subject's act) /\allowbreak{} local /\allowbreak{} global \\
+\texttt{background} & true/\allowbreak{}false & True = this action happens behind the focal subject \\
+\texttt{uncertainty} & ActionUncertainty, optional & probabilistic /\allowbreak{} deterministic /\allowbreak{} mixed \\
+\texttt{description\_\allowbreak zh} & text & PAI extension ---\allowbreak{} kept from v0.3 for back-compat. Lets the human- authored beat travel alongside the SCINE classification. human-authored Chinese description, e.g. "zuichun xidong" (lips trembling) \\
+\texttt{description\_\allowbreak en} & text & human-authored English description, e.g. "lips quivering" \\
+\texttt{beat\_\allowbreak features} & list of text & visible texture cues: ["cracked\_\allowbreak dry\_\allowbreak chapped\_\allowbreak lips", "thin\_\allowbreak elderly\_\allowbreak lips"] \\
+\texttt{intensity} & Literal["subtle", \allowbreak "medium", \allowbreak "dramatic"], optional & how strong the beat is on screen \\
+\texttt{duration\_\allowbreak hint\_\allowbreak s} & number, optional & rough seconds ---\allowbreak{} informs Wan-I2V length, not literal \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Emotion}}
+\noindent One emotion beat. Implicit/\allowbreak{}Explicit are orthogonal ---\allowbreak{} implicit captures body-language cues, explicit names the emotion directly.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{implicit} & text, optional & body language cue (open set): "clenched jaw", "downcast eyes" ---\allowbreak{} preferred \\
+\texttt{explicit} & text, optional & direct emotion name (open set): "grief", "joy" ---\allowbreak{} rare; most cinema is implicit \\
+\texttt{temporal} & EmotionTemporal, optional & atomic /\allowbreak{} sequential /\allowbreak{} overlapping /\allowbreak{} \ldots{} \\
+\texttt{foreground} & EmotionForeground, optional & focal /\allowbreak{} local /\allowbreak{} global \\
+\texttt{background} & true/\allowbreak{}false & True = emotion is on a non-focal subject in the background \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Dialogue}}
+\noindent One line of dialogue. Audio is generated separately (ADR); this models the FILM-LEVEL classification only.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{type\_\allowbreak of\_\allowbreak delivery} & DialogueDelivery, optional & dash (interrupted) /\allowbreak{} ellipsis (trailing) /\allowbreak{} monologue \\
+\texttt{foreground} & DialogueForeground, optional & focal /\allowbreak{} local /\allowbreak{} global \\
+\texttt{speaker} & text, optional & PAI extension ---\allowbreak{} speaker + text so the line can also feed into vo\_\allowbreak lines/\allowbreak{}on\_\allowbreak screen\_\allowbreak dialogue at the scene level. character\_\allowbreak id of who's speaking \\
+\texttt{text} & text, optional & the line itself (Chinese or English) \\
+\texttt{language} & text, optional & pace-0.2 events.dialogues[].language ---\allowbreak{} BCP-47-ish open string ("zh","en","ja") spoken language of this line \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{EventsAdvanced}}
+\noindent SCINE Events $\to$ Advanced Controls (Table 6 bottom).
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{story\_\allowbreak structure} & StoryStructure, optional & narrative function: turning\_\allowbreak point /\allowbreak{} climax /\allowbreak{} foreshadowing /\allowbreak{} conflict \\
+\texttt{pace} & Pace, optional & slow /\allowbreak{} fast \\
+\texttt{regularity} & Regularity, optional & regular (steady rhythm) /\allowbreak{} irregular (broken pacing) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Events}}
+\noindent SCINE Pillar 4 ---\allowbreak{} narrative substance of the shot.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{actions} & list of Action & one entry per action beat in the shot \\
+\texttt{emotions} & list of Emotion & one entry per emotion beat \\
+\texttt{dialogues} & list of Dialogue & one entry per spoken line \\
+\texttt{change\_\allowbreak in\_\allowbreak environment} & text, optional & free-form: "wind rises", "candle gutters out" ---\allowbreak{} a non-character event \\
+\texttt{advanced} & EventsAdvanced & story\_\allowbreak structure /\allowbreak{} pace /\allowbreak{} regularity \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{PromptOverride}}
+\noindent Per-panel hand-written prompt override. Same shape as v0.3. When set, the prompt compiler returns this verbatim and skips the structured composition ---\allowbreak{} used to inject ad-hoc fixes without re-deriving fields.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{positive} & text & full positive prompt to send to the backend (non-empty wins) \\
+\texttt{negative} & text & full negative prompt \\
+\texttt{authored\_\allowbreak at} & text, optional & ISO-8601 timestamp when the override was written \\
+\texttt{authored\_\allowbreak by} & text, optional & who wrote it (user handle /\allowbreak{} "llm" /\allowbreak{} "auto") \\
+\texttt{note} & text, optional & why this override exists (the bug it fixes) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CompileHintsFlux}}
+\noindent Flux-specific compile hints (per-panel sidecar).
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{prompt\_\allowbreak override} & PromptOverride, optional & hand-written prompt that bypasses the prompt compiler's structured assembly \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CompileHints}}
+\noindent Per-panel compile\_\allowbreak hints sidecar ---\allowbreak{} one entry per backend. Kept compatible with v0.3's `compile\_\allowbreak hints[]` shape so existing sidecar data round-trips.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{panel\_\allowbreak id} & text & which panel this entry applies to \\
+\texttt{flux} & CompileHintsFlux & Flux-specific overrides \\
+\texttt{gpt\_\allowbreak image\_\allowbreak 2} & map & GPT-Image-2 overrides (free-form dict) \\
+\texttt{wan\_\allowbreak i2v} & map & Wan-I2V video-stage overrides (free-form dict) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Panel}}
+\noindent One storyboard frame inside a Shot. Inherits the parent shot's camera/\allowbreak{}setup/\allowbreak{}lighting/\allowbreak{}events by default; override fields below (all optional dicts) hold panel-local diffs only. Panels exist when a single shot needs multiple distinct frames in the storyboard (e.g. shot\_\allowbreak 01 starts wide, then a beat later cuts to a close-up of the same subject within the same camera setup).
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{id} & text & canonical id, e.g. "scene\_\allowbreak 01\_\allowbreak shot\_\allowbreak 01\_\allowbreak panel\_\allowbreak 0001" \\
+\texttt{panel\_\allowbreak number} & integer & 1-based ordinal within the shot \\
+\texttt{scene\_\allowbreak id} & text, optional & cached scene\_\allowbreak id for lookup-by-panel-id \\
+\texttt{camera\_\allowbreak override} & map, optional & Optional panel-level overrides ---\allowbreak{} dicts so they can be sparse without carrying every field's default. Each shape mirrors its pillar dataclass (Camera, Setup, Lighting, Events). sparse Camera-shaped diff vs the parent shot's camera \\
+\texttt{setup\_\allowbreak override} & map, optional & sparse Setup-shaped diff (e.g. swap `excluded`, change `primary\_\allowbreak focus`) \\
+\texttt{lighting\_\allowbreak override} & map, optional & sparse Lighting-shaped diff \\
+\texttt{events\_\allowbreak override} & map, optional & sparse Events-shaped diff (e.g. different action for this beat) \\
+\texttt{primary\_\allowbreak focus} & PrimaryFocus, optional & Frequently-overridden flat fields (kept hot for the storyboard sidebar). quick-access override for what dominates this frame \\
+\texttt{notes} & text, optional & free-form: director notes specific to this panel \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Shot}}
+\noindent One cinematic shot ---\allowbreak{} the atomic unit per SCINE \S{}3.1. Contains all 4 SCINE pillars as first-class sub-trees, plus its panels. A shot = one continuous camera run. Multi-camera coverage of the same beat = multiple shots, each with its own camera. Panels within a shot share the same camera spec (use multiple panels only for different time-moments inside that camera setup).
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{shot\_\allowbreak id} & text & canonical id, e.g. "shot\_\allowbreak 01" within scene\_\allowbreak 01 \\
+\texttt{camera} & Camera & Pillar 1 \\
+\texttt{setup} & Setup & Pillar 2 \\
+\texttt{lighting} & Lighting & Pillar 3 \\
+\texttt{events} & Events & Pillar 4 \\
+\texttt{panels} & list of Panel & storyboard frames realising this shot \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{NarrativeMeta}}
+\noindent Top-of-scene narrative ledger ---\allowbreak{} character roster, action beats, dialogue list. Carried over from v0.3 essentially unchanged; SCINE leaves narrative summary outside the 4 pillars.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{summary} & text & 1-2 sentence prose summary of what happens in this scene \\
+\texttt{characters\_\allowbreak present} & list of text & character\_\allowbreak ids appearing anywhere in the scene \\
+\texttt{character\_\allowbreak age\_\allowbreak states} & map & character\_\allowbreak id $\to$ age\_\allowbreak state used in THIS scene (e.g. "alice": "adult\_\allowbreak 50") \\
+\texttt{key\_\allowbreak actions} & list of text & short prose list of main physical beats \\
+\texttt{vo\_\allowbreak lines} & list of map & voice-over lines (off-screen narration) ---\allowbreak{} [\{speaker, text, \ldots{}\}] \\
+\texttt{on\_\allowbreak screen\_\allowbreak dialogue} & list of map & spoken on-screen dialogue ---\allowbreak{} [\{speaker, text, \ldots{}\}] \\
+\texttt{titles} & list of text & any on-screen title-cards or chapter headings rendered for this scene \\
+\texttt{sfx\_\allowbreak notes} & list of text & sound design notes (used downstream by audio mix) \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{WorldEntity}}
+\noindent A character or prop placed in stage-frame world coordinates. `ref` is a character ref ("alice@adult\_\allowbreak 50") or prop\_\allowbreak id ("main\_\allowbreak console").
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{ref} & text & character id@age OR prop\_\allowbreak id \\
+\texttt{world\_\allowbreak xy} & list of number & [x, y] in meters; stage top-down \\
+\texttt{z} & number & height: 0=on ground, -0.5=sitting, +1=elevated \\
+\texttt{facing\_\allowbreak deg} & number & 0=east, 90=north, 180=west, 270=south \\
+\texttt{scale} & number & 1.0 = real-life size; <1 = miniaturized; >1 = giant \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{CameraSetup}}
+\noindent One camera position in stage coordinates ---\allowbreak{} what a shot uses.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{shot\_\allowbreak id} & text &  \\
+\texttt{world\_\allowbreak xy} & list of number & camera position \\
+\texttt{z} & number & camera height (eye-level default) \\
+\texttt{looking\_\allowbreak at\_\allowbreak xy} & list of number & what the camera is aimed at (stage point) \\
+\texttt{lens\_\allowbreak mm} & number, optional & focal length, optional override \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{PhysicalLayout}}
+\noindent Scene-wide world coordinates. The prompt compiler and a future Blender bridge can derive screen positions, depth ordering, and even greybox geometry from this single source of truth.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{frame\_\allowbreak of\_\allowbreak reference} & Literal["stage\_\allowbreak top\_\allowbreak view", \allowbreak "world\_\allowbreak xy"] &  \\
+\texttt{subjects} & list of WorldEntity & entries refer to characters by id@age \\
+\texttt{props} & list of WorldEntity & entries refer to props by prop\_\allowbreak id \\
+\texttt{camera\_\allowbreak setups} & list of CameraSetup & one per shot\_\allowbreak id that uses world projection \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{ShotDefaults}}
+\noindent Per-scene defaults that every shot in the scene INHERITS by default. Use this for fields that naturally span an entire scene ---\allowbreak{} aspect\_\allowbreak ratio, backdrop.location, backdrop.\{era, region, culture\}, environment.style, lighting.condition, texture.color\_\allowbreak palette. Each Shot can override any of these; resolved value is deep\_\allowbreak merge(defaults, shot\_\allowbreak value) where None values in defaults never overwrite filled values in the shot. Avoid putting per-shot variables here (shot\_\allowbreak size, action, subjects, framing). Those are shot-specific by definition. Shape mirrors the 3 visual pillars but every nested field is Optional, so the dict can be as sparse as you like. See `pai\_\allowbreak compat.resolve\_\allowbreak shot(scene, shot)` for the merge implementation.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{camera} & Camera, optional &  \\
+\texttt{setup} & Setup, optional &  \\
+\texttt{lighting} & Lighting, optional &  \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Semantics}}
+\noindent PACE `semantics.*` ---\allowbreak{} the OMC-aligned meaning layer. Separate from the four visual pillars because it describes what a shot is *for* rather than what it looks like: who participates, where the beat sits in the story, and which production task produced it.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{task} & text, optional & semantics.task ---\allowbreak{} the pipeline task that authored this \\
+\texttt{participant} & list, optional & semantics.participant ---\allowbreak{} OMC Participant refs \\
+\texttt{relationships} & list, optional & semantics.relationships ---\allowbreak{} inter-participant relations \\
+\texttt{narrative\_\allowbreak context} & dict, optional & semantics.narrativeContext ---\allowbreak{} beat/\allowbreak{}act placement \\
+\texttt{production\_\allowbreak context} & dict, optional & semantics.productionContext ---\allowbreak{} unit, day, department \\
+\texttt{version} & text, optional & semantics.version ---\allowbreak{} OMC schema version in force \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{FieldMeta}}
+\noindent PACE `manifest.fieldMeta[]` ---\allowbreak{} provenance for one field. An array rather than a path-keyed map: pace-0.2 removed dynamic key sets throughout, so the field path travels inside the record.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{path} & text & JSON pointer into the doc, e.g. "/\allowbreak{}pace/\allowbreak{}camera/\allowbreak{}fps" \\
+\texttt{source} & text, optional & who set it: "llm" /\allowbreak{} "human" /\allowbreak{} "derived" \\
+\texttt{confidence} & number, optional &  \\
+\texttt{note} & text, optional &  \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{PromptRecord}}
+\noindent PACE `manifest.prompts[]` ---\allowbreak{} one compiled prompt, addressed by id. Also an array in pace-0.2, where earlier drafts keyed by compiler name.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{id} & text & e.g. "v1T2i" \\
+\texttt{text} & text &  \\
+\texttt{backend} & text, optional &  \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Artifact}}
+\noindent PACE artifact ledger entry ---\allowbreak{} `manifest.artifacts`, and the project/\allowbreak{}scene-level `artifacts` arrays. pace-0.2 moved screenplay text and every other binary out of the standard project tree and into object storage, referenced by URI, so an artifact record is how a document points at its own inputs.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{kind} & text & e.g. "source\_\allowbreak script\_\allowbreak file", "source\_\allowbreak script\_\allowbreak text" \\
+\texttt{uri} & text, optional & "assets:/\allowbreak{}/\allowbreak{}..." object-store reference \\
+\texttt{source} & text, optional & "uploaded" /\allowbreak{} "generated" \\
+\texttt{content\_\allowbreak hash} & text, optional & Provenance. `uri` says where an artifact is and `source` says what kind of thing made it; neither says WHICH VERSION of the input produced it, which is the only question a staleness check asks. Without these two a panel can be re-cut from a medium to a close-up and the render made against the old framing stays on disk with nothing marking it expired. manifest.artifacts[].contentHash \\
+\texttt{derived\_\allowbreak from} & list of text & upstream content hashes \\
+\texttt{note} & text, optional &  \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Review}}
+\noindent PACE `manifest.review` ---\allowbreak{} an approval, bound to the content it approves. `approved\_\allowbreak hash` is the load-bearing field. An approval recorded against a document *identifier* stays true after the document changes, which yields an approved artifact nobody has reviewed in its current form ---\allowbreak{} worse than no gate at all, because a gate that cannot go stale stops anyone from checking by hand. Binding the approval to the hash makes it expire exactly when the content moves.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{status} & text & unreviewed | approved | rejected \\
+\texttt{by} & text, optional &  \\
+\texttt{at} & text, optional & ISO 8601 \\
+\texttt{approved\_\allowbreak hash} & text, optional & content hash this approval covers \\
+\texttt{note} & text, optional &  \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Manifest}}
+\noindent PACE `manifest.*` ---\allowbreak{} the per-document bookkeeping block.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{artifacts} & list of Artifact & manifest.artifacts \\
+\texttt{prompts} & list of PromptRecord & manifest.prompts[] \\
+\texttt{field\_\allowbreak meta} & list of FieldMeta & manifest.fieldMeta[] \\
+\texttt{audio} & dict, optional & manifest.audio \\
+\texttt{continuity} & dict, optional & manifest.continuity \\
+\texttt{review} & Review, optional & manifest.review \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{SceneDoc}}
+\noindent One scene ---\allowbreak{} wrapper that holds the SCINE-aligned shot list plus narrative meta. Compatible with v0.3's top-level shape so the storyboard/\allowbreak{}api endpoints can deserialize after a small adapter.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{\_\allowbreak schema\_\allowbreak version} & text & schema version tag ---\allowbreak{} readers branch on this. Bumped 2026-06-05 1.0 $\to$ 1.1 to match SCHEMA.md after the SCINE-pillar extensions. 50/\allowbreak{}51 on-disk scene files already declare "pai-1.1"; enrich\_\allowbreak scenes\_\allowbreak scine.py:665 accepts both 1.0 and 1.1 for back-compat. \\
+\texttt{scene\_\allowbreak id} & text & canonical id, e.g. "scene\_\allowbreak 05" \\
+\texttt{scene\_\allowbreak number} & integer, optional & 1-based ordinal in the screenplay \\
+\texttt{scene\_\allowbreak heading} & text, optional & screenplay slugline: "EXT. DESERT ---\allowbreak{} DAWN" \\
+\texttt{act} & text, optional & which act of the film: "I" /\allowbreak{} "II" /\allowbreak{} "III" or "prologue" /\allowbreak{} "epilogue" \\
+\texttt{narrative\_\allowbreak meta} & NarrativeMeta & roster + beats + dialogue ledger (outside pillars) \\
+\texttt{shot\_\allowbreak defaults} & ShotDefaults, optional & PAI 1.1 ---\allowbreak{} scene-wide shared fields. Every shot deep-merges these as its baseline before reading its own (sparse) overrides. None means the scene has no defaults; every shot is fully self-describing. \\
+\texttt{physical\_\allowbreak layout} & PhysicalLayout, optional & PAI 1.1 prototype ---\allowbreak{} optional scene-wide world coordinates. When set, per-subject screen\_\allowbreak position can be derived from camera + world\_\allowbreak xy instead of authored per shot. See pipeline/\allowbreak{}derive\_\allowbreak screen\_\allowbreak position.py. \\
+\texttt{shots} & list of Shot & ordered list of shots in this scene \\
+\texttt{compile\_\allowbreak hints} & list of CompileHints & per-panel sidecar hints (one entry per panel that needs hints) \\
+\texttt{semantics} & Semantics, optional & PACE pace-0.2 blocks. Optional so pai-1.0/\allowbreak{}1.1 documents load unchanged. \\
+\texttt{manifest} & Manifest, optional &  \\
+\texttt{artifacts} & list of Artifact & scene.artifacts \\
+\texttt{\_\allowbreak source} & text, optional & path to the source script segment this scene was extracted from \\
+\texttt{\_\allowbreak generated\_\allowbreak at} & text, optional & ISO-8601 timestamp when this scene file was first written \\
+\bottomrule
+\end{longtable}
