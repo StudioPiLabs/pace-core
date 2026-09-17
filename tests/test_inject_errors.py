@@ -183,7 +183,7 @@ def _run(missing=(), invented=(), overspec=(), overgen=(), role=()):
 
 def test_role_ok_on_a_missing_event_is_not_a_detection():
     """Mirrors verify_breakdown.score: nothing matched, so nothing was
-    swapped. Counting those once turned 2 role errors into 30."""
+    swapped, and counting them inflates the role-error count."""
     r = {"alignments": [{"script_scene": 0, "matches": [
         {"script_event": "e1", "match": "MISSING", "role_ok": False}]}]}
     assert ("ROLE", 0, "e1") not in signals(r)
