@@ -1318,11 +1318,15 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         if Path(sj["mesh"]).is_file():
             sj["seat_contact"] = _seat_contact_z(sj["mesh"])
     if dress:
-        from pace_core.pai_compat import costume_text
+        from pace_core.pai_compat import costume_text, wardrobe_of
         _kb = json.loads(Path(p.chars_file).read_text()) if Path(p.chars_file).is_file() else {}
         _kb = _kb.get("characters", _kb) if isinstance(_kb, dict) else {}
+        _wd = (json.loads(Path(p.props_file).read_text())
+               if Path(p.props_file).is_file() else {})
         for sj, s in zip(subjects, subs):
-            tones = garment_tones(costume_text(_kb.get(sj["character_id"]), s.get("age_state")))
+            tones = garment_tones(costume_text(
+                _kb.get(sj["character_id"]), s.get("age_state"),
+                wardrobe=wardrobe_of(_wd, s)))
             if tones:
                 sj["costume"] = tones
 
@@ -2874,8 +2878,21 @@ def _kernel_greybox(spec: dict) -> dict:
                 across = float(ots.get("across_m", max(
                     OTS_ACROSS_M, OTS_CLEARANCE_M * (behind + d) / d)))
                 side = mathutils.Vector((-look.y, look.x, 0.0))
-                if abs(near_head.x + side.x * across) > \
-                   abs(near_head.x - side.x * across):
+                # Which shoulder decides which side of frame the near subject
+                # lands on, so it is the declared screen order's choice when
+                # there is one: taking the cabin-centre shoulder regardless
+                # crossed the line on scene_11's cut into its OTS.
+                near_x = next((s.get("declared_x") for s in spec.get("subjects") or []
+                               if s.get("character_id") == ots.get("near_subject")), None)
+                if near_x is not None and abs(float(near_x) - 0.5) > 1e-6:
+                    view = far_head - (near_head + look * behind + side * across)
+                    right = mathutils.Vector((view.y, -view.x, 0.0))
+                    lands_right = (near_head - (near_head + look * behind
+                                                + side * across)).dot(right) > 0
+                    if lands_right != (float(near_x) > 0.5):
+                        side = -side
+                elif abs(near_head.x + side.x * across) > \
+                        abs(near_head.x - side.x * across):
                     side = -side
                 cam.location = near_head + look * behind + side * across
                 # Aim at the face, not the crown: the top of a head's box is

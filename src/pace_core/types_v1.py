@@ -509,6 +509,13 @@ class Subject:
     cls:         Optional[str] = None                # subject category, open: "young_woman", "elderly_man", "tabby_cat"
     accessories: Optional[str] = None                # what they're wearing/holding: "prayer beads, walking staff"
     costume:     Optional[str] = None                # garments: "saffron robe", "dust-stained tunic"
+    # PAI extension — the wardrobe entry this costume IS, so a garment is a
+    # library object with an id and states rather than a sentence retyped per
+    # shot. Free text cannot be compared across a cut: one panel said "a
+    # fitted slate-blue technical jacket" and the next delivered a white
+    # tunic, and nothing could report it, because there was no identifier for
+    # the two to disagree about. Resolves in kb/props.json like any prop_id.
+    costume_id:  Optional[str] = None                # wardrobe entry id, e.g. "abigail_costume"
     hair:        Optional[str] = None                # "shaved head", "long black braid", "wild grey beard"
     makeup:      Optional[str] = None                # "kohl-rimmed eyes", "war paint", "soot smudges"
     pose:        Optional[str] = None                # body posture: "kneeling, hands clasped", "leaning against doorframe"
@@ -1132,6 +1139,7 @@ FIELD_TIER: dict[str, Literal["required", "recommended", "advanced", "requiredIf
     "setup.subjects[].gaze":                 "recommended",
     "setup.subjects[].screenPosition":      "recommended",
     "setup.subjects[].costume":              "recommended",
+    "setup.subjects[].costume_id":           "recommended",
     "setup.secondarySubjects":              "recommended",   # pace-0.2 §coverage
     "setup.props[].description":             "recommended",
     "setup.props[].cls":                     "recommended",
