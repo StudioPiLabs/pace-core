@@ -908,13 +908,22 @@ def _facing_from_gaze(subs: list, places: list, i: int) -> float:
 # the sampler starts from rather than one it makes. Values are the grey the
 # garment should read as, on the 0..1 scale of the greybox's own 0.55.
 _GARMENT_TOPS = ("t-shirt", "tshirt", "tee", "tank", "vest", "shirt", "blouse",
-                 "sweater", "jumper", "hoodie", "jacket", "coat", "top", "dress")
+                 "sweater", "sweatshirt", "pullover", "cardigan", "jumper", "hoodie",
+                 "jacket", "blazer", "parka", "coat", "tunic", "polo", "top", "dress")
 _SHORT_SLEEVED = ("t-shirt", "tshirt", "tee", "tank", "vest")
 _GARMENT_BOTTOMS = ("jeans", "trousers", "pants", "slacks", "shorts", "skirt", "leggings")
 _GARMENT_TONES = (("black", 0.12), ("charcoal", 0.22), ("navy", 0.25), ("dark", 0.28),
                   ("grey", 0.45), ("gray", 0.45), ("khaki", 0.60), ("beige", 0.68),
                   ("faded", 0.72), ("light", 0.72), ("pale", 0.75), ("cream", 0.82),
-                  ("white", 0.88))
+                  ("white", 0.88),
+                  # Hues, at the grey each reads as in a greyscale control
+                  # image. Without them a costume named only by hue -- an
+                  # olive sweatshirt, a slate-blue jacket -- got no tone, and
+                  # the sampler chose a different garment at every angle.
+                  ("burgundy", 0.25), ("maroon", 0.25), ("brown", 0.32),
+                  ("purple", 0.32), ("slate", 0.38), ("red", 0.38), ("teal", 0.38),
+                  ("olive", 0.40), ("green", 0.40), ("blue", 0.42), ("orange", 0.58),
+                  ("tan", 0.62), ("mustard", 0.62), ("pink", 0.72), ("yellow", 0.78))
 
 
 def garment_tones(costume: str | None) -> dict:
@@ -923,7 +932,10 @@ def garment_tones(costume: str | None) -> dict:
     out: dict = {}
     for phrase in re.split(r",| and | with ", (costume or "").lower()):
         words = re.findall(r"[a-z-]+", phrase)
-        tone = next((t for w in words for name, t in _GARMENT_TONES if w == name), None)
+        # "slate-blue" names its colour in its parts; "t-shirt" names its
+        # garment whole. Both are looked up.
+        parts = [q for w in words for q in (w, *w.split("-"))]
+        tone = next((t for w in parts for name, t in _GARMENT_TONES if w == name), None)
         if tone is None:
             continue
         if "top" not in out and any(g in words for g in _GARMENT_TOPS):
@@ -937,9 +949,9 @@ def garment_tones(costume: str | None) -> dict:
 def hair_style(descriptor: str | None) -> str | None:
     """The HAIR_STYLES key a character's own description asks for, or None.
 
-    Only hair the proxy can carry as a close shell: short or curly. Longer
-    hair is left bald rather than capped wrong, and a description that names
-    no hair gets none.
+    Short, curly, or long: any hair at all is better than the bald dome a
+    lens behind the head otherwise sees, which the sampler paints as a
+    helmet. A description that names no hair, or a shaved head, gets none.
     """
     from pace_core.compilers.compile_common import _hair_phrase
 
@@ -948,6 +960,8 @@ def hair_style(descriptor: str | None) -> str | None:
         return "curly"
     if words & {"short", "cropped", "buzzed", "close", "crew"}:
         return "short"
+    if words & {"long", "shoulder", "length", "bob", "ponytail", "braid", "wavy", "straight"}:
+        return "long"
     return None
 
 
@@ -1289,6 +1303,20 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         depth = {s.get("character_id"): sy for s, (sx, sy) in zip(subs, places)}
         near = max(ids, key=lambda cid: depth.get(cid, 0.0))
         far = min(ids, key=lambda cid: depth.get(cid, 0.0))
+        # Unless the two are turned to each other. Declared gazes at each
+        # other rotate both bodies (see _facing_from_gaze), so either shoulder
+        # shows a face, and the panel's focus says whose: that is what makes a
+        # shot / reverse-shot, two panels of one exchange framed over each
+        # other's shoulder, instead of the same angle twice.
+        ref = focus.get("ref")
+        gaze = {s.get("character_id"): (s.get("gaze") or {}) for s in subs}
+        if ref in ids and any(
+                g.get("target_type") == "character" and g.get("target_ref") == ref
+                and gaze.get(ref, {}).get("target_ref") == cid
+                for cid, g in gaze.items() if cid != ref):
+            far = ref
+            near = next(cid for cid, g in gaze.items()
+                        if cid != ref and g.get("target_ref") == ref)
         ots_pair = {"aim_subject": far, "near_subject": near}
         # What the panel's own size and angle mean for this position. Both
         # were declared and neither reached the placement; the kernel has read
@@ -1786,6 +1814,12 @@ def _render_depth_twin(sc, spec: dict) -> str:
 HAIR_STYLES = {
     "short": {"thickness": 0.010, "grain": 0.010, "depth": 0.004},
     "curly": {"thickness": 0.022, "grain": 0.014, "depth": 0.012},
+    # Hair past the collar covers the whole back of the skull down to the
+    # neck, so its hairline falls further at the back (`nape`) and the shell
+    # is thick enough to read as a mass rather than a cap. It is not a shape
+    # for the length below the neck: the prompt carries that, and what the
+    # control image has to stop is the bald dome it would otherwise start from.
+    "long": {"thickness": 0.028, "grain": 0.018, "depth": 0.008, "nape": 0.80},
 }
 
 
@@ -1814,7 +1848,7 @@ def _hair_cap(head_src, cid: str, style: dict):
     def on_scalp(v):
         height = (v.co.z - z0) / ((z1 - z0) or 1.0)   # chin 0 -> crown 1
         back = (v.co.y - y0) / ((y1 - y0) or 1.0)     # face 0 -> occiput 1
-        return height > 0.84 - 0.56 * back
+        return height > 0.84 - style.get("nape", 0.56) * back
 
     bmesh.ops.delete(bm, geom=[f for f in bm.faces
                                if not all(on_scalp(v) for v in f.verts)],
@@ -1974,8 +2008,12 @@ def _see_past_set(*, cam, focus, bodies, heads, set_names, spec,
     never the structural shell. Returns what it saw and what it did.
     """
     report = {"searched": False, "moved": None, "removed": [], "visible": {}}
-    if spec.get("ots") or not heads:
+    if not heads:
         return report
+    # An over-the-shoulder's lens is solved from the pair, so it is not moved;
+    # but the furniture beside a seat can still stand between that lens and
+    # the shoulder it looks past, and that is removed like any other.
+    fixed_lens = bool(spec.get("ots"))
     sc = bpy.context.scene
     cast = set(bodies) | set(heads.values())
     state = {"deps": bpy.context.evaluated_depsgraph_get()}
@@ -2009,7 +2047,7 @@ def _see_past_set(*, cam, focus, bodies, heads, set_names, spec,
     eye0 = cam.location.copy()
     seen = look(eye0)
     worst = min(v[0] for v in seen.values())
-    if worst < HEAD_CLEAR_SHARE:
+    if worst < HEAD_CLEAR_SHARE and not fixed_lens:
         report["searched"] = True
         off = eye0 - focus
         dh = math.hypot(off.x, off.y)
@@ -2920,6 +2958,21 @@ def _kernel_greybox(spec: dict) -> dict:
                         abs(near_head.x - side.x * across):
                     side = -side
                 cam.location = near_head + look * behind + side * across
+                # Inside the cabin the scene's other panels are built as. The
+                # vehicle shell is stretched to contain whatever camera it is
+                # given, so a lens stood 1.3 m behind a shoulder that is
+                # already near a side wall gets a cabin twice as wide as the
+                # wide shot's -- the same car, a different room, across one
+                # cut. Shortening the distance keeps the width the cast
+                # already sets. The margin is 0.2 m rather than the shell's own
+                # 0.5: at 0.5 the lens came so close that the near head sat 39
+                # degrees off axis, outside a 35 mm frame, and the shot had no
+                # shoulder to be over.
+                lim = max(W, (max_x - min_x) + 1.4) / 2 - 0.2
+                if abs(cam.location.x) > lim and abs(look.x) > 1e-6:
+                    edge = math.copysign(lim, cam.location.x)
+                    behind = max(0.25, (edge - near_head.x - side.x * across) / look.x)
+                    cam.location = near_head + look * behind + side * across
                 # Aim at the face, not the crown: the top of a head's box is
                 # hair, and a lens that tracks it puts the eyeline low.
                 focus = mathutils.Vector((far_head.x, far_head.y,
@@ -3034,6 +3087,14 @@ def _kernel_greybox(spec: dict) -> dict:
         cam_y = cam.location.y
         back_y = min(min_y, focus.y) - 0.9                 # beyond the far seat
         front_y = cam_y + 0.6                              # behind the lens
+        if ots:
+            # A lens looking across the cabin sees its length at the frame's
+            # edges, and a shell sized for a lens looking down it ends inside
+            # that view: black bands left and right of an over-the-shoulder.
+            reach = max(W, (max_x - min_x) + 1.4) / 2 + abs(cam.location.x)
+            pad = reach * math.tan(cam.data.angle / 2) + 0.3
+            back_y = min(back_y, cam_y - pad)
+            front_y = max(front_y, cam_y + pad)
         # NOT the KB's cabin: stretched until it contains the camera and the
         # cast plus 1.4 m of clearance. family_car declares 1.45 m across --
         # the Civic's SAE shoulder room W3 of 1448 mm -- and is built here at
