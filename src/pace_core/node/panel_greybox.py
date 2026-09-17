@@ -965,6 +965,31 @@ def hair_style(descriptor: str | None) -> str | None:
     return None
 
 
+# Hair colours at the grey each reads as in a greyscale control image.
+_HAIR_TONES = {"black": 0.14, "brunette": 0.28, "brown": 0.32, "auburn": 0.36,
+               "red": 0.42, "ginger": 0.50, "grey": 0.55, "gray": 0.55,
+               "silver": 0.70, "blonde": 0.78, "blond": 0.78, "platinum": 0.84,
+               "white": 0.88}
+
+
+def hair_tone(descriptor: str | None) -> float | None:
+    """The grey a character's declared hair colour reads as, or None.
+
+    The first colour named wins ("black hair flecked with grey" is black);
+    "light" and "dark" shift it. Untoned, the shell is the cast's grey, lit
+    pale from the front and dark from behind, and the sampler paints a
+    different colour on each side of a cut.
+    """
+    from pace_core.compilers.compile_common import _hair_phrase
+
+    words = re.findall(r"[a-z]+", (_hair_phrase(descriptor or "") or "").lower())
+    tone = next((_HAIR_TONES[w] for w in words if w in _HAIR_TONES), None)
+    if tone is None:
+        return None
+    shift = 0.14 * ("light" in words) - 0.12 * ("dark" in words)
+    return round(min(0.9, max(0.08, tone + shift)), 2)
+
+
 def build_spec(project: str, scene_id: str, panel_id: str,
                out_png: str | Path, res: tuple[int, int] = DEFAULT_RES, *,
                scene: dict | None = None, dress: bool = False) -> dict:
@@ -1377,10 +1402,14 @@ def build_spec(project: str, scene_id: str, panel_id: str,
             # delivers that dome: a bald back of the head under a description
             # that names short hair.
             entry = _kb.get(sj["character_id"]) or {}
-            style = hair_style((entry.get("age_states") or {}).get(s.get("age_state"))
-                               or entry.get("anchor"))
+            descriptor = ((entry.get("age_states") or {}).get(s.get("age_state"))
+                          or entry.get("anchor"))
+            style = hair_style(descriptor)
             if style:
                 sj["hair"] = style
+                tone = hair_tone(descriptor)
+                if tone is not None:
+                    sj["hair_tone"] = tone
 
     # The set `build_locations` already built for this scene, if it is there.
     # Per scene rather than per location because that is how build_locations
@@ -1874,12 +1903,13 @@ def _render_depth_twin(sc, spec: dict) -> str:
 HAIR_STYLES = {
     "short": {"thickness": 0.010, "grain": 0.010, "depth": 0.004},
     "curly": {"thickness": 0.022, "grain": 0.014, "depth": 0.012},
-    # Hair past the collar covers the whole back of the skull down to the
-    # neck, so its hairline falls further at the back (`nape`) and the shell
-    # is thick enough to read as a mass rather than a cap. It is not a shape
-    # for the length below the neck: the prompt carries that, and what the
-    # control image has to stop is the bald dome it would otherwise start from.
-    "long": {"thickness": 0.028, "grain": 0.018, "depth": 0.008, "nape": 0.80},
+    # Hair past the collar covers the back of the skull and hangs below it:
+    # the hairline falls to the nape, and the rim behind the ears drops as a
+    # curtain `fall` head-heights below the chin. A cap alone, seen from
+    # behind, reads as short curly hair, and the sampler renders it so. Its
+    # grain is broad and shallow for the same reason.
+    "long": {"thickness": 0.024, "grain": 0.040, "depth": 0.002, "nape": 0.80,
+             "fall": 0.35},
 }
 
 
@@ -1918,6 +1948,8 @@ def _hair_cap(head_src, cid: str, style: dict):
     # on an open cap can flip the whole shell into the skull.
     bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces],
                      context="VERTS")
+    xs = [v.co.x for v in bm.verts]
+    x0, x1 = (min(xs), max(xs)) if xs else (0.0, 0.0)
     bm.to_mesh(me)
     bm.free()
     hair = bpy.data.objects.new(f"hair_{cid}", me)
@@ -1952,7 +1984,71 @@ def _hair_cap(head_src, cid: str, style: dict):
     # upholstery -- the sampler painted a seat headrest where the head was.
     for p in hair.data.polygons:
         p.use_smooth = True
+    if style.get("fall"):
+        fall = _hair_fall(head_src, cid, (x0, x1, y0, y1, z0, z1), style)
+        bpy.ops.object.select_all(action="DESELECT")
+        fall.select_set(True)
+        hair.select_set(True)
+        bpy.context.view_layer.objects.active = hair
+        bpy.ops.object.join()
     return hair
+
+
+def _hair_fall(head_src, cid: str, bounds, style: dict):
+    """Hair that hangs past the collar: a smooth hood round the skull.
+
+    A dome over the crown, a tube below the ears down to `fall` head-heights
+    under the chin, open at the bottom and cut away in front of the face, so
+    the face shows and the hair frames it. Vertical ridges and an uneven hem
+    are what make it hair: smooth, from behind, it is a headrest. Same proxy
+    frame as `_hair_cap`.
+    """
+    import math
+
+    import bmesh
+    x0, x1, y0, y1, z0, z1 = bounds
+    h = (z1 - z0) or 1.0
+    cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
+    rx, ry = (x1 - x0) / 2 * 1.10, (y1 - y0) / 2 * 1.08
+    ear = z0 + 0.55 * h
+    top, bottom = z1 + 0.012, z0 - style["fall"] * h
+    bm = bmesh.new()
+    bmesh.ops.create_uvsphere(bm, u_segments=144, v_segments=24, radius=1.0)
+    for v in bm.verts:
+        x, y, z = v.co
+        if z < 0:
+            r = (x * x + y * y) ** 0.5 or 1.0
+            x, y = x / r, y / r
+        a = math.atan2(y, x)
+        # Clumps of unequal width that deepen from the crown down: evenly
+        # spaced ridges read as ribbed upholstery. Below the ears the hair
+        # draws in to the neck and out again at the hem, the outline of hair
+        # rather than of a chair back.
+        depth = min(1.0, 1.0 - z)
+        clump = (0.5 * math.sin(23 * a + 1.3) + 0.3 * math.sin(61 * a + 0.7 - 2.5 * z)
+                 + 0.2 * math.sin(137 * a + 2.1)) ** 2
+        waist = 1.0 - 0.10 * math.sin(math.pi * min(1.0, -z)) if z < 0 else 1.0
+        s = (1.0 + 0.05 * depth * clump) * waist
+        v.co.x, v.co.y = cx + x * rx * s, cy + y * ry * s
+        v.co.z = ear + z * ((top - ear) if z >= 0 else (ear - bottom))
+        if -0.999 < z < -0.95:          # the hem ring; the pole goes below
+            v.co.z += 0.035 * math.sin(7 * a + 0.4) + 0.02 * math.sin(19 * a + 1.1)
+    unit = {v: ((v.co.x - cx) / rx, (v.co.y - cy) / ry, v.co.z) for v in bm.verts}
+    bmesh.ops.delete(bm, geom=[
+        f for f in bm.faces
+        if all(unit[v][1] < -0.30 for v in f.verts)
+        or len(f.verts) == 3 and min(unit[v][2] for v in f.verts) < ear - 0.5 * h],
+        context="FACES")
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context="VERTS")
+    me = bpy.data.meshes.new(f"hair_fall_{cid}")
+    bm.to_mesh(me)
+    bm.free()
+    fall = bpy.data.objects.new(f"hair_fall_{cid}", me)
+    bpy.context.collection.objects.link(fall)
+    fall.matrix_world = head_src.matrix_world.copy()
+    for p in me.polygons:
+        p.use_smooth = True
+    return fall
 
 
 # Garment tones ride on a colour attribute, and the beauty pass switches to
@@ -2581,11 +2677,18 @@ def _kernel_greybox(spec: dict) -> dict:
         # Hair joins the body, not the head copy: the head matte is what the
         # read point is measured against, and a cap would lift its centroid.
         style = HAIR_STYLES.get(subj.get("hair") or "")
+        hair = None
         if style is not None and head_src is not None:
-            imported.append(_hair_cap(head_src, subj["character_id"], style))
+            hair = _hair_cap(head_src, subj["character_id"], style)
+            imported.append(hair)
         # Garments before the join, while the part groups are still apart.
         if subj.get("costume"):
             _dress(imported, subj["costume"])
+        if hair is not None and subj.get("hair_tone") is not None:
+            for o in imported:
+                if o is not hair and _TONE_ATTR not in o.data.color_attributes:
+                    _tone_mesh(o, _GREY)
+            _tone_mesh(hair, (subj["hair_tone"],) * 3 + (1.0,))
         bpy.ops.object.select_all(action="DESELECT")
         for o in imported:
             o.select_set(True)
@@ -3391,7 +3494,8 @@ def _kernel_greybox(spec: dict) -> dict:
     # gets the same attribute at the greybox's own grey, so the frame is
     # unchanged wherever nothing was dressed and nothing was switched off.
     dark_ids = [fx["id"] for fx in (spec.get("fixtures") or []) if fx.get("dark")]
-    if any(s.get("costume") for s in spec["subjects"]) or dark_ids:
+    if any(s.get("costume") or s.get("hair_tone") is not None
+           for s in spec["subjects"]) or dark_ids:
         for o in bpy.data.objects:
             if o.type == "MESH":
                 if _TONE_ATTR not in o.data.color_attributes:

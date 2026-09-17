@@ -103,6 +103,27 @@ def test_any_named_hair_is_capped():
     assert set(filter(None, (hair_style("short hair"), hair_style("curly hair")))) <= set(HAIR_STYLES)
 
 
+def test_hair_is_toned_from_its_named_colour():
+    """An untoned shell is the cast's grey, pale lit from the front and dark
+    from behind, so the sampler painted a different colour at each side of a
+    cut."""
+    from pace_core.node.panel_greybox import hair_tone
+
+    blonde = hair_tone("with shoulder-length blonde hair and a thoughtful expression")
+    black = hair_tone("with short black hair flecked with grey and a relaxed demeanor")
+    assert blonde > 0.7 and black < 0.2
+    assert hair_tone("with light brown hair") > hair_tone("with brown hair") > hair_tone("with dark brown hair")
+    assert hair_tone("with short hair") is None and hair_tone(None) is None
+
+
+def test_long_hair_hangs_below_the_head():
+    """A scalp cap alone, seen from behind, came back as short curly hair."""
+    from pace_core.node.panel_greybox import HAIR_STYLES
+
+    assert HAIR_STYLES["long"].get("fall", 0) > 0
+    assert not any(s.get("fall") for k, s in HAIR_STYLES.items() if k != "long")
+
+
 def test_a_garment_named_by_hue_gets_a_tone():
     """An olive sweatshirt and a slate-blue jacket were read as no garment
     and a white tee respectively: the hue was unknown, and the tee under
