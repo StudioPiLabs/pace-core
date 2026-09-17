@@ -1500,6 +1500,9 @@ def anchor_version(spec: dict) -> str:
     # restamp every upright panel in every project.
     if spec.get("roll_deg"):
         payload["roll_deg"] = spec["roll_deg"]
+    # A shared scene cabin is different geometry too, on the same terms.
+    if spec.get("scene_shell"):
+        payload["scene_shell"] = spec["scene_shell"]
     payload["subjects"] = [
         {"id": s.get("character_id"), "mesh": Path(s.get("mesh") or "").name,
          "pose": s.get("pose"), "facing_deg": s.get("facing_deg"),
@@ -1602,8 +1605,13 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
                        export_glb_include_bodies: bool = False,
                        camera_delta: dict | None = None,
                        scene: dict | None = None,
-                       dress: bool = False) -> dict:
+                       dress: bool = False,
+                       scene_shell: dict | None = None) -> dict:
     """Build one panel's control frame. Returns the kernel's result dict.
+
+    `scene_shell`: the cabin every panel of the scene is built in, as
+    make_scene_greyboxes measures it; omitted, the shell is sized for this
+    panel's camera alone.
 
     `scene`: build from this scene document rather than the installed one --
     how a restage pass tries a blocking before it writes it.
@@ -1630,6 +1638,8 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
                       dress=dress)
     if camera_delta:
         spec["camera_delta"] = camera_delta
+    if scene_shell:
+        spec["scene_shell"] = scene_shell
     missing = missing_meshes(spec)
     if missing:
         return {"ok": False, "_missing_meshes": missing,
@@ -1648,6 +1658,52 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     out.setdefault("bodies", len(spec["subjects"]))
     out.setdefault("seats", spec["seats"])
     return out
+
+
+def make_scene_greyboxes(project: str, scene_id: str, out_for, *,
+                         panel_ids: list[str] | None = None,
+                         res: tuple[int, int] = DEFAULT_RES,
+                         dress: bool = False,
+                         scene: dict | None = None) -> dict[str, dict]:
+    """Build every panel of a scene inside one cabin. {panel_id: result}.
+
+    A shell sized per panel follows its own camera, so two panels of one
+    scene were two differently proportioned cars, and a cut between them
+    moved the walls: the space drifted even where the cast and the cameras
+    held. This builds each panel once to learn the shell its camera needs,
+    takes the union -- widest, tallest, furthest back and forward -- and
+    builds every panel again inside it. The union contains every camera, so
+    no panel's framing changes; only the room around it stops moving.
+
+    `out_for(panel_id)` returns the output path for a panel. Scenes whose
+    panels are not all built as a procedural shell (a location .blend, a
+    subway car) are built once, per panel, as before.
+    """
+    import tempfile
+
+    if scene is None:
+        scene = json.loads((Path(paths_for(project).scenes_dir) / f"{scene_id}.json").read_text())
+    ids = panel_ids or [pl["id"] for sh in scene.get("shots") or []
+                        for pl in sh.get("panels") or []]
+    first: dict[str, dict] = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        for pid in ids:
+            first[pid] = make_panel_greybox(project, scene_id, pid,
+                                            Path(tmp) / f"{pid}.png", res=res,
+                                            scene=scene, dress=dress)
+    bounds = [((r or {}).get("shell") or {}).get("bounds") for r in first.values()]
+    if not all(bounds) or len({(r.get("shell") or {}).get("style") for r in first.values()}) != 1:
+        return {pid: make_panel_greybox(project, scene_id, pid, out_for(pid), res=res,
+                                        scene=scene, dress=dress) for pid in ids}
+    # Unrounded: a bound rounded down falls inside the panel that set it, and
+    # that panel then keeps its own, a hair wider than everyone else's.
+    shared = {"half_w": max(b["half_w"] for b in bounds),
+              "top_z": max(b["top_z"] for b in bounds),
+              "back_y": min(b["back_y"] for b in bounds),
+              "front_y": max(b["front_y"] for b in bounds)}
+    return {pid: make_panel_greybox(project, scene_id, pid, out_for(pid), res=res,
+                                    scene=scene, dress=dress, scene_shell=shared)
+            for pid in ids}
 
 
 # ── kernel (runs INSIDE Blender) ──────────────────────────────────────────
@@ -1678,8 +1734,7 @@ INTERIOR_STYLES = {
 }
 
 
-def _build_interior(box, *, style, half_w, mid_y, depth, top_z, back_y,
-                    pillar_limit):
+def _build_interior(box, *, style, half_w, mid_y, depth, top_z, back_y, lens):
     """Floor, ceiling, walls and their dressing, around an enclosed camera.
 
     Every dimension arrives already solved: this places geometry, it does not
@@ -1723,8 +1778,14 @@ def _build_interior(box, *, style, half_w, mid_y, depth, top_z, back_y,
         box(f"door_{side}",  (at(0.04), mid_y, top_z * panel_z), (0.08, depth * 0.98, top_z * panel_h))
         box(f"kick_{side}",  (at(0.09), mid_y, 0.05),         (0.18, depth, 0.10))
         for i, ey in enumerate(edges):
-            if ey <= pillar_limit:
-                box(f"pillar_{side}{i}", (at(0.06), ey, top_z / 2), (0.12, 0.13, top_z))
+            # A pillar beside the lens would fill the frame edge, so the ones
+            # within 0.8 m of it along the cabin, on the wall the lens stands
+            # nearer, are left out. Only those: every other pillar stays, so
+            # panels that share a cabin share its dressing, and a lens looking
+            # across the cabin still sees the far wall's bays the wide shows.
+            if abs(ey - lens[1]) < 0.8 and abs(sx - lens[0]) <= half_w + 0.1:
+                continue
+            box(f"pillar_{side}{i}", (at(0.06), ey, top_z / 2), (0.12, 0.13, top_z))
 
     for i, ey in enumerate(edges):
         box(f"rib_{i}", (0, ey, top_z - 0.05), (half_w * 2, 0.12, 0.07))
@@ -3114,6 +3175,18 @@ def _kernel_greybox(spec: dict) -> dict:
         half_w = max(W, (max_x - min_x) + 1.4) / 2
         half_w = max(half_w, abs(cam.location.x) + 0.5)
         top_z = max(H, cam.location.z + 0.5, max_z + 0.35)
+        # One cabin for every panel of a scene. Sized per panel, the shell
+        # follows each camera, so the wide and the over-the-shoulders after it
+        # were built 4.25 m and 4.10 m across, 6.5 m and 4.0 m long: the same
+        # car with its walls, ribs and pillars somewhere else at every cut.
+        # make_scene_greyboxes measures what each panel needs and passes the
+        # union, which contains every camera by construction.
+        shared = spec.get("scene_shell") or {}
+        if shared:
+            half_w = max(half_w, float(shared["half_w"]))
+            top_z = max(top_z, float(shared["top_z"]))
+            back_y = min(back_y, float(shared["back_y"]))
+            front_y = max(front_y, float(shared["front_y"]))
         shell_bounds = {"half_w": half_w, "top_z": top_z, "front_y": front_y}
         mid_y = (front_y + back_y) / 2
         depth = front_y - back_y
@@ -3165,12 +3238,15 @@ def _kernel_greybox(spec: dict) -> dict:
 
         shell_built.update(style="vehicle", width=round(half_w * 2, 4),
                            depth=round(depth, 4), height=round(top_z, 4),
+                           bounds={"half_w": half_w, "top_z": top_z,
+                                   "back_y": back_y, "front_y": front_y},
+                           shared=bool(shared),
                            kb_cabin=[W, D, H],
                            cast_x_extent=round(max_x - min_x, 4),
                            camera_x=round(cam.location.x, 4))
         _build_interior(box, style="vehicle", half_w=half_w, mid_y=mid_y,
                         depth=depth, top_z=top_z, back_y=back_y,
-                        pillar_limit=cam_y - 0.8)
+                        lens=(cam.location.x, cam_y))
     elif spec.get("shape") in ("chamber", "office"):
         # ── a room: the same shell as the cabin, at a room's proportions ──
         #
@@ -3191,7 +3267,7 @@ def _kernel_greybox(spec: dict) -> dict:
         depth = front_y - back_y
         _build_interior(box, style="room", half_w=half_w, mid_y=mid_y,
                         depth=depth, top_z=top_z, back_y=back_y,
-                        pillar_limit=cam_y - 0.8)
+                        lens=(cam.location.x, cam_y))
         # A room's furniture, staged like the cabin's. This branch was added
         # without this call, so an office prop was read by _panel_fixtures,
         # reported in the spec, and silently never built -- the exact failure
