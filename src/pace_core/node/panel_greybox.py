@@ -934,6 +934,23 @@ def garment_tones(costume: str | None) -> dict:
     return out
 
 
+def hair_style(descriptor: str | None) -> str | None:
+    """The HAIR_STYLES key a character's own description asks for, or None.
+
+    Only hair the proxy can carry as a close shell: short or curly. Longer
+    hair is left bald rather than capped wrong, and a description that names
+    no hair gets none.
+    """
+    from pace_core.compilers.compile_common import _hair_phrase
+
+    words = set((_hair_phrase(descriptor or "") or "").lower().replace("-", " ").split())
+    if words & {"curly", "coily", "afro"}:
+        return "curly"
+    if words & {"short", "cropped", "buzzed", "close", "crew"}:
+        return "short"
+    return None
+
+
 def build_spec(project: str, scene_id: str, panel_id: str,
                out_png: str | Path, res: tuple[int, int] = DEFAULT_RES, *,
                scene: dict | None = None, dress: bool = False) -> dict:
@@ -1329,6 +1346,14 @@ def build_spec(project: str, scene_id: str, panel_id: str,
                 wardrobe=wardrobe_of(_wd, s)))
             if tones:
                 sj["costume"] = tones
+            # The proxy's scalp is a smooth dome, and a lens behind a head
+            # delivers that dome: a bald back of the head under a description
+            # that names short hair.
+            entry = _kb.get(sj["character_id"]) or {}
+            style = hair_style((entry.get("age_states") or {}).get(s.get("age_state"))
+                               or entry.get("anchor"))
+            if style:
+                sj["hair"] = style
 
     # The set `build_locations` already built for this scene, if it is there.
     # Per scene rather than per location because that is how build_locations

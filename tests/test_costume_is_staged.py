@@ -84,3 +84,19 @@ def test_a_props_library_given_as_a_list_resolves_the_same():
 
     entry = {"id": "lucas_costume", "anchor": "a soft olive sweatshirt"}
     assert wardrobe_of([entry], {"costume_id": "lucas_costume"}) is entry
+
+
+# ── hair, from the same description the prompt reads ─────────────────────
+def test_short_hair_is_capped_and_long_hair_is_not():
+    """A lens behind a bald proxy delivers a bald back of the head under a
+    prompt that names short hair; a shell for long hair would be wrong in
+    shape, so it is left alone."""
+    from pace_core.node.panel_greybox import HAIR_STYLES, hair_style
+
+    assert hair_style("average build, Hispanic, with short black hair flecked "
+                      "with grey and a relaxed demeanor.") == "short"
+    assert hair_style("slim, with tight curly hair and a wide smile") == "curly"
+    assert hair_style("average build, Caucasian, with shoulder-length blonde "
+                      "hair and a thoughtful expression") is None
+    assert hair_style("a bald man") is None and hair_style(None) is None
+    assert set(filter(None, (hair_style("short hair"), hair_style("curly hair")))) <= set(HAIR_STYLES)
