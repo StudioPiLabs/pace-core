@@ -7,12 +7,11 @@ that is free prose rather than a typed value. Everything else fails a schema
 check when it is wrong; a beat fails silently and semantically, and the render
 is the first place anyone notices.
 
-Four rules, each from a failure this corpus actually produced:
+Four rules, each from a failure a breakdown actually produced:
 
   unelaborated   the beat restates its key_action verbatim ("power loss"),
                  so the shot has a label where it needs staging and the
-                 generator invents what the label looks like. 23 of
-                 AutomaticDrive's 27 shots.
+                 generator invents what the label looks like.
   multi-action   one beat coordinating two actions across clauses. Prose has
                  to hold them together and that is where it breaks: a beat
                  reading "look up at his mother ... while both parents stay

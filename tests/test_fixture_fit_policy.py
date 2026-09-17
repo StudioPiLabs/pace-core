@@ -2,13 +2,13 @@
 
 `fitted_mesh` scaled every axis independently to fill the declared span, which
 means a prop whose natural proportions differ from its slot is anisotropically
-distorted -- and nothing said so. Measured in-build on the evaluation corpus's cabin,
+distorted -- and nothing said so. Measured in-build on a vehicle cabin,
 each mesh yawed as it is actually placed:
 
-    car_console   1.75 x 0.56 x 0.38  ->  1.89 x 0.35 x 0.18    2.29x
-    cabin_panels  1.85 x 1.96 x 0.45  ->  0.07 x 0.95 x 0.26   14.60x
+    main_console   1.75 x 0.56 x 0.38  ->  1.89 x 0.35 x 0.18    2.29x
+    wall_panels  1.85 x 1.96 x 0.45  ->  0.07 x 0.95 x 0.26   14.60x
 
-cabin_panels is a wall lining squeezed to 3.9% of its own width to reach a
+wall_panels is a wall lining squeezed to 3.9% of its own width to reach a
 7 cm door-card slot. Whatever that GLB was modelled as, that is not what
 renders: dropping the mesh and letting the box fallback take the slot changes
 0.70% of the frame, so at that compression the mesh contributes nothing a
@@ -23,7 +23,7 @@ belongs to whoever authored the span. What was missing is the reading.
 The numbers above are taken inside Blender on purpose. Its glTF importer
 applies the Y-up to Z-up conversion, so measuring the same GLB's vertices
 outside Blender returns a permuted extent and a wrong anisotropy -- 3.90x for
-cabin_panels rather than 14.60x.
+wall_panels rather than 14.60x.
 """
 from __future__ import annotations
 

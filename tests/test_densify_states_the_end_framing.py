@@ -7,7 +7,7 @@ pair differed only by panel_number and a prose note.
 
 On the video path that was invisible: plan_camera_track interpolates between
 the two panels, so the pair works. On the still path each panel renders alone,
-and scene_10/shot_01's two panels came back pixel-identical.
+and a shot's two panels came back pixel-identical.
 
 The end panel now carries the size the move arrives at as a camera_override,
 one step along the ShotSize ladder. That is a composition target — where the
@@ -143,9 +143,8 @@ def test_a_shot_that_declares_static_is_not_densified():
     """`static: true` says the frame is held. A shot that also lists a move is
     contradicting itself, and which half is wrong is an authoring decision.
 
-    Every 2-panel shot in the evaluation corpus came from this pair of statements —
-    4 declaring static alongside a crane, 0 genuinely moving — and the pairs
-    rendered identically because there was no second framing to state.
+    2-panel shots have come from this pair of statements — static declared
+    alongside a crane, nothing genuinely moving — and the pairs rendered identically because there was no second framing to state.
     """
     doc = _scene()
     doc["shots"][0]["camera"]["trajectory"]["static"] = True

@@ -6,10 +6,10 @@ and nothing reads a sibling. `paths.py` defines canonical as exactly
 `scene_<digits>.json` and 29 call sites use that filter, deliberately: an
 extra file in that directory doubles every scene in the studio sidebar. So the
 enrichment pass has always produced files that no compiler, greybox or route
-would open, and the merge was done by hand -- AutomaticDrive's scenes carry
-`_enriched_at` on the canonical files and have no sidecars left beside them.
+would open, and the merge was done by hand -- scenes merged that way carry
+`_enriched_at` on the canonical files and no sidecars beside them.
 
-What enrichment adds is not decoration. On Zheng's scene_01 it filled
+What enrichment adds is not decoration. On a Chinese-language scene it filled
 `events.actions[].description_en`, which was EMPTY -- so every prompt was
 compiled from the Chinese beat because the English one did not exist yet --
 plus `environment.mood`, `lighting.condition`, `lighting.color_temperature`,

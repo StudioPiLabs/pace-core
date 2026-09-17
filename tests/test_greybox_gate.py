@@ -5,9 +5,9 @@ ones that stage a specific defect and require the gate to name it: a body that
 did not render, a matte that lost its alpha, a cast delivered in the wrong
 left-to-right order, and a control pass left over from an earlier build.
 
-The screen-order case is not hypothetical. The evaluation corpus's 2026-09-02 build
-of scene_01_shot_03_panel_0003 rendered the three-person cabin reversed --
-omar, declared leftmost at x=0.38, came out on the right -- and nothing in the
+The screen-order case is not hypothetical. A build of a three-person cabin
+rendered the cast reversed --
+gus, declared leftmost at x=0.38, came out on the right -- and nothing in the
 pipeline noticed. `test_reversed_cast_fails` is that regression in miniature.
 """
 from __future__ import annotations
@@ -150,81 +150,81 @@ def _clause(report, name):
 
 
 def test_a_correctly_staged_panel_passes(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (80, 120),
-                            "theo": (150, 190)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5),
-                                  ("theo", 0.62)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (80, 120),
+                            "hal": (150, 190)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5),
+                                  ("hal", 0.62)]), out)
     assert r.ok
     assert r.failures == []
 
 
 def test_reversed_cast_fails(tmp_path):
     """The 2026-09-02 regression: declared order, rendered mirrored."""
-    out = _build(tmp_path, {"omar": (150, 190), "nina": (80, 120),
-                            "theo": (10, 50)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5),
-                                  ("theo", 0.62)]), out)
+    out = _build(tmp_path, {"gus": (150, 190), "fay": (80, 120),
+                            "hal": (10, 50)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5),
+                                  ("hal", 0.62)]), out)
     assert not r.ok
     order = _clause(r, "screen_order")
     assert order.ok is False and order.value == 0.0
-    assert "omar declared left of nina" in order.detail
+    assert "gus declared left of fay" in order.detail
 
 
 def test_a_body_that_did_not_render_fails_visibility(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (80, 120)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5),
-                                  ("theo", 0.62)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (80, 120)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5),
+                                  ("hal", 0.62)]), out)
     vis = _clause(r, "required_entity_visibility")
     assert vis.ok is False and vis.value == pytest.approx(2 / 3, abs=1e-4)
-    assert "no matte: theo" in vis.detail
+    assert "no matte: hal" in vis.detail
 
 
 def test_a_body_staged_outside_the_frustum_fails_visibility(tmp_path):
     """The matte exists and is empty -- a different defect from no matte."""
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (0, 0)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (0, 0)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5)]), out)
     vis = _clause(r, "required_entity_visibility")
     assert vis.ok is False and "matte empty" in vis.detail
 
 
 def test_an_alphaless_matte_fails_rather_than_passing_as_full_frame(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (80, 120)},
-                 no_alpha={"nina"})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (80, 120)},
+                 no_alpha={"fay"})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5)]), out)
     vis = _clause(r, "required_entity_visibility")
     assert vis.ok is False and "no alpha" in vis.detail
 
 
 def test_a_subject_below_the_area_floor_fails(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (100, 101)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (100, 101)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5)]), out)
     area = _clause(r, "projected_subject_area")
     assert area.ok is False
-    assert area.value < MIN_SUBJECT_AREA and "nina" in area.detail
+    assert area.value < MIN_SUBJECT_AREA and "fay" in area.detail
 
 
 def test_required_can_be_narrowed_to_the_beats_own_facts(tmp_path):
     """A subject the geometry staged but the beat does not require is not a
     reason to refuse the panel."""
-    out = _build(tmp_path, {"omar": (10, 50)})
-    spec = _spec(tmp_path, [("omar", 0.38), ("nina", 0.5)])
+    out = _build(tmp_path, {"gus": (10, 50)})
+    spec = _spec(tmp_path, [("gus", 0.38), ("fay", 0.5)])
     assert evaluate(spec, out).ok is False
-    assert evaluate(spec, out, required={"omar"}).ok is True
+    assert evaluate(spec, out, required={"gus"}).ok is True
 
 
 # ── what the gate does NOT claim ──────────────────────────────────────────
 
 def test_unmeasurable_clauses_are_reported_not_silently_passed(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (80, 120)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (80, 120)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5)]), out)
     assert "focal_action_readability" in r.unmeasured
     assert _clause(r, "focal_action_readability").ok is None
     assert r.ok is True          # unmeasurable does not block
 
 
 def test_a_single_subject_declares_no_screen_order(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38)]), out)
+    out = _build(tmp_path, {"gus": (10, 50)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38)]), out)
     assert "screen_order" in r.unmeasured
     assert r.ok is True
 
@@ -232,12 +232,12 @@ def test_a_single_subject_declares_no_screen_order(tmp_path):
 # ── occlusion ─────────────────────────────────────────────────────────────
 
 def test_two_subjects_on_one_sight_line_fail(tmp_path):
-    """Scene 2's defect, in miniature. Its three-quarter azimuth stacked two
+    """A three-quarter azimuth's defect, in miniature. It stacked two
     of three subjects, leaving 67% of one under the other, and every other
     clause passed -- so a panel that rendered a declared subject as a sliver
     of forehead was called an anchor."""
-    out = _build(tmp_path, {"nina": (60, 120), "theo": (75, 135)})
-    r = evaluate(_spec(tmp_path, [("nina", 0.5), ("theo", 0.62)]), out)
+    out = _build(tmp_path, {"fay": (60, 120), "hal": (75, 135)})
+    r = evaluate(_spec(tmp_path, [("fay", 0.5), ("hal", 0.62)]), out)
     occ = _clause(r, "subject_occlusion")
     assert occ.ok is False
     assert occ.value > 0.35
@@ -246,8 +246,8 @@ def test_two_subjects_on_one_sight_line_fail(tmp_path):
 
 
 def test_side_by_side_subjects_pass(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50), "nina": (80, 120)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38), ("nina", 0.5)]), out)
+    out = _build(tmp_path, {"gus": (10, 50), "fay": (80, 120)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38), ("fay", 0.5)]), out)
     assert _clause(r, "subject_occlusion").ok is True
     assert r.ok
 
@@ -262,8 +262,8 @@ def test_some_overlap_is_how_depth_reads(tmp_path):
 
 
 def test_a_single_subject_cannot_occlude_itself(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50)})
-    r = evaluate(_spec(tmp_path, [("omar", 0.38)]), out)
+    out = _build(tmp_path, {"gus": (10, 50)})
+    r = evaluate(_spec(tmp_path, [("gus", 0.38)]), out)
     assert _clause(r, "subject_occlusion").ok is None
     assert "subject_occlusion" in r.unmeasured
 
@@ -282,24 +282,24 @@ def _head(path: Path, x0: int, x1: int) -> None:
 
 
 def test_a_head_behind_the_set_fails(tmp_path):
-    """Scene 2 again, one level out. omar's body was 51% visible and his head
+    """Scene 2 again, one level out. gus's body was 51% visible and his head
     0%: the set stood in front of exactly the part a frame is composed
     around, and body-vs-body occlusion could not see it because those mattes
     are rendered with the set hidden."""
-    out = _build(tmp_path, {"omar": (10, 50)})
-    _head(tmp_path / (out.name + ".head_omar.png"), 10, 50)
-    _visible(tmp_path / (out.name + ".visible_omar.png"), 10, 50, y0=45, y1=80)
-    r = evaluate(_spec(tmp_path, [("omar", 0.38)]), out)
+    out = _build(tmp_path, {"gus": (10, 50)})
+    _head(tmp_path / (out.name + ".head_gus.png"), 10, 50)
+    _visible(tmp_path / (out.name + ".visible_gus.png"), 10, 50, y0=45, y1=80)
+    r = evaluate(_spec(tmp_path, [("gus", 0.38)]), out)
     rp = _clause(r, "read_point_visible")
-    assert rp.ok is False and "omar 0%" in rp.detail
+    assert rp.ok is False and "gus 0%" in rp.detail
     assert not r.ok
 
 
 def test_a_head_the_camera_can_see_passes(tmp_path):
-    out = _build(tmp_path, {"omar": (10, 50)})
-    _head(tmp_path / (out.name + ".head_omar.png"), 10, 50)
-    _visible(tmp_path / (out.name + ".visible_omar.png"), 10, 50)
-    assert _clause(evaluate(_spec(tmp_path, [("omar", 0.38)]), out),
+    out = _build(tmp_path, {"gus": (10, 50)})
+    _head(tmp_path / (out.name + ".head_gus.png"), 10, 50)
+    _visible(tmp_path / (out.name + ".visible_gus.png"), 10, 50)
+    assert _clause(evaluate(_spec(tmp_path, [("gus", 0.38)]), out),
                    "read_point_visible").ok is True
 
 
@@ -307,9 +307,9 @@ def test_a_build_without_the_visible_pass_says_so(tmp_path):
     """An older greybox has no visible-matte beside it. That is unmeasured,
     not passing: reporting it as a pass would let a stale build clear a clause
     it was never rendered for."""
-    out = _build(tmp_path, {"omar": (10, 50)})
-    _head(tmp_path / (out.name + ".head_omar.png"), 10, 50)
-    r = evaluate(_spec(tmp_path, [("omar", 0.38)]), out)
+    out = _build(tmp_path, {"gus": (10, 50)})
+    _head(tmp_path / (out.name + ".head_gus.png"), 10, 50)
+    r = evaluate(_spec(tmp_path, [("gus", 0.38)]), out)
     assert _clause(r, "read_point_visible").ok is None
     assert "read_point_visible" in r.unmeasured
 
@@ -317,9 +317,9 @@ def test_a_build_without_the_visible_pass_says_so(tmp_path):
 def test_action_readability_still_says_it_cannot_measure_an_action(tmp_path):
     """Visibility is not readability: seeing a head does not say whether the
     action reads, and the clause must keep admitting that."""
-    out = _build(tmp_path, {"omar": (10, 50)})
-    _head(tmp_path / (out.name + ".head_omar.png"), 10, 50)
-    _visible(tmp_path / (out.name + ".visible_omar.png"), 10, 50)
-    far = _clause(evaluate(_spec(tmp_path, [("omar", 0.38)]), out),
+    out = _build(tmp_path, {"gus": (10, 50)})
+    _head(tmp_path / (out.name + ".head_gus.png"), 10, 50)
+    _visible(tmp_path / (out.name + ".visible_gus.png"), 10, 50)
+    far = _clause(evaluate(_spec(tmp_path, [("gus", 0.38)]), out),
                   "focal_action_readability")
     assert far.ok is None and "read_point_visible" in far.detail

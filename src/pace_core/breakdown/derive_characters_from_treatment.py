@@ -3,8 +3,8 @@
 
 A treatment's 人物设定 names each character and describes them in the author's
 words. `extract_characters` never sees it: it reads the screenplay body and
-infers an appearance from how a person behaves in scenes. On Zheng the two
-disagree about the protagonist, and the disagreement is not subtle --
+infers an appearance from how a person behaves in scenes. The two can
+disagree about a protagonist, and not subtly --
 
     treatment   一头红色短发与众格格不入   (a head of RED SHORT hair, which is
                                         the point: 与众格格不入, she does not
@@ -46,7 +46,7 @@ from pace_core.pai_compat import resolve_character                # noqa: E402
 from pace_core.paths import paths_for                                  # noqa: E402
 
 #: `名字：描述` — a name, optionally with a parenthetical role, then a
-#: full-width colon. The name may carry a middle dot (AI·狰) and Latin letters.
+#: full-width colon. The name may carry a middle dot (AI·白泽) and Latin letters.
 _ENTRY = re.compile(
     r"(?P<name>[A-Za-z0-9·一-鿿]{1,16})"
     r"(?:（(?P<role>[^）]{0,20})）)?\s*[:：]\s*"
@@ -190,7 +190,7 @@ def run(*, project: str, write: bool = False) -> dict:
     for name, body in sheet.items():
         rec = resolve_character(name, registry)
         if not rec:
-            # The beast is 狰 in the panels and AI·狰 on the sheet.
+            # A creature cued 白泽 in the panels can be AI·白泽 on the sheet.
             rec = next((r for n, r in registry.items()
                         if isinstance(r, dict)
                         and any(a and a in name for a in (r.get("aliases") or []))), {})

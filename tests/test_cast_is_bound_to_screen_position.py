@@ -29,23 +29,23 @@ def _shot(*subjects: dict) -> dict:
 
 def test_subjects_come_back_in_screen_order_not_registry_order():
     shot = _shot(
-        {"character_id": "nina", "screen_position": {"x": 0.50}},
-        {"character_id": "omar",  "screen_position": {"x": 0.38}},
-        {"character_id": "theo", "screen_position": {"x": 0.62}},
+        {"character_id": "fay", "screen_position": {"x": 0.50}},
+        {"character_id": "gus",  "screen_position": {"x": 0.38}},
+        {"character_id": "hal", "screen_position": {"x": 0.62}},
     )
     assert [s["character_id"] for s in subjects_left_to_right(shot)] == \
-        ["omar", "nina", "theo"]
+        ["gus", "fay", "hal"]
 
 
 def test_each_subject_carries_the_phrase_for_where_it_stands():
     shot = _shot(
-        {"character_id": "omar",  "screen_position": {"x": 0.38}},
-        {"character_id": "nina", "screen_position": {"x": 0.50}},
-        {"character_id": "theo", "screen_position": {"x": 0.62}},
+        {"character_id": "gus",  "screen_position": {"x": 0.38}},
+        {"character_id": "fay", "screen_position": {"x": 0.50}},
+        {"character_id": "hal", "screen_position": {"x": 0.62}},
     )
     got = {s["character_id"]: s["phrase"] for s in subjects_left_to_right(shot)}
-    assert got == {"omar": "on the left", "nina": "in the centre",
-                   "theo": "on the right"}
+    assert got == {"gus": "on the left", "fay": "in the centre",
+                   "hal": "on the right"}
 
 
 def test_a_zone_and_the_x_it_means_get_the_same_words():
@@ -99,21 +99,21 @@ def test_a_group_prompt_anchors_every_description(monkeypatch):
         "shot_id": "shot_01",
         "camera": {"creative_intent": {"shot_size": "medium"}},
         "setup": {"subjects": [
-            {"character_id": "nina", "screen_position": {"x": 0.50}},
-            {"character_id": "omar",  "screen_position": {"x": 0.38}},
-            {"character_id": "theo", "screen_position": {"x": 0.62}},
+            {"character_id": "fay", "screen_position": {"x": 0.50}},
+            {"character_id": "gus",  "screen_position": {"x": 0.38}},
+            {"character_id": "hal", "screen_position": {"x": 0.62}},
         ]},
     }
     panel = {"id": "p", "panel_number": 1}
     kb = {c: {"generic_anchors": {"default": f"{c}-looks"}, "anchor": f"{c}-looks"}
-          for c in ("nina", "omar", "theo")}
+          for c in ("fay", "gus", "hal")}
     ctx = compile_flux2.CompileContext(characters_kb=kb)
     pos, _ = compile_flux2.compile_flux_for_base(
         "flux2_dev_fp8mixed.safetensors", scene, shot, panel, ctx)
 
     # left to right, and each anchored
     assert pos.index("on the left") < pos.index("in the centre") < pos.index("on the right")
-    assert pos.index("omar-looks") < pos.index("nina-looks") < pos.index("theo-looks")
+    assert pos.index("gus-looks") < pos.index("fay-looks") < pos.index("hal-looks")
 
 
 def test_a_single_subject_panel_is_not_given_a_side(monkeypatch):
@@ -124,15 +124,15 @@ def test_a_single_subject_panel_is_not_given_a_side(monkeypatch):
         "shot_id": "shot_01",
         "camera": {"creative_intent": {"shot_size": "medium"}},
         "setup": {"subjects": [
-            {"character_id": "nina", "screen_position": {"x": 0.38}},
+            {"character_id": "fay", "screen_position": {"x": 0.38}},
         ]},
     }
     panel = {"id": "p", "panel_number": 1}
     ctx = compile_flux2.CompileContext(
-        characters_kb={"nina": {"generic_anchors": {"default": "nina-looks"},
-                                 "anchor": "nina-looks"}})
+        characters_kb={"fay": {"generic_anchors": {"default": "fay-looks"},
+                                 "anchor": "fay-looks"}})
     pos, _ = compile_flux2.compile_flux_for_base(
         "flux2_dev_fp8mixed.safetensors", scene, shot, panel, ctx)
 
-    assert "nina-looks" in pos
+    assert "fay-looks" in pos
     assert "on the left" not in pos

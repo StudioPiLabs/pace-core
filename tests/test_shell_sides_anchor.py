@@ -5,7 +5,7 @@ The anchor vocabulary had no side. `shell_center`'s own comment says it is for
 screen panels lining the walls around the seats are not at the front or the
 back, they are around", but it places ONE object at the middle of the cabin.
 For a wraparound sized like a wall that is not a wraparound, it is an occluder:
-staged that way, `cabin_panels` sat between the lens and the cast and buried
+staged that way, `wall_panels` sat between the lens and the cast and buried
 both heads — the failure `_fixtures_for`'s docstring warns about.
 
 `shell_sides` places two instances instead, mirrored in x and each turned to

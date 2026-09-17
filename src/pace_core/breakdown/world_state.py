@@ -30,7 +30,7 @@ from dataclasses import dataclass, field
 
 
 def normalise_entity(name: str) -> str:
-    """`all_panels`, `the_panels`, `panels` are one entity; `car_console` is
+    """`all_panels`, `the_panels`, `panels` are one entity; `main_console` is
     not. Only leading articles and quantifiers are stripped -- anything
     cleverer starts merging things the screenplay keeps apart."""
     s = (name or "").strip().lower().replace("-", "_")
@@ -143,8 +143,8 @@ def contradictions(text: str, state: dict[tuple[str, str], Transition],
     assembled prompt cannot tell which noun a word belongs to: "panels ...,
     with a handheld slab, its entire face a single glowing screen" mentions
     panels and glows separately, and reads as a panel contradiction that is
-    not one. Proximity does not rescue it either -- measured on this corpus
-    the true positive sits 120 characters apart and that false positive 89.
+    not one. Proximity does not rescue it either -- a true positive can sit
+    further apart than a false one (120 characters against 89, measured).
     Scope the input; do not guess at the seam.
 
     Use `audit_props` for a shot, which does the scoping correctly.

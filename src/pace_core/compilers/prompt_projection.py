@@ -148,7 +148,7 @@ FIELDS: dict[str, Rule] = {
         Mode.WRITE, "What sits behind the cast."),
     "setup.environment.density": Rule(
         Mode.QUARANTINED, "Found holding one template value on most shots of "
-        "the evaluation corpus, including interiors it contradicts. A leaked "
+        "a measured production, including interiors it contradicts. A leaked "
         "default is not a description, and a model told a frame is crowded "
         "will draw a crowd. Restore when the field describes the shot it is "
         "on.", "measured", True),
@@ -156,7 +156,7 @@ FIELDS: dict[str, Rule] = {
         Mode.WRITE, "How large the space reads, and distinct from shot_size, "
         "which is only where the camera stands — writing scale stretched a "
         "courtyard from 14 gate-widths to 30-40 with the shot size unchanged. "
-        "Note it held one value on every shot of the evaluation corpus, so "
+        "Note it can hold one value on every shot of a production, so "
         "it differentiated nothing there; harmless, but do not read a "
         "difference into it.", "measured", True),
     "setup.environment.style": Rule(
@@ -165,7 +165,7 @@ FIELDS: dict[str, Rule] = {
         "competes with it: one sentence of lighting logic moved black coverage "
         "25.4% -> 1.3% by contradicting the style pack.", "measured"),
     "setup.environment.elements": Rule(
-        Mode.NEVER_FILLED, "Never filled on the evaluation corpus."),
+        Mode.NEVER_FILLED, "Never filled by the breakdown."),
 
     # ── the film's world, which is not a per-shot field ──────────────────
     # Not read off a shot at all: it comes from `kb/shot_design.json` and is
@@ -213,8 +213,8 @@ FIELDS: dict[str, Rule] = {
     # ── subjects: appearance yes, position no ────────────────────────────
     "setup.subjects[].continuity_anchor": Rule(
         Mode.QUARANTINED, "Meant to be the character's fixed identity phrase, "
-        "written verbatim — and on the evaluation corpus it contradicted "
-        "characters.json for 4 of 5 cast, anchors opening 'young adult' for "
+        "written verbatim — and it has been found contradicting "
+        "characters.json for most of a cast, anchors opening 'young adult' for "
         "characters registered middle_aged and 'child' for one registered "
         "young_adult. The deterministic compiler never read this field, so "
         "the contradiction has been free until now; writing it verbatim as the "
@@ -350,14 +350,14 @@ FIELDS: dict[str, Rule] = {
     "events.advanced.pace": Rule(Mode.INPUT_ONLY, "Scene rhythm; steers tone."),
     "events.advanced.regularity": Rule(Mode.INPUT_ONLY, "As pace."),
     "events.emotions": Rule(
-        Mode.NEVER_FILLED, "0 of 27 shots — and the one field measured to be "
+        Mode.NEVER_FILLED, "Never filled by the breakdown — and the one field measured to be "
         "the ONLY source of the emotional adjective: posture with no emotion "
         "word plays the beat backwards, asking for anger and getting a sad "
         "face. Until it is authored, the meta-prompt has the model read the "
         "emotion out of the action text instead.", "untested"),
-    "events.dialogues": Rule(Mode.NEVER_FILLED, "0 of 27 shots."),
-    "events.change_in_environment": Rule(Mode.NEVER_FILLED, "0 of 27 shots."),
-    "events.advanced.story_structure": Rule(Mode.NEVER_FILLED, "0 of 27 shots."),
+    "events.dialogues": Rule(Mode.NEVER_FILLED, "Never filled by the breakdown."),
+    "events.change_in_environment": Rule(Mode.NEVER_FILLED, "Never filled by the breakdown."),
+    "events.advanced.story_structure": Rule(Mode.NEVER_FILLED, "Never filled by the breakdown."),
 
     # ── exclusions ───────────────────────────────────────────────────────
     "setup.excluded": Rule(
@@ -367,8 +367,8 @@ FIELDS: dict[str, Rule] = {
         "where cfg=1.0 means the negative prompt is never evaluated at all, so "
         "positive substitution is the only channel that exists.", "measured"),
     "setup.secondary_subjects": Rule(
-        Mode.NEVER_FILLED, "0 of 27 shots."),
-    "setup.text_generation": Rule(Mode.NEVER_FILLED, "0 of 27 shots."),
+        Mode.NEVER_FILLED, "Never filled by the breakdown."),
+    "setup.text_generation": Rule(Mode.NEVER_FILLED, "Never filled by the breakdown."),
 
     # ── panel identity and authoring notes ───────────────────────────────
     "panels[].id": Rule(Mode.INPUT_ONLY, "Addresses the panel in the reply."),
@@ -492,7 +492,7 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
             # eye already sits there, so a clause spent on it buys nothing.
             ("camera_angle", "camera.extrinsics.angle", ang if ang != "eye_level" else ""),
             # location_of()'s second value is backdrop.location — an id
-            # ("family_car"), not a description. The prose is backdrop.setting.
+            # ("sedan_interior"), not a description. The prose is backdrop.setting.
             ("location_anchor", "setup.backdrop.location", loc_ref or loc_setting),
             ("setting", "setup.backdrop.setting", backdrop.get("setting")),
             ("era", "setup.backdrop.era", backdrop.get("era")),

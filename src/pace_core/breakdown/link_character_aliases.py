@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Join what the panels call a character to what the registry calls it.
 
-`split_script` writes subjects by the name the screenplay uses -- 陈芊芊, 李秘书
+`split_script` writes subjects by the name the screenplay uses -- 林小雨, 王秘书
 -- and `extract_characters` keys the registry by a romanised slug --
-`chen_qianqian`, `secretary_li`. Nothing joins them, so on Zheng the overlap
+`lin_xiaoyu`, `secretary_wang`. Nothing joins them, so in a Chinese screenplay the overlap
 between the two sets of identifiers is EMPTY, and everything downstream of a
 character lookup quietly does nothing:
 
@@ -22,7 +22,7 @@ them.
 The join is on SCENE CO-OCCURRENCE, not on the names. `_extracted.scenes`
 records where the extractor saw each character and the panels record where each
 reference appears, so the two sets identify the same person without anyone
-transliterating anything: 陈芊芊 and `chen_qianqian` appear in exactly the same
+transliterating anything: 林小雨 and `lin_xiaoyu` appear in exactly the same
 nine scenes. Names in two scripts and two languages are exactly what this
 should not depend on.
 
@@ -37,9 +37,9 @@ Two things it refuses to guess:
   puts one character's face on another's shot and nothing downstream can tell.
 
 Co-occurrence resolves the principals and stops there, and no second
-statistic rescues the rest. On Zheng the beast 狰 matches `zheng` at 0.50, and
-狰（陈芊芊的脸） -- the same beast wearing the protagonist's face -- matches
-`chairman` at 0.50 with a LARGER margin over its runner-up. Ranking by margin
+statistic rescues the rest. A creature's cue can match its own slug at 0.50
+while the same creature cued as wearing the protagonist's face matches an
+unrelated character at 0.50 with a LARGER margin over its runner-up. Ranking by margin
 would take the wrong one first. Two references appearing in one scene tells
 you they were on screen together and nothing else, so the remainder is a
 judgment, and `--confirm ref=key` is where a person records one. Confirmations
@@ -107,7 +107,7 @@ def head_noun(ref: str) -> str:
 
     Both sides are English slugs written by the same extractor, so the head of
     the compound is what it is actually naming. It declines far more than it
-    matches -- 10 of Zheng's 14 orphans -- and makes no wrong match, which is
+    matches -- most orphans stay orphans -- and makes no wrong match, which is
     the trade this module already takes everywhere else.
     """
     return (ref or "").strip().lower().split("_")[-1].rstrip("s")
@@ -163,8 +163,8 @@ def link(registry: dict, scenes: list[dict],
 
     linked: dict[str, list[str]] = collections.defaultdict(list)
     unresolved: list[dict] = []
-    # Strongest first, so a qualifier like 狰（异兽） can attach to the plain
-    # 狰 that has already been matched on its own evidence.
+    # Strongest first, so a qualifier like 白泽（异兽） can attach to the plain
+    # 白泽 that has already been matched on its own evidence.
     for ref, rs in sorted(refs.items(), key=lambda kv: -len(kv[1])):
         if kind == "character" and not is_person(ref):
             unresolved.append({"ref": ref, "reason": "not one person",
@@ -177,7 +177,7 @@ def link(registry: dict, scenes: list[dict],
         if score >= threshold:
             linked[key].append(ref)
             continue
-        # A qualified form of a reference already linked: 狰（异兽）, 狰（陈芊芊的
+        # A qualified form of a reference already linked: 白泽（异兽）, 白泽（林小雨的
         # 脸）. The base name is the evidence, not the co-occurrence.
         base = next((k for k, aliases in linked.items()
                      for a in aliases if ref.startswith(a) and ref != a), None)

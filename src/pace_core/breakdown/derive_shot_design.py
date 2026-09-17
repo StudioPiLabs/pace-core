@@ -8,7 +8,7 @@ that says WHY a shot is built as it is, and `camera._design.intent` is stamped
 from it onto every shot -- read by the camera-movement deriver and admitted to
 the prompt projection as grounds-not-words.
 
-Nothing generated it. AutomaticDrive's was authored by hand, and a project
+Nothing generated it. Where one exists it was authored by hand, and a project
 without one has no theme in the machine at all: `design_check` has nothing to
 check a shot against, and a regenerated shot cannot rederive the intent it was
 built for.
@@ -60,7 +60,7 @@ _VOCAB = _SKILL.reference("vocabulary.yaml")
 SHOT_SIZES = tuple(_VOCAB["shot_size"])
 ANGLES = tuple(_VOCAB["angle"])
 #: Rig behaviour lives in trajectory.gear; framing moves in movement_3d. The
-#: distinction this corpus already got wrong once, storing `handheld` where it
+#: distinction a breakdown has got wrong before, storing `handheld` where it
 #: is not a legal value and losing it to a `tripod` default.
 MOVEMENTS = tuple(_VOCAB["camera_movement"])
 

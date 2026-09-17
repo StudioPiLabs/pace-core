@@ -37,15 +37,15 @@ def test_one_helper_resolves_it_everywhere():
 
 
 def test_the_panel_wins_over_the_shot():
-    shot = {"setup": {"primary_focus": {"type": "character", "ref": "lucas"}}}
-    panel = {"primary_focus": {"type": "character", "ref": "abigail"}}
-    assert primary_focus_of(panel, shot)["ref"] == "abigail"
+    shot = {"setup": {"primary_focus": {"type": "character", "ref": "bob"}}}
+    panel = {"primary_focus": {"type": "character", "ref": "alice"}}
+    assert primary_focus_of(panel, shot)["ref"] == "alice"
 
 
 def test_a_panel_that_says_nothing_inherits_the_shot():
-    shot = {"setup": {"primary_focus": {"type": "character", "ref": "lucas"}}}
-    assert primary_focus_of({"primary_focus": None}, shot)["ref"] == "lucas"
-    assert primary_focus_of({}, shot)["ref"] == "lucas"
+    shot = {"setup": {"primary_focus": {"type": "character", "ref": "bob"}}}
+    assert primary_focus_of({"primary_focus": None}, shot)["ref"] == "bob"
+    assert primary_focus_of({}, shot)["ref"] == "bob"
 
 
 def test_neither_declaring_one_is_not_an_error():
