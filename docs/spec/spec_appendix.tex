@@ -1,7 +1,7 @@
 \section{The full field specification}
 \label{app:spec}
 
-The table below is generated from the schema source: 42 sub-schemas, 259 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
+The table below is generated from the schema source: 44 sub-schemas, 276 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
 
 \subsection*{\texttt{CameraIntrinsics}}
 \noindent Optical /\allowbreak{} exposure parameters. SCINE encodes them as 3-bucket categoricals (wide/\allowbreak{}medium/\allowbreak{}narrow for aperture, etc.); the exact-value fields below let real-capture metadata travel alongside without conflict, but compilers should read the categorical fields.
@@ -224,6 +224,40 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \bottomrule
 \end{longtable}
 
+\subsection*{\texttt{BlockingMove}}
+\noindent One leg of a subject's move across the stage during the shot. A leg is a destination plus how they travel to it. Several legs in order describe a move whose character changes partway -- crossing to a mark, then turning back.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{to\_\allowbreak xy} & list of number & destination [x, y] in metres, stage top-down \\
+\texttt{via\_\allowbreak xy} & list of list of number & waypoints in order, when the path is not a straight line \\
+\texttt{z} & number, optional & height on arrival, when it changes (sitting, climbing) \\
+\texttt{facing\_\allowbreak deg} & number, optional & facing on arrival; 0=east, 90=north, as WorldEntity \\
+\texttt{motion} & SubjectMotion, optional & how they travel -- walk /\allowbreak{} run /\allowbreak{} stagger /\allowbreak{} ... \\
+\texttt{easing} & Easing & acceleration profile; same vocabulary as camera \\
+\texttt{on\_\allowbreak beat} & integer, optional & index into events.actions this leg plays under \\
+\texttt{duration\_\allowbreak s} & number, optional & rough seconds -- informs clip length, not literal \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Blocking}}
+\noindent PAI extension -- the subject's mark on the floor, and their move off it. The camera has had `trajectory` since PAI 1.0 and lighting has `motion`; subjects had neither, so where someone stood and where they walked could only be written as prose inside an Action. Prose cannot be projected into a frame, derived from, or compared across a cut -- the same reason `screen\_\allowbreak position` was added beside the free-text `pose`. `screen\_\allowbreak position` says where the subject lands in the picture; this says where they stand in the space the picture is taken of. The camera relates the two, so any one of the three can be derived from the other two. Coordinates are the scene's PhysicalLayout frame when it declares one, otherwise stage top-down metres with z measured up from the floor.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{world\_\allowbreak xy} & list of number & the mark at the top of the shot, [x, y] in metres \\
+\texttt{z} & number & height: 0=on the floor, -0.5=seated, +1=elevated \\
+\texttt{facing\_\allowbreak deg} & number, optional & 0=east, 90=north, 180=west, 270=south -- as WorldEntity \\
+\texttt{static} & true/\allowbreak{}false & True => holds the mark; mirrors camera.trajectory.static \\
+\texttt{moves} & list of BlockingMove & the legs, in order; empty when static \\
+\texttt{enters\_\allowbreak from} & text, optional & where they come in from when they start off-stage \\
+\texttt{exits\_\allowbreak to} & text, optional & where they leave to when they end off-stage \\
+\texttt{subject\_\allowbreak path} & text, optional & Mirrors camera.trajectory.camera\_\allowbreak path: the dense per-frame product is an artifact reference, so the declaration itself stays readable. artifact reference (assets:/\allowbreak{}/\allowbreak{} URI) to per-frame keyframe JSON \\
+\bottomrule
+\end{longtable}
+
 \subsection*{\texttt{Subject}}
 \noindent Setup $\to$ Subjects. The focal characters /\allowbreak{} creatures in the shot. All fields are open sets ---\allowbreak{} captures the visual specifics that a Subject LoRA /\allowbreak{} PuLID reference would later identity-lock.
 
@@ -245,6 +279,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{screen\_\allowbreak position} & ScreenPosition, optional & where this subject sits in the frame \\
 \texttt{in\_\allowbreak frame} & InFrame, optional & in the picture this panel (see InFrame) \\
 \texttt{in\_\allowbreak frame\_\allowbreak extent} & text, optional & for "partial": "right shoulder in the foreground" \\
+\texttt{blocking} & Blocking, optional & PAI extension -- floor position and staging. See Blocking: screen\_\allowbreak position is where they land in frame, this is where they stand in the space. the mark, and the move off it \\
 \bottomrule
 \end{longtable}
 
