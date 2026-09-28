@@ -85,3 +85,13 @@ def test_a_bobbing_walk_is_still_one_leg():
     sample; read across a real displacement, it is one crossing."""
     pts = [(i * 0.5, 0.04 if i % 2 else -0.04) for i in range(14)]
     assert len(legs_of(_walk(pts), fps=24)) == 1
+
+
+
+def test_milling_about_in_one_spot_is_not_a_dozen_legs():
+    """Short back-and-forth steps are not a sequence of crossings.
+
+    Someone shuffling around a spot changes heading constantly and covers real
+    ground doing it; a sheet draws that as one move, not one arrow per step."""
+    pts = [(0, 0), (0.3, 0.1), (0.1, 0.3), (0.4, 0.2), (0.2, 0.45), (0.5, 0.35)]
+    assert len(legs_of(_walk(pts), fps=24)) <= 1

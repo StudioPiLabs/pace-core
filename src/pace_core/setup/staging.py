@@ -24,6 +24,11 @@ from ..types_v1 import Blocking, BlockingMove
 # A mark is a place to stand, not a point: weight shifts, breathing and a rig's
 # own float all move a body a little without anybody crossing the floor.
 STILL_M = 0.15
+# The shortest move that earns its own arrow on a sheet, and the displacement
+# heading is read across. Holding a mark and walking a leg are different
+# questions and want different thresholds: at the still threshold, someone
+# milling about in one spot comes back as a dozen legs of a foot each.
+LEG_M = 0.5
 # Heading change that ends a leg. Below this a path is still "the same walk";
 # above it, a blocking sheet would draw a second arrow.
 TURN_DEG = 25.0
@@ -60,14 +65,14 @@ def _seconds(samples: Sequence[dict], i: int, j: int, fps: Optional[float]) -> O
 
 
 def legs_of(samples: Sequence[dict], *, fps: Optional[float] = None,
-            still_m: float = STILL_M, turn_deg: float = TURN_DEG) -> list[BlockingMove]:
+            leg_m: float = LEG_M, turn_deg: float = TURN_DEG) -> list[BlockingMove]:
     """Cut the path where its heading breaks; each run between cuts is a leg.
 
-    Heading is only read across a displacement bigger than the noise floor.
-    Between neighbouring samples it is meaningless: someone walking a straight
-    line while their weight rocks -- a hopping walk, a bobbing run -- swings
-    the sample-to-sample heading through the whole circle, and a rule phrased
-    over neighbours cuts one crossing into a dozen legs."""
+    Heading is only read across `leg_m`. Between neighbouring samples it is
+    meaningless: someone walking a straight line while their weight rocks -- a
+    hopping walk, a bobbing run -- swings the sample-to-sample heading through
+    the whole circle, and a rule phrased over neighbours cuts one crossing into
+    a dozen legs."""
     if len(samples) < 2:
         return []
     legs: list[BlockingMove] = []
@@ -75,18 +80,18 @@ def legs_of(samples: Sequence[dict], *, fps: Optional[float] = None,
     ref = 0             # last point far enough from its predecessor to give a heading
     run_heading: Optional[float] = None
     for i in range(1, len(samples)):
-        if math.dist(_xy(samples[ref]), _xy(samples[i])) < still_m:
+        if math.dist(_xy(samples[ref]), _xy(samples[i])) < leg_m:
             continue                       # too close to say which way they went
         h = _heading(_xy(samples[ref]), _xy(samples[i]))
         if h is None:
             continue
         if run_heading is not None and _angle_gap(h, run_heading) > turn_deg:
-            if math.dist(_xy(samples[start]), _xy(samples[ref])) >= still_m:
+            if math.dist(_xy(samples[start]), _xy(samples[ref])) >= leg_m:
                 legs.append(_leg(samples, start, ref, fps))
             start = ref
         run_heading = h
         ref = i
-    if math.dist(_xy(samples[start]), _xy(samples[-1])) >= still_m:
+    if math.dist(_xy(samples[start]), _xy(samples[-1])) >= leg_m:
         legs.append(_leg(samples, start, len(samples) - 1, fps))
     return legs
 
@@ -103,7 +108,8 @@ def _leg(samples: Sequence[dict], i: int, j: int, fps: Optional[float]) -> Block
 
 
 def blocking_from_path(samples: Iterable[dict], *, fps: Optional[float] = None,
-                       still_m: float = STILL_M, turn_deg: float = TURN_DEG,
+                       still_m: float = STILL_M, leg_m: float = LEG_M,
+                       turn_deg: float = TURN_DEG,
                        subject_path: Optional[str] = None) -> Blocking:
     """The declaration these samples support: the mark, and the legs off it."""
     s = list(samples)
@@ -119,7 +125,7 @@ def blocking_from_path(samples: Iterable[dict], *, fps: Optional[float] = None,
         return Blocking(world_xy=mark, z=z, facing_deg=facing, static=True,
                         subject_path=subject_path)
 
-    legs = legs_of(s, fps=fps, still_m=still_m, turn_deg=turn_deg)
+    legs = legs_of(s, fps=fps, leg_m=leg_m, turn_deg=turn_deg)
     if not legs and subject_path is None:
         # The subject covers ground but no run of it survives the leg rules;
         # rather than call that standing still, keep the whole move as one leg.
