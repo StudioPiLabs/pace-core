@@ -506,6 +506,72 @@ class ScreenPosition:
     depth: Optional[ScreenDepth] = None              # foreground / midground / background
 
 
+# How a subject gets from one mark to the next. Enumerated, not open, so a
+# move can be compared across a cut the way a camera move already can be.
+SubjectMotion = Literal[
+    "walk", "run", "stagger", "crawl", "turn",
+    "rise", "sit", "kneel", "fall", "carried",
+]
+
+
+@dataclass
+class BlockingMove:
+    """One leg of a subject's move across the stage during the shot.
+
+    A leg is a destination plus how they travel to it. Several legs in order
+    describe a move whose character changes partway -- crossing to a mark,
+    then turning back."""
+    to_xy:      list[float]         = field(default_factory=list)  # destination [x, y] in metres, stage top-down
+    via_xy:     list[list[float]]   = field(default_factory=list)  # waypoints in order, when the path is not a straight line
+    z:          Optional[float]         = None      # height on arrival, when it changes (sitting, climbing)
+    facing_deg: Optional[float]         = None      # facing on arrival; 0=east, 90=north, as WorldEntity
+    motion:     Optional[SubjectMotion] = None      # how they travel -- walk / run / stagger / ...
+    easing:     Easing                  = "linear"  # acceleration profile; same vocabulary as camera
+    on_beat:    Optional[int]           = None      # index into events.actions this leg plays under
+    duration_s: Optional[float]         = None      # rough seconds -- informs clip length, not literal
+
+
+@dataclass
+class Blocking:
+    """PAI extension -- the subject's mark on the floor, and their move off it.
+
+    The camera has had `trajectory` since PAI 1.0 and lighting has `motion`;
+    subjects had neither, so where someone stood and where they walked could
+    only be written as prose inside an Action. Prose cannot be projected into
+    a frame, derived from, or compared across a cut -- the same reason
+    `screen_position` was added beside the free-text `pose`.
+
+    `screen_position` says where the subject lands in the picture; this says
+    where they stand in the space the picture is taken of. The camera relates
+    the two, so any one of the three can be derived from the other two.
+
+    Coordinates are the scene's PhysicalLayout frame when it declares one,
+    otherwise stage top-down metres with z measured up from the floor."""
+    world_xy:     list[float]        = field(default_factory=list)  # the mark at the top of the shot, [x, y] in metres
+    z:            float              = 0.0    # height: 0=on the floor, -0.5=seated, +1=elevated
+    facing_deg:   Optional[float]    = None   # 0=east, 90=north, 180=west, 270=south -- as WorldEntity
+    static:       bool               = True   # True => holds the mark; mirrors camera.trajectory.static
+    moves:        list[BlockingMove] = field(default_factory=list)  # the legs, in order; empty when static
+    enters_from:  Optional[str]      = None   # where they come in from when they start off-stage
+    exits_to:     Optional[str]      = None   # where they leave to when they end off-stage
+    # Mirrors camera.trajectory.camera_path: the dense per-frame product is an
+    # artifact reference, so the declaration itself stays readable.
+    subject_path: Optional[str]      = None   # artifact reference (assets:// URI) to per-frame keyframe JSON
+
+    def __post_init__(self) -> None:
+        # `static` and `moves` are two statements about the same thing. A
+        # document that makes both cannot be projected either way, so it is
+        # rejected here rather than resolved by a silent precedence rule.
+        if self.static and self.moves:
+            raise ValueError(
+                "Blocking declares static=True and also lists moves; "
+                "set static=False to declare a move")
+        if not self.static and not self.moves and not self.subject_path:
+            raise ValueError(
+                "Blocking declares static=False but names no moves and no "
+                "subject_path; say where the subject goes")
+
+
 @dataclass
 class Subject:
     """Setup → Subjects. The focal characters / creatures in the shot.
@@ -536,6 +602,9 @@ class Subject:
     screen_position: Optional[ScreenPosition] = None    # where this subject sits in the frame
     in_frame:        Optional[InFrame]        = None    # in the picture this panel (see InFrame)
     in_frame_extent: Optional[str]            = None    # for "partial": "right shoulder in the foreground"
+    # PAI extension -- floor position and staging. See Blocking: screen_position
+    # is where they land in frame, this is where they stand in the space.
+    blocking:        Optional[Blocking]       = None    # the mark, and the move off it
 
 
 # ── Text Generation (PAI 1.1 expansion) ─────────────────────────────────
@@ -1154,6 +1223,13 @@ FIELD_TIER: dict[str, Literal["required", "recommended", "advanced", "requiredIf
     "setup.subjects[].pose":                 "recommended",
     "setup.subjects[].gaze":                 "recommended",
     "setup.subjects[].screenPosition":      "recommended",
+    "setup.subjects[].blocking":             "recommended",   # floor position + staging
+    "setup.subjects[].blocking.worldXy":    "recommended",
+    "setup.subjects[].blocking.facingDeg":  "recommended",
+    "setup.subjects[].blocking.static":      "recommended",
+    "setup.subjects[].blocking.moves[]":    "recommended",
+    "setup.subjects[].blocking.moves[].motion": "recommended",
+    "setup.subjects[].blocking.subjectPath": "recommended",
     "setup.subjects[].costume":              "recommended",
     "setup.subjects[].costume_id":           "recommended",
     "setup.secondarySubjects":              "recommended",   # pace-0.2 §coverage
@@ -1218,6 +1294,9 @@ FIELD_TIER: dict[str, Literal["required", "recommended", "advanced", "requiredIf
     "setup.subjects[].proportions":          "advanced",
     "setup.subjects[].accessories":          "advanced",
     "setup.subjects[].makeup":               "advanced",
+    "setup.subjects[].blocking.z":           "advanced",
+    "setup.subjects[].blocking.entersFrom": "advanced",
+    "setup.subjects[].blocking.exitsTo":    "advanced",
     "lighting.softShadows":                 "advanced",
     "lighting.hardShadows":                 "advanced",
     "lighting.reflection":                   "advanced",
