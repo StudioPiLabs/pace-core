@@ -61,24 +61,31 @@ def _seconds(samples: Sequence[dict], i: int, j: int, fps: Optional[float]) -> O
 
 def legs_of(samples: Sequence[dict], *, fps: Optional[float] = None,
             still_m: float = STILL_M, turn_deg: float = TURN_DEG) -> list[BlockingMove]:
-    """Cut the path where its heading breaks; each run between cuts is a leg."""
+    """Cut the path where its heading breaks; each run between cuts is a leg.
+
+    Heading is only read across a displacement bigger than the noise floor.
+    Between neighbouring samples it is meaningless: someone walking a straight
+    line while their weight rocks -- a hopping walk, a bobbing run -- swings
+    the sample-to-sample heading through the whole circle, and a rule phrased
+    over neighbours cuts one crossing into a dozen legs."""
     if len(samples) < 2:
         return []
     legs: list[BlockingMove] = []
-    start = 0
+    start = 0           # where the current leg began
+    ref = 0             # last point far enough from its predecessor to give a heading
     run_heading: Optional[float] = None
     for i in range(1, len(samples)):
-        h = _heading(_xy(samples[i - 1]), _xy(samples[i]))
+        if math.dist(_xy(samples[ref]), _xy(samples[i])) < still_m:
+            continue                       # too close to say which way they went
+        h = _heading(_xy(samples[ref]), _xy(samples[i]))
         if h is None:
-            continue                       # standing still inside a move; not a turn
-        if run_heading is None:
-            run_heading = h
             continue
-        if _angle_gap(h, run_heading) > turn_deg:
-            if math.dist(_xy(samples[start]), _xy(samples[i - 1])) >= still_m:
-                legs.append(_leg(samples, start, i - 1, fps))
-            start = i - 1
-            run_heading = h
+        if run_heading is not None and _angle_gap(h, run_heading) > turn_deg:
+            if math.dist(_xy(samples[start]), _xy(samples[ref])) >= still_m:
+                legs.append(_leg(samples, start, ref, fps))
+            start = ref
+        run_heading = h
+        ref = i
     if math.dist(_xy(samples[start]), _xy(samples[-1])) >= still_m:
         legs.append(_leg(samples, start, len(samples) - 1, fps))
     return legs

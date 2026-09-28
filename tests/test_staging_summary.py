@@ -76,3 +76,12 @@ def test_the_dense_path_can_stand_alone():
     b = blocking_from_path(_walk([(0, 0), (0.01, 0)]),
                            subject_path="assets://staging/x.json")
     assert b.subject_path == "assets://staging/x.json"
+
+
+def test_a_bobbing_walk_is_still_one_leg():
+    """A hopping walk swings the sample-to-sample heading without turning.
+
+    Read between neighbours, this path changes direction on nearly every
+    sample; read across a real displacement, it is one crossing."""
+    pts = [(i * 0.5, 0.04 if i % 2 else -0.04) for i in range(14)]
+    assert len(legs_of(_walk(pts), fps=24)) == 1
