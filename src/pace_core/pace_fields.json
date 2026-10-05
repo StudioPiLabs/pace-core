@@ -227,6 +227,188 @@
       "note": "有 physicalLayout 时派生,不手填"
     },
     {
+      "path": "setup.subjects[].blocking",
+      "pillar": "setup",
+      "track": "struct",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1(coarse)/S2(derived)",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3",
+        "QA"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "USD xformOp:translate/rotateZ",
+      "verified": "proposed",
+      "note": "floor position and staging; screenPosition is its projection through the camera"
+    },
+    {
+      "path": "setup.subjects[].blocking.worldXy",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "xformOp:translate (x, y), metres",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.z",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "xformOp:translate (z), metres above the floor",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.facingDeg",
+      "pillar": "setup",
+      "track": "precise",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "rotateZ",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.static",
+      "pillar": "setup",
+      "track": "bool",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2",
+        "QA"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "mirrors camera.trajectory.static",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.moves[]",
+      "pillar": "setup",
+      "track": "struct[]",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1(coarse)/S2(derived)",
+      "consumers": [
+        "S1",
+        "S2",
+        "S3"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "one leg per destination, in order",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.moves[].motion",
+      "pillar": "setup",
+      "track": "vocab",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "blender",
+        "wan"
+      ],
+      "industryRef": "how the subject travels between marks",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.subjectPath",
+      "pillar": "setup",
+      "track": "artifact",
+      "tier": "recommended",
+      "status": "active",
+      "owner": "S2",
+      "consumers": [
+        "S2",
+        "S3",
+        "POST"
+      ],
+      "backends": [
+        "blender",
+        "wan",
+        "post"
+      ],
+      "industryRef": "per-frame keyframe JSON, as camera.trajectory.cameraPath is for the camera",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.entersFrom",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "off-stage origin when the subject starts out of the scene",
+      "verified": "proposed"
+    },
+    {
+      "path": "setup.subjects[].blocking.exitsTo",
+      "pillar": "setup",
+      "track": "open",
+      "tier": "advanced",
+      "status": "active",
+      "owner": "S1",
+      "consumers": [
+        "S1",
+        "S2"
+      ],
+      "backends": [
+        "blender"
+      ],
+      "industryRef": "off-stage destination when the subject ends out of the scene",
+      "verified": "proposed"
+    },
+    {
       "path": "setup.props[].propId",
       "pillar": "setup",
       "track": "key",

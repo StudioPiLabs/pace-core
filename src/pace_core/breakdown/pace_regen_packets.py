@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare PACE-bound regeneration packets for a PAI project.
+"""Prepare PACE-bound regeneration packets for a PACE project.
 
 This script does not render images or solve SMPL-X. It derives the reviewable
 handoff artifacts needed before those expensive stages:

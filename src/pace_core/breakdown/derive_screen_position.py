@@ -1,6 +1,6 @@
 """Project stage-frame world coordinates into per-shot screen positions.
 
-PAI 1.1 prototype helper. Given a scene with `physical_layout` filled in,
+PACE prototype helper. Given a scene with `physical_layout` filled in,
 walks each shot's `camera_setups` entry and computes a `screen_position`
 ({zone, x, y, depth}) for every subject + prop the camera can see.
 

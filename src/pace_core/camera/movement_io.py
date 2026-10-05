@@ -102,7 +102,7 @@ def write_movement(shot: dict, movements: list[str],
     return shot
 
 
-# ── PAI → planner adapter ─────────────────────────────────────────────
+# ── PACE → planner adapter ─────────────────────────────────────────────
 
 
 def shot_to_planner_dict(shot: dict,

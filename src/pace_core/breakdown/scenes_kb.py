@@ -1,6 +1,6 @@
 """KB-tier scene loader for Stage A builders.
 
-Reads `kb/on_scene/projects/<project>/scene_*.json` (PAI 1.1) and returns a
+Reads `kb/on_scene/projects/<project>/scene_*.json` (PACE) and returns a
 scenes_breakdown-shaped dict the build_* / extract_* modules consume. Only
 the bulk `load_all_scenes` loader is in active use — single-scene read goes
 through `pace_core.pai_compat.load_scene(path)`.

@@ -1,6 +1,6 @@
 """A dutch angle: a canted horizon about the optical axis.
 
-The vocabulary has had "dutch" as an angle since PAI 1.1 and nothing built
+The PACE vocabulary has had "dutch" as an angle from the start and nothing built
 it: the builder read it as eye level and the compiler said nothing. A roll is
 its own field, so a high or low camera can be canted and keep its elevation.
 """

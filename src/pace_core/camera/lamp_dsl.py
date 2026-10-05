@@ -161,7 +161,7 @@ def extract_dsl_line(text: str) -> Optional[str]:
     return normalize_dsl(flat) if is_valid_dsl(flat) else None
 
 
-# ── Rule-based fallback (no LLM): PAI Movement Literals → DSL ───────────
+# ── Rule-based fallback (no LLM): PACE Movement Literals → DSL ───────────
 # Maps our camera_planner Movement vocabulary onto DSL deltas for ONE segment;
 # the segment is then repeated ×4 (steady move across the shot). Lets the LAMP
 # path always yield a valid DSL even when the LLM is unavailable.
@@ -182,7 +182,7 @@ _RULE_ANGLE = {  # token -> (field, degrees)
 
 
 def rule_based_dsl(movements: list[str]) -> str:
-    """Deterministic PAI Movement list → DSL line. Stylistic/Wan-only moves
+    """Deterministic PACE Movement list → DSL line. Stylistic/Wan-only moves
     (handheld, steadicam, from_behind, …) carry no geometry → contribute
     nothing; an empty/unknown list yields a static hold."""
     mv = {"x": "no", "y": "no", "z": "no"}
@@ -367,7 +367,7 @@ def plan_dsl_or_rule(narrative: str, *, movements: Optional[list[str]] = None,
                      model: str = DEFAULT_MODEL, kind: str = "camera",
                      retries: int = 1, call: Optional[LlmCall] = None) -> dict:
     """Safe entry point: try the LLM, fall back to the rule-based mapping of the
-    shot's existing PAI Movement list. Always returns a valid DSL dict.
+    shot's existing PACE Movement list. Always returns a valid DSL dict.
     For kind="object" the fallback is a static hold (no object-movement vocab)."""
     try:
         return plan_dsl(narrative, model=model, kind=kind, retries=retries, call=call)
@@ -391,7 +391,7 @@ def main() -> None:
     ap.add_argument("--model", default=DEFAULT_MODEL, help="model key (kb models.json)")
     ap.add_argument("--shot-size", default=None)
     ap.add_argument("--angle", default=None)
-    ap.add_argument("--movements", default="", help="comma-sep PAI Movement list (rule fallback)")
+    ap.add_argument("--movements", default="", help="comma-sep PACE Movement list (rule fallback)")
     ap.add_argument("--execute", action="store_true", help="actually call the LLM")
     args = ap.parse_args()
 

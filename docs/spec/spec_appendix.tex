@@ -1,7 +1,7 @@
 \section{The full field specification}
 \label{app:spec}
 
-The table below is generated from the schema source: 42 sub-schemas, 259 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
+The table below is generated from the schema source: 44 sub-schemas, 276 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
 
 \subsection*{\texttt{CameraIntrinsics}}
 \noindent Optical /\allowbreak{} exposure parameters. SCINE encodes them as 3-bucket categoricals (wide/\allowbreak{}medium/\allowbreak{}narrow for aperture, etc.); the exact-value fields below let real-capture metadata travel alongside without conflict, but compilers should read the categorical fields.
@@ -32,7 +32,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \endhead
 \texttt{angle} & Angle, optional & vertical tilt: eye\_\allowbreak level /\allowbreak{} low /\allowbreak{} high /\allowbreak{} overhead /\allowbreak{} dutch /\allowbreak{} \ldots{} \\
 \texttt{roll\_\allowbreak deg} & number, optional & canted horizon about the optical axis, + = clockwise; "dutch" alone implies 15 \\
-\texttt{position} & Literal["front", \allowbreak "three\_\allowbreak quarter", \allowbreak "profile", \allowbreak "ots", \allowbreak "behind"], optional & PAI extension ---\allowbreak{} relative position to subject (front /\allowbreak{} 3-4 /\allowbreak{} profile /\allowbreak{} ots /\allowbreak{} behind). Terms.md \S{}6.2 covers this even though SCINE Table 3 only lists `angle`; we keep it because it's a real distinction in the data (e.g. reverse-shot vs front-on). \\
+\texttt{position} & Literal["front", \allowbreak "three\_\allowbreak quarter", \allowbreak "profile", \allowbreak "ots", \allowbreak "behind"], optional & PACE extension ---\allowbreak{} relative position to subject (front /\allowbreak{} 3-4 /\allowbreak{} profile /\allowbreak{} ots /\allowbreak{} behind). Terms.md \S{}6.2 covers this even though SCINE Table 3 only lists `angle`; we keep it because it's a real distinction in the data (e.g. reverse-shot vs front-on). \\
 \bottomrule
 \end{longtable}
 
@@ -46,7 +46,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{movement\_\allowbreak 2d} & list of Movement2D & planar moves (pan/\allowbreak{}tilt/\allowbreak{}zoom) \\
 \texttt{movement\_\allowbreak 3d} & list of Movement3D & spatial moves (dolly/\allowbreak{}track/\allowbreak{}crane/\allowbreak{}arc/\allowbreak{}\ldots{}) \\
 \texttt{gear} & Gear, optional & rig used ---\allowbreak{} affects steadiness + motion character \\
-\texttt{easing} & Easing & PAI extension ---\allowbreak{} temporal sampling curve between start/\allowbreak{}end keyframes. acceleration profile of the move \\
+\texttt{easing} & Easing & PACE extension ---\allowbreak{} temporal sampling curve between start/\allowbreak{}end keyframes. acceleration profile of the move \\
 \texttt{camera\_\allowbreak path} & text, optional & pace-0.2 camera.trajectory.camera\_\allowbreak path ---\allowbreak{} artifact ref (assets:/\allowbreak{}/\allowbreak{} URI) to the computed 6-DoF keyframe JSON (the PRODUCT of camera.program's LAMP recipe). 6-DoF keyframe JSON artifact reference \\
 \bottomrule
 \end{longtable}
@@ -59,7 +59,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \endhead
 \texttt{shot\_\allowbreak size} & ShotSize, optional & jingbie (shot size) ---\allowbreak{} how much of subject/\allowbreak{}environment is in frame \\
 \texttt{framing} & Framing, optional & composition pattern (single/\allowbreak{}two\_\allowbreak shot/\allowbreak{}empty/\allowbreak{}\ldots{}) \\
-\texttt{aspect\_\allowbreak ratio} & text & PAI extension ---\allowbreak{} aspect ratio is a real per-shot choice (2.35:1 anamorphic vs 16:9 for inserts) even though SCINE doesn't enumerate it. e.g. "2.35:1", "16:9", "1.85:1", "4:3" \\
+\texttt{aspect\_\allowbreak ratio} & text & PACE extension ---\allowbreak{} aspect ratio is a real per-shot choice (2.35:1 anamorphic vs 16:9 for inserts) even though SCINE doesn't enumerate it. e.g. "2.35:1", "16:9", "1.85:1", "4:3" \\
 \bottomrule
 \end{longtable}
 
@@ -150,7 +150,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{setting} & Setting, optional & int (interior) /\allowbreak{} ext (exterior) \\
 \texttt{time\_\allowbreak of\_\allowbreak day} & TimeOfDay, optional & 11-value enum ---\allowbreak{} see TimeOfDay \\
 \texttt{location} & text, optional & open set: "changan\_\allowbreak 5th\_\allowbreak c\_\allowbreak palace\_\allowbreak bedroom", "desert\_\allowbreak caves" ---\allowbreak{} used to look up location bibles \\
-\texttt{era} & text, \emph{inferred} & PAI extension ---\allowbreak{} period + region + culture. Lets the renderer pick era-appropriate costume /\allowbreak{} architecture /\allowbreak{} props instead of defaulting to "generic Asian historical". Open-set strings: pick the description that most faithfully roots the shot in its world. "350 CE" /\allowbreak{} "5th c. CE" /\allowbreak{} "modern\_\allowbreak day" /\allowbreak{} "2099" ---\allowbreak{} open set, human-readable \\
+\texttt{era} & text, \emph{inferred} & PACE extension ---\allowbreak{} period + region + culture. Lets the renderer pick era-appropriate costume /\allowbreak{} architecture /\allowbreak{} props instead of defaulting to "generic Asian historical". Open-set strings: pick the description that most faithfully roots the shot in its world. "350 CE" /\allowbreak{} "5th c. CE" /\allowbreak{} "modern\_\allowbreak day" /\allowbreak{} "2099" ---\allowbreak{} open set, human-readable \\
 \texttt{region} & text, \emph{inferred} & "silk\_\allowbreak road\_\allowbreak oasis" /\allowbreak{} "modern\_\allowbreak shanghai" ---\allowbreak{} sympathetic to location\_\allowbreak ref \\
 \texttt{culture} & text, \emph{inferred} & "kuchean\_\allowbreak buddhist" /\allowbreak{} "tang\_\allowbreak dynasty" /\allowbreak{} "byzantine" ---\allowbreak{} a coherent cultural-style frame to pull on \\
 \texttt{weather} & text, optional & pace-0.2 setup.backdrop.\{weather,season\} ---\allowbreak{} open-set strings (no enum upstream) open: "clear", "rain", "snow", "overcast", "sandstorm", \ldots{} \\
@@ -199,7 +199,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \end{longtable}
 
 \subsection*{\texttt{Gaze}}
-\noindent PAI extension ---\allowbreak{} where this subject is looking. Captures eyeline so the storyboard records "Alice looking at the console" or "Bob staring off-frame right" as structured data instead of folding it into the free-form `pose` string. Used by the prompt compiler to render "looking at X" /\allowbreak{} "gaze directed off-screen left", and by future eyeline-match continuity checks across shots. Either `target` (looking at something IN frame) or `direction` (looking off-frame in a direction) should be set ---\allowbreak{} not both. If both are None the subject's gaze is unspecified.
+\noindent PACE extension ---\allowbreak{} where this subject is looking. Captures eyeline so the storyboard records "Alice looking at the console" or "Bob staring off-frame right" as structured data instead of folding it into the free-form `pose` string. Used by the prompt compiler to render "looking at X" /\allowbreak{} "gaze directed off-screen left", and by future eyeline-match continuity checks across shots. Either `target` (looking at something IN frame) or `direction` (looking off-frame in a direction) should be set ---\allowbreak{} not both. If both are None the subject's gaze is unspecified.
 
 \begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
 \toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
@@ -212,7 +212,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \end{longtable}
 
 \subsection*{\texttt{ScreenPosition}}
-\noindent PAI extension ---\allowbreak{} where this subject sits in the frame. Spec'd here so multi-subject compositions can be machine-read (and later fed to ControlNet pose /\allowbreak{} spatial prompting) instead of relying on SceneGeometry.relative\_\allowbreak positioning's free-text string. Two coordinate systems supported ---\allowbreak{} pick whichever you actually know: - `zone`: rule-of-thirds zone keyword (coarse but human-friendly) - `(x, y)`: normalized frame coords, 0..1 (precise; for pose rigs) `depth` is orthogonal ---\allowbreak{} applies to either.
+\noindent PACE extension ---\allowbreak{} where this subject sits in the frame. Spec'd here so multi-subject compositions can be machine-read (and later fed to ControlNet pose /\allowbreak{} spatial prompting) instead of relying on SceneGeometry.relative\_\allowbreak positioning's free-text string. Two coordinate systems supported ---\allowbreak{} pick whichever you actually know: - `zone`: rule-of-thirds zone keyword (coarse but human-friendly) - `(x, y)`: normalized frame coords, 0..1 (precise; for pose rigs) `depth` is orthogonal ---\allowbreak{} applies to either.
 
 \begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
 \toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
@@ -221,6 +221,40 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{x} & number, optional & 0.0 = left edge of frame, 1.0 = right edge (precise) \\
 \texttt{y} & number, optional & 0.0 = top edge of frame, 1.0 = bottom edge (precise) \\
 \texttt{depth} & ScreenDepth, optional & foreground /\allowbreak{} midground /\allowbreak{} background \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{BlockingMove}}
+\noindent One leg of a subject's move across the stage during the shot. A leg is a destination plus how they travel to it. Several legs in order describe a move whose character changes partway -- crossing to a mark, then turning back.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{to\_\allowbreak xy} & list of number & destination [x, y] in metres, stage top-down \\
+\texttt{via\_\allowbreak xy} & list of list of number & waypoints in order, when the path is not a straight line \\
+\texttt{z} & number, optional & height on arrival, when it changes (sitting, climbing) \\
+\texttt{facing\_\allowbreak deg} & number, optional & facing on arrival; 0=east, 90=north, as WorldEntity \\
+\texttt{motion} & SubjectMotion, optional & how they travel -- walk /\allowbreak{} run /\allowbreak{} stagger /\allowbreak{} ... \\
+\texttt{easing} & Easing & acceleration profile; same vocabulary as camera \\
+\texttt{on\_\allowbreak beat} & integer, optional & index into events.actions this leg plays under \\
+\texttt{duration\_\allowbreak s} & number, optional & rough seconds -- informs clip length, not literal \\
+\bottomrule
+\end{longtable}
+
+\subsection*{\texttt{Blocking}}
+\noindent PACE extension -- the subject's mark on the floor, and their move off it. The camera has carried `trajectory` from the first version of this schema and lighting has carried `motion`; subjects had neither, so where someone stood and where they walked could only be written as prose inside an Action. Prose cannot be projected into a frame, derived from, or compared across a cut -- the same reason `screen\_\allowbreak position` was added beside the free-text `pose`. `screen\_\allowbreak position` says where the subject lands in the picture; this says where they stand in the space the picture is taken of. The camera relates the two, so any one of the three can be derived from the other two. Coordinates are the scene's PhysicalLayout frame when it declares one, otherwise stage top-down metres with z measured up from the floor.
+
+\begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
+\toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
+\endhead
+\texttt{world\_\allowbreak xy} & list of number & the mark at the top of the shot, [x, y] in metres \\
+\texttt{z} & number & height: 0=on the floor, -0.5=seated, +1=elevated \\
+\texttt{facing\_\allowbreak deg} & number, optional & 0=east, 90=north, 180=west, 270=south -- as WorldEntity \\
+\texttt{static} & true/\allowbreak{}false & True => holds the mark; mirrors camera.trajectory.static \\
+\texttt{moves} & list of BlockingMove & the legs, in order; empty when static \\
+\texttt{enters\_\allowbreak from} & text, optional & where they come in from when they start off-stage \\
+\texttt{exits\_\allowbreak to} & text, optional & where they leave to when they end off-stage \\
+\texttt{subject\_\allowbreak path} & text, optional & Mirrors camera.trajectory.camera\_\allowbreak path: the dense per-frame product is an artifact reference, so the declaration itself stays readable. artifact reference (assets:/\allowbreak{}/\allowbreak{} URI) to per-frame keyframe JSON \\
 \bottomrule
 \end{longtable}
 
@@ -233,18 +267,19 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{cls} & text, optional & subject category, open: "young\_\allowbreak woman", "elderly\_\allowbreak man", "tabby\_\allowbreak cat" \\
 \texttt{accessories} & text, optional & what they're wearing/\allowbreak{}holding: "prayer beads, walking staff" \\
 \texttt{costume} & text, optional & garments: "saffron robe", "dust-stained tunic" \\
-\texttt{costume\_\allowbreak id} & text, optional & PAI extension ---\allowbreak{} the wardrobe entry this costume IS, so a garment is a library object with an id and states rather than a sentence retyped per shot. Free text cannot be compared across a cut: one panel said "a fitted grey-blue jacket" and the next delivered a white tunic, and nothing could report it, because there was no identifier for the two to disagree about. Resolves in kb/\allowbreak{}props.json like any prop\_\allowbreak id. wardrobe entry id, e.g. "alice\_\allowbreak costume" \\
+\texttt{costume\_\allowbreak id} & text, optional & PACE extension ---\allowbreak{} the wardrobe entry this costume IS, so a garment is a library object with an id and states rather than a sentence retyped per shot. Free text cannot be compared across a cut: one panel said "a fitted grey-blue jacket" and the next delivered a white tunic, and nothing could report it, because there was no identifier for the two to disagree about. Resolves in kb/\allowbreak{}props.json like any prop\_\allowbreak id. wardrobe entry id, e.g. "alice\_\allowbreak costume" \\
 \texttt{hair} & text, optional & "shaved head", "long black braid", "wild grey beard" \\
 \texttt{makeup} & text, optional & "kohl-rimmed eyes", "war paint", "soot smudges" \\
 \texttt{pose} & text, optional & body posture: "kneeling, hands clasped", "leaning against doorframe" \\
 \texttt{silhouette} & text, optional & contour adjective: "imposing", "frail", "rigid" \\
 \texttt{proportions} & text, optional & body type: "wiry", "broad-shouldered", "diminutive" \\
-\texttt{character\_\allowbreak id} & text, optional & PAI extension ---\allowbreak{} link back to the canonical character registry so Subject appearance can default-inherit from kb/\allowbreak{}characters.json. Optional; setting just the open-set fields above also works. id matching the project's character registry, e.g. "alice" \\
+\texttt{character\_\allowbreak id} & text, optional & PACE extension ---\allowbreak{} link back to the canonical character registry so Subject appearance can default-inherit from kb/\allowbreak{}characters.json. Optional; setting just the open-set fields above also works. id matching the project's character registry, e.g. "alice" \\
 \texttt{age\_\allowbreak state} & text, optional & which life-stage variant of that character, e.g. "adult\_\allowbreak 50", "adult\_\allowbreak 18" \\
-\texttt{gaze} & Gaze, optional & PAI extension ---\allowbreak{} eyeline + frame placement. Both Optional so existing pai-1.0 files (which lack these) parse unchanged. where this subject is looking \\
+\texttt{gaze} & Gaze, optional & PACE extension ---\allowbreak{} eyeline + frame placement. Both Optional so existing pai-1.0 files (which lack these) parse unchanged. where this subject is looking \\
 \texttt{screen\_\allowbreak position} & ScreenPosition, optional & where this subject sits in the frame \\
 \texttt{in\_\allowbreak frame} & InFrame, optional & in the picture this panel (see InFrame) \\
 \texttt{in\_\allowbreak frame\_\allowbreak extent} & text, optional & for "partial": "right shoulder in the foreground" \\
+\texttt{blocking} & Blocking, optional & PACE extension -- floor position and staging. See Blocking: screen\_\allowbreak position is where they land in frame, this is where they stand in the space. the mark, and the move off it \\
 \bottomrule
 \end{longtable}
 
@@ -293,7 +328,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{primary\_\allowbreak focus} & PrimaryFocus & what dominates the frame \\
 \texttt{secondary\_\allowbreak subjects} & list of text & character refs (id@age form), present but not the focus ---\allowbreak{} see pai\_\allowbreak compat.ref\_\allowbreak to\_\allowbreak id\_\allowbreak age \\
 \texttt{excluded} & list of text & things NOT to render ---\allowbreak{} fed into the negative prompt \\
-\texttt{text\_\allowbreak generation} & list of TextElement & On-screen text ---\allowbreak{} expanded from PAI 1.0's single `Optional[str]` into a list of structured elements so each text item (subtitle, sign, handwritten letter, billboard) gets its own target /\allowbreak{} language /\allowbreak{} typography. the prompt compiler renders each entry as its own clause. \\
+\texttt{text\_\allowbreak generation} & list of TextElement & On-screen text ---\allowbreak{} expanded from a single `Optional[str]` into a list of structured elements so each text item (subtitle, sign, handwritten letter, billboard) gets its own target /\allowbreak{} language /\allowbreak{} typography. the prompt compiler renders each entry as its own clause. \\
 \bottomrule
 \end{longtable}
 
@@ -313,7 +348,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{position} & LightingPosition, optional & primary 3-point position of the key light \\
 \texttt{motion} & LightingMotion, optional & flickering (firelight) /\allowbreak{} pulsing (sirens, screens) \\
 \texttt{color\_\allowbreak gels} & text, optional & free-form: "warm amber on key, cyan on fill" \\
-\texttt{color\_\allowbreak temp\_\allowbreak k} & integer, optional & PAI extension ---\allowbreak{} exact Kelvin if known from real capture. exact Kelvin, e.g. 3200 \\
+\texttt{color\_\allowbreak temp\_\allowbreak k} & integer, optional & PACE extension ---\allowbreak{} exact Kelvin if known from real capture. exact Kelvin, e.g. 3200 \\
 \texttt{notes} & text, optional & free-form: anything else about the light \\
 \bottomrule
 \end{longtable}
@@ -330,7 +365,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \texttt{foreground} & ActionForeground, optional & focal (is the primary subject's act) /\allowbreak{} local /\allowbreak{} global \\
 \texttt{background} & true/\allowbreak{}false & True = this action happens behind the focal subject \\
 \texttt{uncertainty} & ActionUncertainty, optional & probabilistic /\allowbreak{} deterministic /\allowbreak{} mixed \\
-\texttt{description\_\allowbreak zh} & text & PAI extension ---\allowbreak{} kept from v0.3 for back-compat. Lets the human- authored beat travel alongside the SCINE classification. human-authored Chinese description, e.g. "zuichun xidong" (lips trembling) \\
+\texttt{description\_\allowbreak zh} & text & PACE extension ---\allowbreak{} kept from v0.3 for back-compat. Lets the human- authored beat travel alongside the SCINE classification. human-authored Chinese description, e.g. "zuichun xidong" (lips trembling) \\
 \texttt{description\_\allowbreak en} & text & human-authored English description, e.g. "lips quivering" \\
 \texttt{beat\_\allowbreak features} & list of text & visible texture cues: ["cracked\_\allowbreak dry\_\allowbreak chapped\_\allowbreak lips", "thin\_\allowbreak elderly\_\allowbreak lips"] \\
 \texttt{intensity} & Literal["subtle", \allowbreak "medium", \allowbreak "dramatic"], optional & how strong the beat is on screen \\
@@ -360,7 +395,7 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \endhead
 \texttt{type\_\allowbreak of\_\allowbreak delivery} & DialogueDelivery, optional & dash (interrupted) /\allowbreak{} ellipsis (trailing) /\allowbreak{} monologue \\
 \texttt{foreground} & DialogueForeground, optional & focal /\allowbreak{} local /\allowbreak{} global \\
-\texttt{speaker} & text, optional & PAI extension ---\allowbreak{} speaker + text so the line can also feed into vo\_\allowbreak lines/\allowbreak{}on\_\allowbreak screen\_\allowbreak dialogue at the scene level. character\_\allowbreak id of who's speaking \\
+\texttt{speaker} & text, optional & PACE extension ---\allowbreak{} speaker + text so the line can also feed into vo\_\allowbreak lines/\allowbreak{}on\_\allowbreak screen\_\allowbreak dialogue at the scene level. character\_\allowbreak id of who's speaking \\
 \texttt{text} & text, optional & the line itself (Chinese or English) \\
 \texttt{language} & text, optional & pace-0.2 events.dialogues[].language ---\allowbreak{} BCP-47-ish open string ("zh","en","ja") spoken language of this line \\
 \bottomrule
@@ -622,14 +657,14 @@ The table below is generated from the schema source: 42 sub-schemas, 259 fields.
 \begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
 \toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
 \endhead
-\texttt{\_\allowbreak schema\_\allowbreak version} & text & schema version tag ---\allowbreak{} readers branch on this. Bumped 2026-06-05 1.0 $\to$ 1.1 to match SCHEMA.md after the SCINE-pillar extensions. 50/\allowbreak{}51 on-disk scene files already declare "pai-1.1"; enrich\_\allowbreak scenes\_\allowbreak scine.py:665 accepts both 1.0 and 1.1 for back-compat. \\
+\texttt{\_\allowbreak schema\_\allowbreak version} & text & schema version tag ---\allowbreak{} readers test it with is\_\allowbreak supported\_\allowbreak schema\_\allowbreak version() rather than comparing strings, so a document written by an older writer keeps reading \\
 \texttt{scene\_\allowbreak id} & text & canonical id, e.g. "scene\_\allowbreak 05" \\
 \texttt{scene\_\allowbreak number} & integer, optional & 1-based ordinal in the screenplay \\
 \texttt{scene\_\allowbreak heading} & text, optional & screenplay slugline: "EXT. DESERT ---\allowbreak{} DAWN" \\
 \texttt{act} & text, optional & which act of the film: "I" /\allowbreak{} "II" /\allowbreak{} "III" or "prologue" /\allowbreak{} "epilogue" \\
 \texttt{narrative\_\allowbreak meta} & NarrativeMeta & roster + beats + dialogue ledger (outside pillars) \\
-\texttt{shot\_\allowbreak defaults} & ShotDefaults, optional & PAI 1.1 ---\allowbreak{} scene-wide shared fields. Every shot deep-merges these as its baseline before reading its own (sparse) overrides. None means the scene has no defaults; every shot is fully self-describing. \\
-\texttt{physical\_\allowbreak layout} & PhysicalLayout, optional & PAI 1.1 prototype ---\allowbreak{} optional scene-wide world coordinates. When set, per-subject screen\_\allowbreak position can be derived from camera + world\_\allowbreak xy instead of authored per shot. See pipeline/\allowbreak{}derive\_\allowbreak screen\_\allowbreak position.py. \\
+\texttt{shot\_\allowbreak defaults} & ShotDefaults, optional & PACE ---\allowbreak{} scene-wide shared fields. Every shot deep-merges these as its baseline before reading its own (sparse) overrides. None means the scene has no defaults; every shot is fully self-describing. \\
+\texttt{physical\_\allowbreak layout} & PhysicalLayout, optional & PACE prototype ---\allowbreak{} optional scene-wide world coordinates. When set, per-subject screen\_\allowbreak position can be derived from camera + world\_\allowbreak xy instead of authored per shot. See pipeline/\allowbreak{}derive\_\allowbreak screen\_\allowbreak position.py. \\
 \texttt{shots} & list of Shot & ordered list of shots in this scene \\
 \texttt{compile\_\allowbreak hints} & list of CompileHints & per-panel sidecar hints (one entry per panel that needs hints) \\
 \texttt{semantics} & Semantics, optional & PACE pace-0.2 blocks. Optional so pai-1.0/\allowbreak{}1.1 documents load unchanged. \\

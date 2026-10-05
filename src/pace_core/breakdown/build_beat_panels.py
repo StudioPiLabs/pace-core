@@ -27,6 +27,8 @@ import json
 import pathlib
 import sys
 
+from pace_core.types_v1 import SCHEMA_VERSION
+
 GENERATOR_DEFAULT = "claude-opus-5-rb"
 
 # A beat names entities in the screenplay's words ("the panels"); the registry
@@ -330,7 +332,7 @@ def main(argv=None) -> int:
         doc = json.loads(out.read_text())
         doc["shots"] = [new.get(_beat(sh), sh) for sh in doc["shots"]]
     else:
-        doc = {"_schema_version": "pai-1.1", "scene_id": a.out_scene_id,
+        doc = {"_schema_version": SCHEMA_VERSION, "scene_id": a.out_scene_id,
                "scene_number": 20, "scene_heading": src.get("scene_heading"),
                "narrative_meta": src.get("narrative_meta"),
                "shot_defaults": src.get("shot_defaults"),

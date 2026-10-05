@@ -1,6 +1,6 @@
-"""Character metadata extraction phase (PAI 1.1 library — no __main__).
+"""Character metadata extraction phase (PACE library — no __main__).
 
-Extracts character mentions from a project's PAI scene files via an LLM
+Extracts character mentions from a project's PACE scene files via an LLM
 and writes stub entries into `kb/on_scene/characters.json` (preserves
 user edits — only fills blank fields and adds new entries).
 

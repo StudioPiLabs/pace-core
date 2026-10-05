@@ -29,7 +29,7 @@ from pace_core.pai_compat import costume_text, dig, resolve_character
 
 @dataclass
 class CompileContext:
-    """External state injected at compile time — not part of the PAI doc."""
+    """External state injected at compile time — not part of the PACE doc."""
     characters_kb: dict = field(default_factory=dict)
     # The prop registry, so a prop's agreed appearance reaches the prompt
     # rather than being rebuilt from its identifier.
