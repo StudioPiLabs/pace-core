@@ -18,7 +18,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from pace_core.qc.reward import (  # noqa: E402
-    CONSTANT, DISCRIMINATIVE, agreement, conformance, reward,
+    CONSTANT, DISCRIMINATIVE, SAME_DISTANCE_PENALTY, SIZE_ORDER, _size_distance,
+    agreement, conformance, reward,
 )
 
 
@@ -124,7 +125,7 @@ def test_the_reward_stays_in_the_unit_interval():
     # the grading has to leave room between them. Only a cast with no overlap,
     # the wrong framing and the furthest size reaches the floor.
     worst = reward([C("subject_occlusion", False), C("screen_order", False)],
-                   {"shot_size": "master", "framing": "crowd", "cast": ["z"]},
+                   {"shot_size": "establishing", "framing": "crowd", "cast": ["z"]},
                    {"shot_size": "extreme_close_up", "framing": "single",
                     "cast": ["a"]})
     assert best.reward == pytest.approx(1.0)
@@ -136,5 +137,40 @@ def test_a_size_one_step_off_scores_above_the_furthest_one():
     """What the floor test above leaves room for."""
     cl = [C("subject_occlusion", False)]
     near = reward(cl, {"shot_size": "close_up"}, {"shot_size": "extreme_close_up"})
-    far = reward(cl, {"shot_size": "master"}, {"shot_size": "extreme_close_up"})
+    far = reward(cl, {"shot_size": "establishing"}, {"shot_size": "extreme_close_up"})
     assert near.reward > far.reward == pytest.approx(0.0)
+
+
+def test_the_widest_size_is_establishing_and_not_master():
+    """`SIZE_ORDER` lists master last; the camera does not put it there.
+
+    A master is a full-scene coverage shot, which the planner places at the
+    same distance as `full`. Scoring by distance rather than by position in
+    the name list is what corrects this, so an establishing shot is further
+    from a close-up than a master is -- and the two tests above depend on it.
+    """
+    assert _size_distance("extreme_close_up", "establishing") == pytest.approx(1.0)
+    assert _size_distance("extreme_close_up", "master") < 1.0
+    assert SIZE_ORDER[-1] == "master"      # the list still says otherwise
+
+
+def test_two_sizes_at_one_camera_distance_are_close_but_not_equal():
+    """`medium` and `medium_full` resolve to the same distance in the planner.
+
+    They are the same framing under two names, so the credit is nearly full;
+    scoring it as exactly full would make a wrong answer indistinguishable
+    from the right one and put the no-gradient problem back."""
+    d = _size_distance("medium", "medium_full")
+    assert d == pytest.approx(SAME_DISTANCE_PENALTY)
+    assert 0.0 < d < 0.05
+    assert _size_distance("medium", "medium") == 0.0
+
+
+def test_the_size_distance_is_a_ratio_not_a_step_count():
+    """Equal steps along the name list are not equal changes of framing."""
+    tight = _size_distance("extreme_close_up", "close_up")   # 0.4 m -> 0.7 m
+    wide = _size_distance("medium_full", "full")              # 2.0 m -> 3.0 m
+    assert tight > wide          # one step each, different cost
+    # Halving the distance costs the same wherever it starts.
+    assert _size_distance("close_up", "medium_close_up") == pytest.approx(
+        _size_distance("full", "wide"), abs=0.02)

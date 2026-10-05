@@ -26,6 +26,7 @@ because a scalar that hides which half moved is not debuggable.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass, field
 from typing import Iterable, Optional, Sequence
 
@@ -53,11 +54,18 @@ CONSTANT: frozenset[str] = frozenset({
 })
 
 # Shot sizes, ordered, so disagreement can be graded by how far apart two
-# choices are rather than scored as a bare mismatch.
+# choices are rather than scored as a bare mismatch. Kept for the fallback
+# path; the distance actually used is geometric -- see `_size_distance`.
 SIZE_ORDER: tuple[str, ...] = (
     "extreme_close_up", "close_up", "medium_close_up", "medium",
     "medium_full", "full", "wide", "establishing", "master",
 )
+
+# Two shot sizes that resolve to the same camera distance are the same framing
+# under two names. Scoring that as a perfect match would make a wrong answer
+# indistinguishable from the right one, so it costs this much instead: enough
+# to break the tie, little enough to say the error is small.
+SAME_DISTANCE_PENALTY: float = 0.02
 
 
 @dataclass
@@ -105,14 +113,47 @@ def conformance(clauses: Iterable) -> tuple[Optional[float], tuple[str, ...]]:
 
 
 def _size_distance(a: Optional[str], b: Optional[str]) -> Optional[float]:
+    """How far apart two shot sizes are, in [0, 1].
+
+    Measured as a ratio of subject distances rather than as a count of steps
+    along the name list, for two reasons that an ordinal scale gets wrong.
+    The steps are not equal: 0.4 m to 0.7 m is a far larger change in what the
+    frame holds than 3 m to 5 m is, and the names do not even agree on their
+    own order -- `SIZE_ORDER` puts `master` at the wide end while the camera
+    planner places it at the same distance as `full`, which is where a master
+    actually sits. Both follow from the fact that a shot size is a word for a
+    camera distance, so the distance is what to compare.
+
+    A ratio, in logarithm, because framing changes multiplicatively: halving
+    the distance fills twice the frame whether it starts at 1 m or at 10 m.
+
+    The table is the camera planner's own, imported rather than restated, so
+    that what the reward calls a size difference is what the renderer would
+    actually do differently.
+    """
     if a is None or b is None:
         return None
     if a == b:
         return 0.0
-    try:
-        return abs(SIZE_ORDER.index(a) - SIZE_ORDER.index(b)) / (len(SIZE_ORDER) - 1)
-    except ValueError:
-        return 1.0
+
+    from pace_core.camera.camera_planner import SHOT_SIZE_DISTANCE_M as TABLE
+
+    da, db = TABLE.get(a), TABLE.get(b)
+    if da is None or db is None:
+        # A size the planner does not know: fall back to the name order, and
+        # to a full mismatch if it is not even a name we recognise.
+        try:
+            return abs(SIZE_ORDER.index(a) - SIZE_ORDER.index(b)) / (len(SIZE_ORDER) - 1)
+        except ValueError:
+            return 1.0
+
+    known = [TABLE[k] for k in SIZE_ORDER if k in TABLE]
+    span = math.log(max(known) / min(known))
+    d = abs(math.log(da) - math.log(db)) / span
+    # Clamped: the widest pair divides out to 1 in exact arithmetic and to a
+    # shade over it in floating point, which would make a credit of 0 come
+    # back very slightly negative.
+    return min(1.0, max(d, SAME_DISTANCE_PENALTY))
 
 
 def agreement(proposed: dict, human: dict) -> Optional[float]:
