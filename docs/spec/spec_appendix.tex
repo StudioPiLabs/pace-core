@@ -657,7 +657,7 @@ The table below is generated from the schema source: 44 sub-schemas, 276 fields.
 \begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
 \toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
 \endhead
-\texttt{\_\allowbreak schema\_\allowbreak version} & text & schema version tag ---\allowbreak{} readers branch on this. Bumped 2026-06-05 1.0 $\to$ 1.1 to match SCHEMA.md after the SCINE-pillar extensions. 50/\allowbreak{}51 on-disk scene files already declare "pai-1.1"; enrich\_\allowbreak scenes\_\allowbreak scine.py:665 accepts both 1.0 and 1.1 for back-compat. \\
+\texttt{\_\allowbreak schema\_\allowbreak version} & text & schema version tag ---\allowbreak{} readers test it with is\_\allowbreak supported\_\allowbreak schema\_\allowbreak version() rather than comparing strings, so a document written by an older writer keeps reading \\
 \texttt{scene\_\allowbreak id} & text & canonical id, e.g. "scene\_\allowbreak 05" \\
 \texttt{scene\_\allowbreak number} & integer, optional & 1-based ordinal in the screenplay \\
 \texttt{scene\_\allowbreak heading} & text, optional & screenplay slugline: "EXT. DESERT ---\allowbreak{} DAWN" \\

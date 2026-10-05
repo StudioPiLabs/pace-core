@@ -29,6 +29,8 @@ import logging
 
 from pace_scene_skills import load as _skill
 
+from pace_core.types_v1 import SCHEMA_VERSION
+
 logging.basicConfig(
     level=logging.INFO, # 设置级别为 INFO（低于INFO的DEBUG日志将被忽略）
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -516,7 +518,7 @@ def _to_pai_1_1(sc: dict, source_script: str) -> dict:
     }
     shots, compile_hints = _build_initial_shots(sc)
     return {
-        "_schema_version": "pai-1.1",
+        "_schema_version": SCHEMA_VERSION,
         "scene_id":        sc.get("scene_id"),
         "scene_number":    sc.get("scene_number"),
         "scene_heading":   sc.get("heading"),
@@ -877,7 +879,7 @@ def split_text_to_pai(text: str, *, source_label: str = "<memory>",
     out = {
         "_meta": {
             "source_script":   source_label,
-            "schema_version":  "pai-1.1",
+            "schema_version":  SCHEMA_VERSION,
             "generated_at":    datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "model_used":      model,
             "scene_count":     len(scenes),
@@ -939,7 +941,7 @@ def main():
     out = {
         "_meta": {
             "source_script":   src_label,
-            "schema_version":  "pai-1.1",
+            "schema_version":  SCHEMA_VERSION,
             "generated_at":    datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "model_used":      args.model,
             "scene_count":     len(scenes),

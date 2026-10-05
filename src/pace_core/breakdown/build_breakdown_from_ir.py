@@ -31,6 +31,8 @@ import json
 import pathlib
 import sys
 
+from pace_core.types_v1 import SCHEMA_VERSION
+
 GENERATOR_DEFAULT = "claude-opus-5-rb"
 
 SYSTEM = """You are a first assistant director writing a shot breakdown for ONE
@@ -128,7 +130,7 @@ def to_scene_doc(scene: dict, shots: list[dict], project_scene_id: str) -> dict:
                        "state_notes": sh.get("state_notes") or []},
             "setup": {"subjects": [{"character_id": s} for s in (sh.get("subjects") or [])]},
         })
-    return {"_schema_version": "pai-1.1",
+    return {"_schema_version": SCHEMA_VERSION,
             "scene_id": project_scene_id,
             "scene_heading": scene["heading"],
             "script_scene_index": scene["index"],

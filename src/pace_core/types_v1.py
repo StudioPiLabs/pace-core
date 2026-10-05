@@ -1105,15 +1105,33 @@ class Manifest:
     review:     Optional["Review"] = None                         # manifest.review
 
 
-# Bumped 1.1 -> 1.2 on adopting PACE pace-0.2 as the upstream standard
-# (semantics/manifest pillars, artifact ledgers). 1.0 and 1.1 still read:
-# the added blocks are optional, so an older document deserializes with
-# them empty rather than failing.
-SCHEMA_VERSION: str = "pai-1.2"
-SUPPORTED_SCHEMA_VERSIONS: tuple[str, ...] = ("pai-1.0", "pai-1.1", "pai-1.2")
-# The upstream standard this schema tracks, recorded so a reader can tell
-# which PACE revision the field set corresponds to.
-PACE_SCHEMA_VERSION: str = "pace-0.2"
+# The document schema's own version, written into every SceneDoc. Its history
+# ran under the project's earlier name -- 1.0, then 1.1 on the SCINE-pillar
+# extensions, then 1.2 on adopting the upstream registry -- and 1.3 both adds
+# subject blocking and carries the name this specification actually has.
+#
+# Every earlier version still reads. The blocks and fields each step added are
+# optional, so an older document deserializes with them empty rather than
+# failing, which is the property that makes the tag worth writing at all.
+SCHEMA_VERSION: str = "pace-1.3"
+SUPPORTED_SCHEMA_VERSIONS: tuple[str, ...] = (
+    "pai-1.0", "pai-1.1", "pai-1.2", "pace-1.3",
+)
+# The upstream field registry this schema tracks. Deliberately not called a
+# PACE *schema* version: it numbers the registry, not the document, and two
+# constants both reading "pace-x.y" for different things is how a reader ends
+# up comparing the wrong pair.
+UPSTREAM_REGISTRY_VERSION: str = "pace-0.2"
+
+
+def is_supported_schema_version(version: object) -> bool:
+    """Whether a document's `_schema_version` is one this reader handles.
+
+    Callers asked this question by writing the tuple out themselves, and the
+    copies went stale the moment a version was added: a reader still testing
+    for 1.0 and 1.1 silently skipped every 1.2 document it was handed, which is
+    the quietest way a corpus can half-disappear. The list lives here."""
+    return version in SUPPORTED_SCHEMA_VERSIONS
 
 
 @dataclass
@@ -1121,7 +1139,7 @@ class SceneDoc:
     """One scene — wrapper that holds the SCINE-aligned shot list plus
     narrative meta. Compatible with v0.3's top-level shape so the
     storyboard/api endpoints can deserialize after a small adapter."""
-    _schema_version:  str = SCHEMA_VERSION                    # schema version tag — readers branch on this. Bumped 2026-06-05 1.0 → 1.1 to match SCHEMA.md after the SCINE-pillar extensions. 50/51 on-disk scene files already declare "pai-1.1"; enrich_scenes_scine.py:665 accepts both 1.0 and 1.1 for back-compat.
+    _schema_version:  str = SCHEMA_VERSION                    # schema version tag — readers test it with is_supported_schema_version() rather than comparing strings, so a document written by an older writer keeps reading
     scene_id:         str = ""                                # canonical id, e.g. "scene_05"
     scene_number:     Optional[int] = None                    # 1-based ordinal in the screenplay
     scene_heading:    Optional[str] = None                    # screenplay slugline: "EXT. DESERT — DAWN"
