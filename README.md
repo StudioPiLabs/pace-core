@@ -20,7 +20,7 @@ It accompanies the paper *PACE: Script Breakdown and Precise Cinematic Geometry 
 | `pace_core.compilers` | prompt compilation (Flux 2), prompt projection |
 | `pace_core.qc` | pre-render gate on the staged anchor |
 | `pace_core.node` | Blender launcher, panel greybox kernel, control-image flattening |
-| `pace_core.types_v1`, `pace_core.pai_compat` | PAI schema types and field accessors |
+| `pace_core.types_v1`, `pace_core.pai_compat` | PACE schema types and field accessors |
 | `pace_core.usd_export` | OpenUSD export |
 
 ## Install

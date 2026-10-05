@@ -1,4 +1,4 @@
-"""PAI 1.0 (scene, shot, panel) triple → Flux **2.dev** prompt + negative.
+"""PACE (scene, shot, panel) triple → Flux **2.dev** prompt + negative.
 
 The sole Flux compiler — Flux 1/T5 support (compile_flux.py) was retired
 project-wide once Flux 2 replaced it as the render backend. Mistral-

@@ -26,14 +26,14 @@ Output shapes
                        — Blender's depth-pass renderer + Wan VACE
                        control_video both consume this.
 
-PAI spec alignment
+Schema alignment
 ──────────────────
 
-The PAI 0.3 schema (pai_lang/types.py) puts movement on Frame.movement
+An earlier schema (the legacy `pai_lang/types.py`) puts movement on Frame.movement
 as `list[Movement]` — composite moves like ["pan_left", "zoom_in"] are
 intentional, not a fluke. This planner accepts BOTH:
 
-  - shot.frame.movement  (canonical PAI 0.3 path; list)
+  - shot.frame.movement  (the earlier schema's canonical path; list)
   - shot.camera.movement (legacy single-string path; auto-promoted to list)
 
 Composite moves compose ADDITIVELY: each Movement contributes its delta
@@ -114,7 +114,7 @@ ANGLE_OFFSETS = {
     "eye level":          (0,    0),
     "low angle":          (-25, -0.5),
     "high angle":         ( 25,  0.8),
-    # PAI Angle aliases (Panel.frame.angle)
+    # PACE Angle aliases (Panel.frame.angle)
     "high":               ( 25,  0.8),    # same as high_angle
     "low":                (-25, -0.5),    # same as low_angle
     "aerial":             ( 80,  3.0),    # same as top_down
@@ -158,7 +158,7 @@ MOVEMENT_KINDS = {
     "zoom_in",
     "zoom_out",
     "handheld",
-    # PAI Movement Literal additions
+    # PACE Movement Literal additions
     "push_in_slow",   # treated like push_in but smaller delta (see MOVEMENT_DELTAS)
     "tracking",       # parallel-track — alias-mapped to dolly_left in DELTAS for now
     "pan_lr",         # left→right pan
@@ -188,7 +188,7 @@ MOVEMENT_DELTAS = {
     "zoom_in":     {"lens_zoom_pct":  40},   # 50mm -> 70mm
     "zoom_out":    {"lens_zoom_pct": -40},
     "handheld":    {"_note": "subtle jitter, no fixed delta — handled by Wan I2V"},
-    # PAI Movement deltas
+    # PACE Movement deltas
     "push_in_slow":{"distance_delta_m": -0.4, "lens_zoom_pct": 0},   # gentler push
     "tracking":    {"y_delta_m": -0.5},                              # mapped to dolly_left
     "pan_lr":      {"yaw_delta_deg":   10},                          # left→right
@@ -353,7 +353,7 @@ def plan_camera(shot: dict, bible: Optional[dict] = None) -> dict:
     path (so refactoring blender_render to consume this is a no-op for the
     existing 24-shot film) and adds explicit lens, target, and movement fields.
 
-    Movement resolution: reads `shot.frame.movement` (PAI 0.3 list[Movement])
+    Movement resolution: reads `shot.frame.movement` (the earlier list[Movement])
     first, falls back to `shot.camera.movement` (legacy single string OR list).
     Multiple movements compose additively. The returned `movement` block
     contains the union of kinds, the composed end keyframe, and the easing.
@@ -365,7 +365,7 @@ def plan_camera(shot: dict, bible: Optional[dict] = None) -> dict:
     know the subject's lateral placement, e.g. from a mannequin slot). When
     present, the default dead-center aim below is replaced by
     composition_solver.solve_rotation_for_screen_position, so the subject
-    projects to (tx, ty) instead of frame center — grounding PAI's
+    projects to (tx, ty) instead of frame center — grounding PACE's
     screen_position field in the same explicit scene the trajectory is
     compiled into, rather than leaving it as authored-but-unconsumed
     metadata. Which point on the subject is driven to (tx, ty) depends on
@@ -645,7 +645,7 @@ def plan_camera_track_from_world(
 ) -> list[dict]:
     """Build an N-frame track from explicit meter-scale keyframes — the
     low-level entry point used by callers (LAMP DSL bridge, manual
-    overrides, blender-bake importers) that don't go through a PAI shot
+    overrides, blender-bake importers) that don't go through a PACE shot
     dict.
 
     `keyframes` is a list of ≥2 dicts each with

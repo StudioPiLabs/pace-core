@@ -1,4 +1,4 @@
-"""PAI 1.1 schema — SCINE-aligned 4-pillar taxonomy.
+"""PACE schema — SCINE-aligned 4-pillar taxonomy.
 
 This is the SCINE (Stable Cinemetrics) NeurIPS-2025 taxonomy, faithfully
 reproduced as Python dataclasses. Every leaf node listed in the paper's
@@ -32,7 +32,7 @@ Convention for field comments:
   - Most fields are Optional[...] = None → leave None when narrative is silent.
   - Open-set str fields take free-form English; controlled Literals must
     use one of the listed tokens verbatim (the enrichment LLM validates).
-  - "PAI extension" tag = added by us on top of stock SCINE.
+  - "PACE extension" tag = added by us on top of stock SCINE.
 """
 
 from __future__ import annotations
@@ -166,7 +166,7 @@ class CameraExtrinsics:
     """Camera placement / orientation."""
     angle: Optional[Angle] = None                    # vertical tilt: eye_level / low / high / overhead / dutch / …
     roll_deg: Optional[float] = None                 # canted horizon about the optical axis, + = clockwise; "dutch" alone implies 15
-    # PAI extension — relative position to subject (front / 3-4 / profile /
+    # PACE extension — relative position to subject (front / 3-4 / profile /
     # ots / behind). Terms.md §6.2 covers this even though SCINE Table 3
     # only lists `angle`; we keep it because it's a real distinction in
     # the data (e.g. reverse-shot vs front-on).
@@ -184,7 +184,7 @@ class CameraTrajectory:
     movement_2d:   list[Movement2D]    = field(default_factory=list)  # planar moves (pan/tilt/zoom)
     movement_3d:   list[Movement3D]    = field(default_factory=list)  # spatial moves (dolly/track/crane/arc/…)
     gear:          Optional[Gear]      = None              # rig used — affects steadiness + motion character
-    # PAI extension — temporal sampling curve between start/end keyframes.
+    # PACE extension — temporal sampling curve between start/end keyframes.
     easing:        Easing              = "linear"          # acceleration profile of the move
     # pace-0.2 camera.trajectory.camera_path — artifact ref (assets:// URI) to the
     # computed 6-DoF keyframe JSON (the PRODUCT of camera.program's LAMP recipe).
@@ -196,7 +196,7 @@ class CameraCreativeIntent:
     """Compositional choices that shape narrative/emotional tone."""
     shot_size:    Optional[ShotSize] = None              # jingbie (shot size) — how much of subject/environment is in frame
     framing:      Optional[Framing]  = None              # composition pattern (single/two_shot/empty/…)
-    # PAI extension — aspect ratio is a real per-shot choice (2.35:1
+    # PACE extension — aspect ratio is a real per-shot choice (2.35:1
     # anamorphic vs 16:9 for inserts) even though SCINE doesn't enumerate it.
     aspect_ratio: str                = "2.35:1"          # e.g. "2.35:1", "16:9", "1.85:1", "4:3"
 
@@ -356,7 +356,7 @@ class Backdrop:
     setting:     Optional[Setting]   = None          # int (interior) / ext (exterior)
     time_of_day: Optional[TimeOfDay] = None          # 11-value enum — see TimeOfDay
     location:    Optional[str]       = None          # open set: "changan_5th_c_palace_bedroom", "desert_caves" — used to look up location bibles
-    # PAI extension — period + region + culture. Lets the renderer pick
+    # PACE extension — period + region + culture. Lets the renderer pick
     # era-appropriate costume / architecture / props instead of defaulting
     # to "generic Asian historical". Open-set strings: pick the
     # description that most faithfully roots the shot in its world.
@@ -424,7 +424,7 @@ class Prop:
     material:    Optional[PropMaterial] = None       # wood/glass/gold/paper/plastic
     pattern:     Optional[PropPattern]  = None       # surface pattern if any
     utility:     Optional[PropUtility]  = None       # decorative (set dressing) vs functional (used by characters)
-    # ── PAI extensions (PAI 1.1) ─────────────────────────────────────────
+    # ── PACE extensions ──────────────────────────────────────────────────
     prop_id:     Optional[str]             = None    # stable id for cross-shot continuity ("andúril_the_sword")
     state:       Optional[PropState]       = None    # current physical state — pristine / weathered / broken / burning / …
     color:       Optional[str]             = None    # open set: "deep_crimson", "soot_black", "celadon_green"
@@ -473,7 +473,7 @@ ScreenDepth = Literal["foreground", "midground", "background"]
 
 @dataclass
 class Gaze:
-    """PAI extension — where this subject is looking. Captures eyeline so
+    """PACE extension — where this subject is looking. Captures eyeline so
     the storyboard records "Alice looking at the console" or
     "Bob staring off-frame right" as structured data instead of folding
     it into the free-form `pose` string. Used by the prompt compiler to render
@@ -491,7 +491,7 @@ class Gaze:
 
 @dataclass
 class ScreenPosition:
-    """PAI extension — where this subject sits in the frame. Spec'd here so
+    """PACE extension — where this subject sits in the frame. Spec'd here so
     multi-subject compositions can be machine-read (and later fed to
     ControlNet pose / spatial prompting) instead of relying on
     SceneGeometry.relative_positioning's free-text string.
@@ -533,9 +533,10 @@ class BlockingMove:
 
 @dataclass
 class Blocking:
-    """PAI extension -- the subject's mark on the floor, and their move off it.
+    """PACE extension -- the subject's mark on the floor, and their move off it.
 
-    The camera has had `trajectory` since PAI 1.0 and lighting has `motion`;
+    The camera has carried `trajectory` from the first version of this schema
+    and lighting has carried `motion`;
     subjects had neither, so where someone stood and where they walked could
     only be written as prose inside an Action. Prose cannot be projected into
     a frame, derived from, or compared across a cut -- the same reason
@@ -580,7 +581,7 @@ class Subject:
     cls:         Optional[str] = None                # subject category, open: "young_woman", "elderly_man", "tabby_cat"
     accessories: Optional[str] = None                # what they're wearing/holding: "prayer beads, walking staff"
     costume:     Optional[str] = None                # garments: "saffron robe", "dust-stained tunic"
-    # PAI extension — the wardrobe entry this costume IS, so a garment is a
+    # PACE extension — the wardrobe entry this costume IS, so a garment is a
     # library object with an id and states rather than a sentence retyped per
     # shot. Free text cannot be compared across a cut: one panel said "a
     # fitted grey-blue jacket" and the next delivered a white tunic, and nothing could report it, because there was no identifier for
@@ -591,24 +592,24 @@ class Subject:
     pose:        Optional[str] = None                # body posture: "kneeling, hands clasped", "leaning against doorframe"
     silhouette:  Optional[str] = None                # contour adjective: "imposing", "frail", "rigid"
     proportions: Optional[str] = None                # body type: "wiry", "broad-shouldered", "diminutive"
-    # PAI extension — link back to the canonical character registry so
+    # PACE extension — link back to the canonical character registry so
     # Subject appearance can default-inherit from kb/characters.json.
     # Optional; setting just the open-set fields above also works.
     character_id: Optional[str] = None               # id matching the project's character registry, e.g. "alice"
     age_state:    Optional[str] = None               # which life-stage variant of that character, e.g. "adult_50", "adult_18"
-    # PAI extension — eyeline + frame placement. Both Optional so existing
+    # PACE extension — eyeline + frame placement. Both Optional so existing
     # pai-1.0 files (which lack these) parse unchanged.
     gaze:            Optional[Gaze]           = None    # where this subject is looking
     screen_position: Optional[ScreenPosition] = None    # where this subject sits in the frame
     in_frame:        Optional[InFrame]        = None    # in the picture this panel (see InFrame)
     in_frame_extent: Optional[str]            = None    # for "partial": "right shoulder in the foreground"
-    # PAI extension -- floor position and staging. See Blocking: screen_position
+    # PACE extension -- floor position and staging. See Blocking: screen_position
     # is where they land in frame, this is where they stand in the space.
     blocking:        Optional[Blocking]       = None    # the mark, and the move off it
 
 
-# ── Text Generation (PAI 1.1 expansion) ─────────────────────────────────
-# Was a single Optional[str] in PAI 1.0; expanded so each on-screen text
+# ── Text Generation (PACE expansion) ────────────────────────────────────
+# Was a single Optional[str]; expanded so each on-screen text
 # element can specify its physical carrier, language, typography, and
 # layout independently. A shot can have multiple TextElements (subtitle
 # + sign + handwritten letter in same frame).
@@ -664,7 +665,7 @@ class Setup:
     primary_focus: PrimaryFocus     = field(default_factory=PrimaryFocus)     # what dominates the frame
     secondary_subjects: list[str]   = field(default_factory=list)   # character refs (id@age form), present but not the focus — see pai_compat.ref_to_id_age
     excluded:      list[str]        = field(default_factory=list)             # things NOT to render — fed into the negative prompt
-    # On-screen text — expanded from PAI 1.0's single `Optional[str]` into a
+    # On-screen text — expanded from a single `Optional[str]` into a
     # list of structured elements so each text item (subtitle, sign,
     # handwritten letter, billboard) gets its own target / language /
     # typography. the prompt compiler renders each entry as its own clause.
@@ -728,7 +729,7 @@ class Lighting:
     position:          Optional[LightingPosition] = None      # primary 3-point position of the key light
     motion:            Optional[LightingMotion]   = None      # flickering (firelight) / pulsing (sirens, screens)
     color_gels:        Optional[str]           = None         # free-form: "warm amber on key, cyan on fill"
-    # PAI extension — exact Kelvin if known from real capture.
+    # PACE extension — exact Kelvin if known from real capture.
     color_temp_k:      Optional[int] = None                    # exact Kelvin, e.g. 3200
     notes:             Optional[str] = None                    # free-form: anything else about the light
 
@@ -791,7 +792,7 @@ class Action:
     foreground:   Optional[ActionForeground]     = None    # focal (is the primary subject's act) / local / global
     background:   bool                           = False   # True = this action happens behind the focal subject
     uncertainty:  Optional[ActionUncertainty]    = None    # probabilistic / deterministic / mixed
-    # PAI extension — kept from v0.3 for back-compat. Lets the human-
+    # PACE extension — kept from v0.3 for back-compat. Lets the human-
     # authored beat travel alongside the SCINE classification.
     description_zh:  str = ""                              # human-authored Chinese description, e.g. "zuichun xidong" (lips trembling)
     description_en:  str = ""                              # human-authored English description, e.g. "lips quivering"
@@ -817,7 +818,7 @@ class Dialogue:
     this models the FILM-LEVEL classification only."""
     type_of_delivery: Optional[DialogueDelivery]   = None    # dash (interrupted) / ellipsis (trailing) / monologue
     foreground:       Optional[DialogueForeground] = None    # focal / local / global
-    # PAI extension — speaker + text so the line can also feed into
+    # PACE extension — speaker + text so the line can also feed into
     # vo_lines/on_screen_dialogue at the scene level.
     speaker: Optional[str] = None                            # character_id of who's speaking
     text:    Optional[str] = None                            # the line itself (Chinese or English)
@@ -934,7 +935,7 @@ class NarrativeMeta:
 
 
 # ════════════════════════════════════════════════════════════════════════
-# Physical layout — scene-wide world coordinates (PAI 1.1 prototype)
+# Physical layout — scene-wide world coordinates (PACE prototype)
 # ════════════════════════════════════════════════════════════════════════
 #
 # Optional layer for scenes where multiple shots share a stage and the
@@ -1126,11 +1127,11 @@ class SceneDoc:
     scene_heading:    Optional[str] = None                    # screenplay slugline: "EXT. DESERT — DAWN"
     act:              Optional[str] = None                    # which act of the film: "I" / "II" / "III" or "prologue" / "epilogue"
     narrative_meta:   NarrativeMeta = field(default_factory=NarrativeMeta)    # roster + beats + dialogue ledger (outside pillars)
-    # PAI 1.1 — scene-wide shared fields. Every shot deep-merges these as
+    # PACE — scene-wide shared fields. Every shot deep-merges these as
     # its baseline before reading its own (sparse) overrides. None means
     # the scene has no defaults; every shot is fully self-describing.
     shot_defaults:    Optional[ShotDefaults] = None
-    # PAI 1.1 prototype — optional scene-wide world coordinates. When set,
+    # PACE prototype — optional scene-wide world coordinates. When set,
     # per-subject screen_position can be derived from camera + world_xy
     # instead of authored per shot. See pipeline/derive_screen_position.py.
     physical_layout:  Optional[PhysicalLayout] = None

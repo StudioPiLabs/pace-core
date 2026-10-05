@@ -177,7 +177,7 @@ def test_plan_cameras_multi(fails: list[str]) -> None:
 
 
 def test_movement_via_frame_path(fails: list[str]) -> None:
-    """PAI 0.3 path: shot.frame.movement = ['push_in'] should reach the planner."""
+    """The earlier schema path: shot.frame.movement = ['push_in'] should reach the planner."""
     shot = {
         "scene_ref": "cafe_interior",
         "camera":    {"shot_size": "medium", "angle": "eye_level"},

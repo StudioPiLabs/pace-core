@@ -1,8 +1,8 @@
 """Motion rig — sparse, approximately-timed keyframe poses into a dense
-per-frame pose track, so that character motion can be *authored* in PAI
+per-frame pose track, so that character motion can be *authored* in PACE
 terms rather than only replayed from a captured clip.
 
-This is the pose-space counterpart of two mechanisms PAI already has, and
+This is the pose-space counterpart of two mechanisms PACE already has, and
 it is deliberately shaped like both. camera_planner compiles a sparse
 motion DSL into a dense metric camera track; temporal_keyframes pins known
 frames and lets a generative model fill the rest. This module does the same

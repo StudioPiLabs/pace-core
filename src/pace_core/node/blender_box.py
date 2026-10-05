@@ -7,7 +7,7 @@ shells out to Blender itself.
 
     box = BlenderBox()
     box.convert(src, out_glb)        # export  — FBX/OBJ/glTF → GLB
-    box.assemble(SceneAssemblySpec)  # build   — PAI scene → .blend
+    box.assemble(SceneAssemblySpec)  # build   — PACE scene → .blend
     box.render_preview(ShotPreviewSpec)   # render — single Workbench frame
     box.render_depth(DepthSeqSpec)   # motion+render — N-frame depth seq
     box.render_passes(...)           # render  — depth/normal/seg passes
@@ -117,7 +117,7 @@ def _blender_env() -> dict:
 # and export_glb are supplied by the host application.
 KERNELS = {
     "convert":        "blender_box.py",           # embedded — --kernel convert
-    "assemble":       "scene_assembler.py",       # PAI scene → .blend
+    "assemble":       "scene_assembler.py",       # PACE scene → .blend
     "render_preview": "render_shot_preview.py",   # single Workbench frame
     "render_depth":   "vace_pipeline.py",         # embedded — --kernel depth
     "render_passes":  "blender_box.py",           # embedded — --kernel passes
@@ -329,7 +329,7 @@ class BlenderBox:
                "--in", str(src), "--out", str(out_glb)]
         return self._invoke(cmd, timeout=_to.BLENDER_CONVERT, full=full)
 
-    # ---- op: build — PAI scene → .blend ----------------------------------
+    # ---- op: build — PACE scene → .blend ----------------------------------
 
     def assemble(self, spec: SceneAssemblySpec | dict) -> dict:
         """Build a .blend for `spec.scene_id` via the assemble kernel."""
@@ -533,7 +533,7 @@ class BlenderBox:
 
         Scene geometry is the assembled .blend at
         <project>/blender_scenes/<scene_ref>.blend; camera + lighting + panel
-        list are read from the PAI scene JSON at `scene_path`.
+        list are read from the PACE scene JSON at `scene_path`.
         """
         scene_path = Path(scene_path)
         if not scene_path.exists():
@@ -590,7 +590,7 @@ class BlenderBox:
         return self._invoke(cmd, timeout=180)
 
 
-# ─── convenience: spec from PAI project ───────────────────────────────────
+# ─── convenience: spec from PACE project ───────────────────────────────────
 
 def default_blend_path(project: str, scene_id: str) -> Path:
     """Convention: <project>/blender_scenes/<scene_id>.blend"""
@@ -664,7 +664,7 @@ def _kernel_list_parts(argv: list) -> None:
     print("RESULT_JSON=" + json.dumps({"ok": True, "parts": parts}))
 
 
-# ── kernel: passes (PAI-driven depth/normal/seg + VACE flow sequence) ─────
+# ── kernel: passes (PACE-driven depth/normal/seg + VACE flow sequence) ─────
 # Helpers below are module-level (used by _kernel_passes). They reference
 # the _plan_* globals, bound from camera_planner inside _kernel_passes.
 
@@ -1151,7 +1151,7 @@ def _kernel_passes(argv: list) -> None:
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--pai",  required=True,
-                        help="path to a PAI doc (kb/on_scene/scenes/scene_NN.json)")
+                        help="path to a PACE doc (kb/on_scene/scenes/scene_NN.json)")
     parser.add_argument("--out",    required=True,
                         help="output directory for depth/normal/seg PNGs")
     parser.add_argument("--ids",    nargs="*",

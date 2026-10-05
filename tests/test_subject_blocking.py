@@ -1,6 +1,7 @@
 """Where a subject stands, and where they walk, are declarable.
 
-The camera has had `trajectory` since PAI 1.0 and lighting has `motion`, so a
+The camera has carried `trajectory` from the first version of the PACE schema
+and lighting has carried `motion`, so a
 document could say the lens pushed in and the key light swung round, but not
 that anyone crossed the room: a subject carried `screen_position` -- where they
 land in the picture -- and nothing about the floor they stand on. Staging could

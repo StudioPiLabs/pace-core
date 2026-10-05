@@ -1,4 +1,4 @@
-"""Pillar accessors for PAI 1.0 (SCINE 4-pillar) scene docs.
+"""Pillar accessors for PACE (SCINE 4-pillar) scene documents.
 
 Read-only helpers that lift the most-used per-shot / per-panel fields
 out of the pillar tree. Every function takes the raw on-disk dict (or
@@ -221,7 +221,7 @@ def id_age_to_ref(character_id: str, age_state: str | None) -> str:
 
 
 # ── Scene-defaults deep-merge ───────────────────────────────────────────
-# PAI 1.1: scene_defaults at scene level + sparse override at shot level.
+# PACE: scene_defaults at scene level + sparse override at shot level.
 # `resolve_shot(scene, shot)` returns a virtual shot dict that combines
 # the two. Used by compile_flux2 and any reader that wants the "as-if"
 # full shot without authors having to duplicate scene-wide constants.
@@ -249,7 +249,7 @@ def _deep_merge(base: dict | None, override: dict | None) -> dict:
 
 
 # ── Camera dual-track: precise EXIF-style values → string clauses ──────
-# PAI 1.0 / 1.1 keeps both categorical buckets (lens_size, aperture, …) and
+# PACE keeps both categorical buckets (lens_size, aperture, …) and
 # exact numbers (focal_length_mm, aperture_f, …). compile_flux2 historically
 # only read the categorical layer. These helpers let it prefer exact values
 # when present and fall back to the bucket — "shot at f/1.4 with 85mm lens"
@@ -677,7 +677,7 @@ def lora_trigger_for(characters: list[str], age_states: dict[str, str],
     return char_kb.get("trigger") or None
 
 
-# ── PAI 1.1 readers that were missing from the original compilers ────
+# ── PACE readers that were missing from the original compilers ───────
 # Pure value extractors. Each compiler renders them in its own prose
 # style (compile_flux2 flowing, compile_gpt_image_2 labeled, compile_
 # nano_banana sentence). Skip silently when fields are absent — the

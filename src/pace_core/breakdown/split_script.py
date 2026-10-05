@@ -2,7 +2,7 @@
 
 Takes a literary script (prose or screenplay format) and breaks it into discrete
 scenes — each scene being a continuous unit of action in one location at one
-time-of-day. Output is one PAI 1.1 file per scene at
+time-of-day. Output is one PACE scene document per scene at
 `kb/on_scene/projects/<project>/scene_NN.json`, with narrative_meta,
 shot_defaults, initial shots, and one starter panel per shot filled in.
 
@@ -490,7 +490,7 @@ def _lift_dialogue(items, kind: str) -> list[dict]:
 
 
 def _to_pai_1_1(sc: dict, source_script: str) -> dict:
-    """Wrap a heuristic/LLM scene dict into the PAI 1.1 unified shape.
+    """Wrap a heuristic/LLM scene dict into the PACE unified shape.
 
     The splitter produces a complete first-pass structure: scene narrative,
     scene-wide shot_defaults, initial shots, and one starter panel per shot.
@@ -956,7 +956,7 @@ def main():
             sid  = unified.get("scene_id") or f"scene_{unified.get('scene_number', '?')}"
             path = out_dir / f"{sid}.json"
             path.write_text(json.dumps(unified, indent=2, ensure_ascii=False))
-        print(f"wrote {len(unified_docs)} PAI 1.1 scene file(s) → {out_dir}/",
+        print(f"wrote {len(unified_docs)} PACE scene file(s) → {out_dir}/",
               file=sys.stderr)
 
     if args.print:

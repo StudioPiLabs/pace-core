@@ -5,7 +5,7 @@ in natural language (currently: the Playground/Library's LLM-powered
 
 This is deliberately NOT the same thing as compile_flux2.py / compile_
 nano_banana.py / compile_gpt_image_2.py / movement_io.py's Wan motion
-phrasing — those are deterministic compilers over STRUCTURED PAI scene/
+phrasing — those are deterministic compilers over STRUCTURED PACE scene/
 shot/panel data. This module distills the same underlying per-model
 knowledge (documented in those files' comments) into free-text guidance
 usable when there's no structured panel behind the prompt, e.g. a

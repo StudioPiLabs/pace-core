@@ -1,5 +1,5 @@
-"""Composition solver — grounds PAI's screen_position field (rule-of-thirds
-zone or normalized (x, y), Section "Identity & Staging" in the PAI schema)
+"""Composition solver — grounds PACE's screen_position field (rule-of-thirds
+zone or normalized (x, y), Section "Identity & Staging" in the PACE schema)
 in the same explicit 3D scene the camera trajectory is already compiled
 into, instead of leaving it as authored-but-unconsumed metadata.
 
