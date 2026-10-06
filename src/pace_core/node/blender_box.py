@@ -1076,6 +1076,7 @@ def _composition_for_panel(setup: dict, characters: list[str],
     explicit (x, y).
     """
     from pace_core.setup.composition_solver import target_xy
+    from pace_core.setup.marks import Mark, resolve_positions
 
     subjects = setup.get("subjects") or []
     if not subjects:
@@ -1096,11 +1097,34 @@ def _composition_for_panel(setup: dict, characters: list[str],
     if target is None:
         return None
 
-    slots = _mannequin_slot_positions(min(2, len(characters)), scene_id)
-    if idx >= len(slots):
+    # The solver has to aim at where the body WILL BE, so this reads the same
+    # declared mark the scene builder stages from, and falls back to the same
+    # template slots it falls back to. Grounding the aim at a slot while the
+    # builder placed the body somewhere else composes the frame against a
+    # position the render never uses.
+    n = min(2, len(characters))
+    marks = resolve_positions(
+        [(s.get("character_id") or "") for s in subjects[:n]],
+        _declared_marks_for_setup(setup),
+        _mannequin_slot_positions(n, scene_id))
+    if idx >= len(marks):
         return None
-    x, y, _z = slots[idx]
-    return {"subject_xy": [x, y], "target_x": target[0], "target_y": target[1]}
+    x, y = marks[idx].xy
+    out = {"subject_xy": [x, y], "target_x": target[0], "target_y": target[1]}
+    if marks[idx].declared:
+        out["subject_xy_declared"] = True
+    return out
+
+
+def _declared_marks_for_setup(setup: dict) -> dict:
+    """Declared marks from one already-resolved setup.
+
+    `marks.declared_marks` walks a whole scene document; here the setup is
+    already in hand, so the same shape is built directly rather than wrapping
+    it back up into a document to take it apart again.
+    """
+    from pace_core.setup.marks import declared_marks
+    return declared_marks({"shots": [{"setup": setup}]})
 
 
 def _synthesize_shot(entry: dict, scene_id: str, narrative_meta: dict) -> dict:

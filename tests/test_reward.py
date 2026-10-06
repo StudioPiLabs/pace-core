@@ -174,3 +174,36 @@ def test_the_size_distance_is_a_ratio_not_a_step_count():
     # Halving the distance costs the same wherever it starts.
     assert _size_distance("close_up", "medium_close_up") == pytest.approx(
         _size_distance("full", "wide"), abs=0.02)
+
+
+def test_the_declared_mark_clause_grades_and_does_not_dilute():
+    """It carries a residual, so it must be credited by distance not verdict.
+
+    And a panel with no declared mark must leave conformance exactly where it
+    was: the clause is undefined there, and an undefined clause that scored
+    zero would teach a policy that an unmeasurable panel is a bad one."""
+    from pace_core.qc.reward import DISCRIMINATIVE
+    assert "subject_on_declared_mark" in DISCRIMINATIVE
+
+    # Graded at every distance, not just inside the tolerance. The linear
+    # credit the other residual clauses use reaches zero AT the tolerance and
+    # stays there, which for a distance in metres means half a metre off and
+    # thirty metres off pay the same -- the no-gradient condition again, in the
+    # one clause added to give reinforcement something to learn from.
+    on_mark = conformance([C("subject_on_declared_mark", True,
+                             value=0.0, threshold=0.25)])[0]
+    at_tol = conformance([C("subject_on_declared_mark", False,
+                            value=0.25, threshold=0.25)])[0]
+    half_off = conformance([C("subject_on_declared_mark", False,
+                              value=0.5, threshold=0.25)])[0]
+    way_off = conformance([C("subject_on_declared_mark", False,
+                             value=2.5, threshold=0.25)])[0]
+    assert on_mark == pytest.approx(1.0)
+    assert at_tol == pytest.approx(0.5)
+    assert on_mark > at_tol > half_off > way_off > 0.0
+
+    others = [C("screen_order", True), C("subject_occlusion", True)]
+    with_mark = conformance(others + [C("subject_on_declared_mark", None)])
+    without = conformance(others)
+    assert with_mark[0] == without[0]
+    assert "subject_on_declared_mark" not in with_mark[1]

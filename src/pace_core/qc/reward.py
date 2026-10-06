@@ -39,6 +39,14 @@ DISCRIMINATIVE: frozenset[str] = frozenset({
     "screen_order",
     "cast_not_in_a_row",
     "reverse_shot_eye_lines_match",
+    # Included by construction rather than by that measurement: it reports a
+    # residual in metres against its own tolerance, so it grades rather than
+    # passing or failing, and it is undefined on a panel where nobody declared
+    # a mark -- which is most of them -- so it cannot dilute a group it has
+    # nothing to say about. It has not yet been through the perturbation test
+    # the other five passed, because the staging it measures only became
+    # observable with it.
+    "subject_on_declared_mark",
 })
 
 # Clauses that passed on every panel of the corpus. They stay in the gate as
@@ -83,12 +91,33 @@ class Parts:
         return self.reward is not None
 
 
+# Clauses whose residual has no natural ceiling. A screen-position error is
+# bounded by the frame, so linear credit that reaches zero at the tolerance
+# loses nothing past it. A floor mark is in metres and can be wrong by any
+# amount, and there the linear form has a dead zone: everything past the
+# tolerance scores exactly zero, so half a metre off and thirty metres off are
+# the same reward and nothing drives the policy back. These decay instead.
+UNBOUNDED_RESIDUAL: frozenset[str] = frozenset({"subject_on_declared_mark"})
+
+
 def _credit(ok: Optional[bool], value: Optional[float],
-            threshold: Optional[float]) -> float:
+            threshold: Optional[float], name: str = "") -> float:
     """One clause's credit. A clause that reports a measured quantity and its
-    own tolerance is graded against that tolerance; otherwise it is its verdict."""
+    own tolerance is graded against that tolerance; otherwise it is its verdict.
+
+    Two gradings, because two kinds of residual. The linear one reaches zero at
+    the tolerance and stays there, which is right for a quantity the frame
+    already bounds. The decaying one, `1 / (1 + (v/t)^2)`, is 1 on the mark,
+    0.5 at the tolerance and never quite zero, which is what a distance in
+    metres needs: it keeps a gradient at any error instead of giving up past
+    one pace. Only clauses in `UNBOUNDED_RESIDUAL` take it, so every figure
+    measured under the linear form stands.
+    """
     if value is not None and threshold not in (None, 0):
-        return max(0.0, 1.0 - abs(value) / abs(threshold))
+        ratio = abs(value) / abs(threshold)
+        if name in UNBOUNDED_RESIDUAL:
+            return 1.0 / (1.0 + ratio * ratio)
+        return max(0.0, 1.0 - ratio)
     return 1.0 if ok else 0.0
 
 
@@ -108,7 +137,8 @@ def conformance(clauses: Iterable) -> tuple[Optional[float], tuple[str, ...]]:
     if not kept:
         return None, ()
     total = sum(_credit(c.ok, getattr(c, "value", None),
-                        getattr(c, "threshold", None)) for c in kept)
+                        getattr(c, "threshold", None),
+                        getattr(c, "name", "")) for c in kept)
     return total / len(kept), tuple(c.name for c in kept)
 
 
