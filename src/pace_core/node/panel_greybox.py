@@ -1021,6 +1021,13 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         x = (s.get("screen_position") or {}).get("x")
         return 0.5 if x is None else float(x)
 
+    def _declared_xy(s: dict) -> list | None:
+        """`blocking.world_xy` as stated, or None when nothing states it."""
+        from pace_core.setup.marks import _xy_of
+        b = s.get("blocking") or {}
+        xy = _xy_of(b.get("world_xy") or b.get("worldXy"))
+        return [xy[0], xy[1]] if xy else None
+
     def _declared_foreground(s: dict) -> bool:
         """Whether this subject asked to be nearer the camera than the rest.
 
@@ -1381,7 +1388,16 @@ def build_spec(project: str, scene_id: str, panel_id: str,
                  "facing_deg": _facing_from_gaze(subs, places, i),
                  # The aim solve needs to know what each subject asked for,
                  # not just where its seat ended up.
-                 "declared_x": _declared_x(s)}
+                 "declared_x": _declared_x(s),
+                 # Both marks, so the gate can measure the gap between what a
+                 # breakdown asked for and where the seat layout put the body.
+                 # Recording them does not move anyone: the layout still
+                 # decides, and `subject_on_declared_mark` reports the error
+                 # it leaves. A declaration cannot be honoured before it can
+                 # be measured.
+                 "staged_xy": [round(places[i][0], 4), round(places[i][1], 4)]
+                 if i < len(places) else None,
+                 "declared_xy": _declared_xy(s)}
                 for i, s in enumerate(subs)]
     for sj in subjects:
         if Path(sj["mesh"]).is_file():
@@ -1534,7 +1550,8 @@ def anchor_version(spec: dict) -> str:
     payload["subjects"] = [
         {"id": s.get("character_id"), "mesh": Path(s.get("mesh") or "").name,
          "pose": s.get("pose"), "facing_deg": s.get("facing_deg"),
-         "declared_x": s.get("declared_x"), "seat_contact": s.get("seat_contact")}
+         "declared_x": s.get("declared_x"), "seat_contact": s.get("seat_contact"),
+         "declared_xy": s.get("declared_xy")}
         for s in (spec.get("subjects") or [])]
     blob = json.dumps(payload, sort_keys=True, default=str).encode()
     return hashlib.sha256(blob).hexdigest()[:16]

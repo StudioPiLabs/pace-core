@@ -614,6 +614,14 @@ def declared_in_frame_clause(out: Path, declared: dict | None) -> Clause:
                   detail="; ".join(bad + note))
 
 
+# How far a staged body may sit from its declared mark and still count as on
+# it. 0.25 m is half a pace: inside that, a director re-marking the floor
+# would not bother. It is deliberately not tied to the composition tolerances
+# above, which are in fractions of a frame -- this one is in metres on the
+# floor, and the two are only related through a camera.
+MARK_TOLERANCE_M = 0.25
+
+
 def evaluate(spec: dict, out: str | Path, *,
              required: set[str] | None = None,
              min_area: float = MIN_SUBJECT_AREA,
@@ -660,6 +668,28 @@ def evaluate(spec: dict, out: str | Path, *,
     clauses.append(Clause("required_entity_visibility", vis == 1.0,
                           value=round(vis, 4), threshold=1.0,
                           detail="; ".join(why)))
+
+    # 1b. subject_on_declared_mark -- the only clause that reads metres on the
+    # floor rather than pixels in the frame. It is undefined, not passing, on a
+    # panel where nobody declared a mark, which is most of them today.
+    from pace_core.setup.marks import mark_error_m
+    marked = [(s.get("character_id"), s.get("staged_xy"), s.get("declared_xy"))
+              for s in subs
+              if s.get("declared_xy") and s.get("staged_xy")]
+    if marked:
+        errs = {cid: mark_error_m(st, dec) for cid, st, dec in marked}
+        worst = max(errs, key=lambda c: errs[c])
+        off = [f"{c} {errs[c]:.2f} m" for c in sorted(errs)
+               if errs[c] > MARK_TOLERANCE_M]
+        clauses.append(Clause(
+            "subject_on_declared_mark", not off,
+            value=round(errs[worst], 4), threshold=MARK_TOLERANCE_M,
+            detail=(f"off the mark: {', '.join(off)}" if off
+                    else f"worst is {worst} at {errs[worst]:.2f} m")))
+    else:
+        clauses.append(Clause(
+            "subject_on_declared_mark", None,
+            detail="no subject declares blocking.world_xy on this panel"))
 
     # 2. projected_subject_area
     areas = {c: (stats.get(c) or {}).get("area") for c in sorted(need)}
