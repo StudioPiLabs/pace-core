@@ -1507,7 +1507,54 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         **({"roll_deg": _roll_of(extr)} if _roll_of(extr) else {}),
         "res": list(res),
         "out": str(out_png),
+        # The cabin this scene shares, if a previous build of this panel
+        # recorded one. A measured shell is a build product and not a
+        # declaration, so this is the only way a pure KB read can arrive at
+        # the same `anchor_version` the build stamped -- see
+        # `_record_scene_shell`. `make_panel_greybox` overrides it when it is
+        # given a shell, so a rebuild uses the new one, not this.
+        **({"scene_shell": shell} if (shell := _recorded_scene_shell(out_png))
+           else {}),
     }
+
+
+def _scene_shell_record(out_png: str | Path) -> Path:
+    """Where a build keeps the shared cabin it was built in."""
+    return Path(out_png).with_suffix(".shell.json")
+
+
+def _recorded_scene_shell(out_png: str | Path) -> dict | None:
+    """The shared cabin a previous build of this panel recorded, if any.
+
+    Unreadable or malformed is treated as absent: this exists to make an
+    anchor reproducible, and a half-read shell would make it reproducibly
+    wrong, which is worse than reporting the panel as unshared.
+    """
+    rec = _scene_shell_record(out_png)
+    try:
+        got = json.loads(rec.read_text())
+    except (OSError, ValueError):
+        return None
+    return got if isinstance(got, dict) and got else None
+
+
+def _record_scene_shell(out_png: str | Path, scene_shell: dict | None) -> None:
+    """Keep the shared cabin beside the frame, or clear a stale one.
+
+    Clearing matters as much as writing. A scene that stops sharing a cabin --
+    one panel loses its proxy mesh, a beat moves outdoors -- would otherwise
+    leave the last shared shell on disk, and the next anchor would cover a
+    cabin the build did not use.
+
+    Not guarded: the frame has just been written to this directory, so a
+    failure here is a real one and not worth hiding behind an anchor nobody
+    can reproduce.
+    """
+    rec = _scene_shell_record(out_png)
+    if scene_shell:
+        rec.write_text(json.dumps(scene_shell, sort_keys=True))
+    elif rec.exists():
+        rec.unlink()
 
 
 # Fields that decide the GEOMETRY. Everything a control signal is projected
@@ -1698,6 +1745,11 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     # from this build -- depth, mattes, the init frame -- comes from this
     # camera, and two controls that disagree about the camera are worse than
     # one control. Without an id on the build nobody can tell that they did.
+    # Record the shared cabin beside the frame before stamping the anchor:
+    # the anchor covers the shell, so without the record `build_spec` cannot
+    # rebuild the spec that produced this hash and the gate reports every
+    # shared-cabin panel as stale for ever.
+    _record_scene_shell(out_png, spec.get("scene_shell"))
     if isinstance(out, dict):
         out["anchor_version"] = anchor_version(spec)
     out.setdefault("bodies", len(spec["subjects"]))
@@ -1728,11 +1780,22 @@ def make_scene_greyboxes(project: str, scene_id: str, out_for, *,
 
     if scene is None:
         scene = json.loads((Path(paths_for(project).scenes_dir) / f"{scene_id}.json").read_text())
-    ids = panel_ids or [pl["id"] for sh in scene.get("shots") or []
-                        for pl in sh.get("panels") or []]
+    # Every panel of the scene, whatever subset is being rebuilt. The shell is
+    # the union over the scene, so measuring only the requested panels yields a
+    # different cabin -- a one-panel rebuild got its own shell back and the
+    # walls moved against the panels it was meant to match. `panel_ids`
+    # narrows what is BUILT, never what is measured.
+    #
+    # The cost is a measuring render per panel of the scene even to rebuild
+    # one. That is the price of the cabin being the scene's; caching the
+    # measured bounds per panel would buy it back and is not this change.
+    all_ids = [pl.get("id") for sh in scene.get("shots") or []
+               for pl in sh.get("panels") or []]
+    all_ids = [pid for pid in all_ids if pid]
+    ids = [pid for pid in (panel_ids or all_ids) if pid]
     first: dict[str, dict] = {}
     with tempfile.TemporaryDirectory() as tmp:
-        for pid in ids:
+        for pid in all_ids:
             first[pid] = make_panel_greybox(project, scene_id, pid,
                                             Path(tmp) / f"{pid}.png", res=res,
                                             scene=scene, dress=dress)
