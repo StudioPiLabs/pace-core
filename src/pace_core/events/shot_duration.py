@@ -2,7 +2,7 @@
 
 `Shot` carries no duration of its own. The only timing in the schema is
 `events.actions[].duration_hint_s`, one level down, documented as "rough
-seconds -- informs Wan-I2V length, not literal". That is what this reads.
+seconds -- informs video length, not literal". That is what this reads.
 
 The rule has to answer one modelling question: do a shot's actions run one
 after another or at the same time? The schema already says. An action with
@@ -17,13 +17,14 @@ shot with no length at all.
 """
 from __future__ import annotations
 
-# No backend is trained far outside this band: Wan VACE is a few seconds,
-# MiniMax H3's trained range is ~124-362 frames at 24fps (5-15s), LTX 2.5
-# tops out around 15s. A hint outside it is a typo, not an intent.
+# Current video backends are trained on clips of a few seconds up to about
+# 15 s. A hint outside this band is a typo, not an intent.
 MIN_SECONDS = 1.0
 MAX_SECONDS = 15.0
 DEFAULT_SECONDS = 5.0
-VACE_FPS = 16
+DEFAULT_FPS = 16
+#: Deprecated alias of DEFAULT_FPS; kept for existing importers.
+VACE_FPS = DEFAULT_FPS
 
 
 def shot_duration_s(shot: dict) -> tuple[float, str]:
@@ -55,7 +56,19 @@ def shot_duration_s(shot: dict) -> tuple[float, str]:
     return round(min(max(total, MIN_SECONDS), MAX_SECONDS), 2), "actions"
 
 
-def vace_frames(seconds: float, fps: int = VACE_FPS) -> int:
-    """Seconds → a frame count VACE accepts. Its latent grid wants 4n+1."""
-    n = max(5, int(round(seconds * fps)))
-    return n + (4 - (n - 1) % 4) % 4
+def frame_count(seconds: float, fps: int = DEFAULT_FPS, quantum: int = 4,
+                offset: int = 1) -> int:
+    """Seconds → a frame count of the form quantum*n + offset, rounded up.
+
+    Many video models' temporal latent grids want 4n+1 frames (the default).
+    The floor is one quantum plus the offset.
+    """
+    if quantum < 1:
+        raise ValueError("quantum must be >= 1")
+    n = max(quantum + offset, int(round(seconds * fps)))
+    return n + (quantum - (n - offset) % quantum) % quantum
+
+
+def vace_frames(seconds: float, fps: int = DEFAULT_FPS) -> int:
+    """Deprecated alias: `frame_count(seconds, fps)` (4n+1)."""
+    return frame_count(seconds, fps)

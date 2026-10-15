@@ -8,7 +8,7 @@ motion DSL into a dense metric camera track; temporal_keyframes pins known
 frames and lets a generative model fill the rest. This module does the same
 for a character's articulation: the caller supplies a handful of poses at
 approximate times, and gets back one pose per rendered frame, in exactly
-the shape vace_pipeline's armature baking already consumes.
+the shape the host depth kernel's armature baking consumes.
 
 Why the timing, and not the posing, is the hard part
 ────────────────────────────────────────────────────
@@ -47,7 +47,7 @@ from typing import Callable, Optional, Protocol, Sequence
 # A pose is {bone_name: (w, x, y, z)} unit quaternions, optionally carrying
 # the reserved key ROOT_KEY for world-space root translation in metres.
 # Quaternions (not Euler) because interpolation between two Euler triples is
-# path-dependent and gimbal-prone; vace_pipeline keys pose bones as
+# path-dependent and gimbal-prone; the depth kernel keys pose bones as
 # rotation_quaternion already, so this matches what the renderer consumes.
 Pose = dict
 ROOT_KEY = "__root_loc__"
@@ -477,7 +477,7 @@ def solve(keyframes: list[dict], *, n_frames: int, fps: int = 16,
     Returns {"track", "warp", "n_frames", "seed", "feasible", "edited",
     "preserved_frames"}. `track` is
     [{frame_index, bones, root?}], one entry per frame, directly consumable
-    by vace_pipeline's armature baking. `warp` reports how far each authored
+    by the depth kernel's armature baking. `warp` reports how far each authored
     keyframe was moved, so a UI can draw the retiming rather than silently
     applying it — the paper's own presentation choice, and the reason a
     stretched segment reads as a decision instead of a bug.

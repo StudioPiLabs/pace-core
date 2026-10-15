@@ -2,7 +2,7 @@
 
 `BlenderBox` is to Blender what `GpuBox` is to ComfyUI: the one module
 that spawns the `blender` binary. Everything else (pai CLI, studio
-routers, the VACE pipeline) goes through a `BlenderBox` method and never
+routers, video pipelines) goes through a `BlenderBox` method and never
 shells out to Blender itself.
 
     box = BlenderBox()
@@ -38,7 +38,7 @@ import subprocess
 import sys
 import tempfile
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -67,6 +67,7 @@ from pace_core import timeouts as _to
 _plan_camera = _plan_cameras = _plan_camera_track = None
 
 
+# Import-time default; BlenderBox() reads paths.BOX at call time.
 BLENDER_BIN = BOX.blender_bin
 
 # Kernel directories, searched in order. A host application registers the
@@ -112,19 +113,24 @@ def _blender_env() -> dict:
 # source of truth for "which file carries each kernel". Some kernels are
 # embedded (dual-mode) in a host module and selected with `--kernel <name>`:
 #   convert / render_passes → this file (blender_box.py)
-#   render_depth            → vace_pipeline.py
-# The rest are standalone bpy scripts; assemble, render_preview, render_depth
-# and export_glb are supplied by the host application.
+#   render_depth            → depth_sequence.py (--kernel depth / cam_track)
+# The rest are standalone bpy scripts. assemble, render_preview, render_depth
+# and export_glb are NOT shipped here: the host application supplies them and
+# registers their directory with `register_kernel_dir`.
 KERNELS = {
     "convert":        "blender_box.py",           # embedded — --kernel convert
     "assemble":       "scene_assembler.py",       # PACE scene → .blend
     "render_preview": "render_shot_preview.py",   # single Workbench frame
-    "render_depth":   "vace_pipeline.py",         # embedded — --kernel depth
+    "render_depth":   "depth_sequence.py",        # host — --kernel depth
     "render_passes":  "blender_box.py",           # embedded — --kernel passes
     "export_glb":     "export_blend_glb.py",       # .blend → GLB (Phase 2)
     "list_parts":     "blender_box.py",            # embedded — --kernel list_parts
     "panel_greybox":  "panel_greybox.py",          # embedded — --kernel greybox
 }
+
+
+class KernelNotFound(FileNotFoundError):
+    """A logical op's kernel file is in none of KERNEL_DIRS."""
 
 
 # ─── spec dataclasses ─────────────────────────────────────────────────────
@@ -196,9 +202,9 @@ class DepthSeqSpec:
     add_ground_plane: bool = False        # add 400×400m flat plane at Z=0
     add_road_markers: bool = False        # line the +X path with posts (depth parallax)
     ground_contour:   bool = False        # rolling terrain (parallax, no posts in output)
-    # Extra control passes (same camera/animation, re-rendered per modality) for
-    # the multi-channel VACE path. normal/seg → extra control channels; matte →
-    # binary subject mask for an in-graph ColorToMask → control_masks.
+    # Extra control passes (same camera/animation, re-rendered per modality)
+    # for multi-channel video control. normal/seg → extra control channels;
+    # matte → binary subject mask for a downstream masked generation.
     emit_normal:      bool = False        # also render normal_NNNN.png
     emit_seg:         bool = False        # also render seg_NNNN.png (random colours)
     emit_matte:       bool = False        # also render matte_NNNN.png (white subj/black bg)
@@ -240,17 +246,20 @@ class BlenderBox:
     binary to launch (`bin`), so it's cheap to construct per call."""
 
     def __init__(self, bin: str | None = None):
-        self.bin = bin or BLENDER_BIN
+        self.bin = bin or _paths.BOX.blender_bin
 
     # ---- kernel + invoke plumbing ----------------------------------------
 
     def _kernel(self, op: str) -> Path:
-        """Resolve a logical op to its bpy kernel path."""
+        """Resolve a logical op to its bpy kernel path, or raise KernelNotFound."""
         name = KERNELS[op]
         for d in KERNEL_DIRS:
             if (d / name).is_file():
                 return d / name
-        return KERNEL_DIRS[0] / name
+        raise KernelNotFound(
+            f"Blender kernel {name!r} for op {op!r} is not in any kernel dir "
+            f"({', '.join(str(d) for d in KERNEL_DIRS)}); the host application "
+            f"must supply it and call register_kernel_dir(<its directory>).")
 
     @staticmethod
     def _job_dir() -> Path:
@@ -484,7 +493,7 @@ class BlenderBox:
         else:
             # Scene render: neither a subject mesh nor a .blend — the kernel renders
             # the camera move over ground geometry (ground_contour/plane in `aids`)
-            # for parallax; appearance comes from the VACE keyframe + prompt.
+            # for parallax; appearance comes from the keyframe + prompt.
             cmd = [self.bin, "--background",
                    "--python", str(kernel), "--", "--kernel", "depth",
                    "--track-json", str(track_json),
@@ -508,7 +517,7 @@ class BlenderBox:
         which one to extract (default: the first). has_camera=False when the GLB
         has no animated camera. Lets the Playground skip the trajectory upload when
         the camera move ships inside the GLB."""
-        kernel = self._kernel("render_depth")          # vace_pipeline.py (dual-mode)
+        kernel = self._kernel("render_depth")          # depth_sequence.py (dual-mode)
         out = self._job_dir() / "cam_track.json"
         cmd = [self.bin, "--background", "--python", str(kernel), "--",
                "--kernel", "cam_track", "--glb-file", str(glb_file), "--out", str(out)]
@@ -580,8 +589,6 @@ class BlenderBox:
         if not Path(spec.in_blend).is_file():
             return {"ok": False, "_missing_blend": spec.in_blend}
         kernel = self._kernel("export_glb")
-        if not kernel.is_file():
-            return {"ok": False, "_pending": f"{kernel.name} not implemented yet"}
         Path(spec.out_glb).parent.mkdir(parents=True, exist_ok=True)
         cmd = [self.bin, "--background", spec.in_blend,
                "--python", str(kernel), "--",
@@ -664,7 +671,7 @@ def _kernel_list_parts(argv: list) -> None:
     print("RESULT_JSON=" + json.dumps({"ok": True, "parts": parts}))
 
 
-# ── kernel: passes (PACE-driven depth/normal/seg + VACE flow sequence) ─────
+# ── kernel: passes (PACE-driven depth/normal/seg + per-frame sequence) ─────
 # Helpers below are module-level (used by _kernel_passes). They reference
 # the _plan_* globals, bound from camera_planner inside _kernel_passes.
 
@@ -706,11 +713,11 @@ def _apply_camera_xform(cam_obj, position, rotation_deg, lens_mm):
 
 def _setup_depth_only_compositor(scene, out_dir: Path, panel_id: str,
                                   emit_flow: bool = False):
-    """Compositor used by the VACE sequence renderer and the clean re-pass.
+    """Compositor used by the sequence renderer and the clean re-pass.
 
     Outputs depth_<panel_id>_<frame>.png always; when emit_flow=True also
-    emits flow EXR + flow_rgb PNG + normal + seg (the four VACE ControlNet
-    channels, produced together in one Cycles render call).
+    emits flow EXR + flow_rgb PNG + normal + seg (four control channels,
+    produced together in one Cycles render call).
     """
     scene.use_nodes = True
     tree  = scene.node_tree
@@ -834,7 +841,7 @@ def _setup_compositor(scene, out_dir: Path, panel_id: str):
 
     # ── Seg pass: IndexOB → 8-bit BW ──
     idmask = nodes.new("CompositorNodeIDMask")
-    idmask.index = 1   # Subject_A.pass_index=1; build_characters.py sets these
+    idmask.index = 1   # Subject_A.pass_index=1, set by the scene builder
     seg = nodes.new("CompositorNodeOutputFile")
     seg.base_path           = str(out_dir)
     seg.file_slots[0].path  = f"seg_{panel_id}_"
@@ -845,14 +852,15 @@ def _setup_compositor(scene, out_dir: Path, panel_id: str):
     links.new(idmask.outputs[0],     seg.inputs[0])
 
 
-def _render_vace_sequence(cam_obj, scene, planner_shot: dict, out_dir: Path,
-                          sid_with_cam: str, num_frames: int) -> None:
+def _render_frame_sequence(cam_obj, scene, planner_shot: dict, out_dir: Path,
+                           sid_with_cam: str, num_frames: int,
+                           dir_prefix: str = "seq") -> Path:
     """Render N depth frames along the planner's eased trajectory.
 
-    Output: out_dir/vace_<sid>/depth_<sid>_<frame:04d>.png (one per frame)
-            + camera_track_<sid>.json. Uses camera_planner.plan_camera_track
-            — picks up composite movement + frame.movement_easing."""
-    sub_out = out_dir / f"vace_{sid_with_cam}"
+    Output: out_dir/<dir_prefix>_<sid>/depth_<sid>_<frame:04d>.png (one per
+            frame) + camera_track_<sid>.json. Uses plan_camera_track — picks
+            up composite movement + frame.movement_easing."""
+    sub_out = out_dir / f"{dir_prefix}_{sid_with_cam}"
     sub_out.mkdir(parents=True, exist_ok=True)
 
     _setup_depth_only_compositor(scene, sub_out, sid_with_cam, emit_flow=True)
@@ -868,7 +876,7 @@ def _render_vace_sequence(cam_obj, scene, planner_shot: dict, out_dir: Path,
                             frame["rotation_deg"],
                             frame["lens_mm"])
         scene.frame_set(i + 1)        # so OutputFile suffix increments
-        scene.render.filepath = str(sub_out / f"_vace_frame_{i+1:04d}")
+        scene.render.filepath = str(sub_out / f"_seq_frame_{i+1:04d}")
         bpy.ops.render.render(write_still=False)
 
     (sub_out / f"camera_track_{sid_with_cam}.json").write_text(
@@ -896,6 +904,7 @@ def _render_vace_sequence(cam_obj, scene, planner_shot: dict, out_dir: Path,
 
     scene.cycles.samples = saved_samples
     scene.frame_set(1)
+    return sub_out
 
 
 def _set_visible(parent_obj, visible: bool):
@@ -1076,7 +1085,7 @@ def _composition_for_panel(setup: dict, characters: list[str],
     explicit (x, y).
     """
     from pace_core.setup.composition_solver import target_xy
-    from pace_core.setup.marks import Mark, resolve_positions
+    from pace_core.setup.marks import resolve_positions
 
     subjects = setup.get("subjects") or []
     if not subjects:
@@ -1180,11 +1189,16 @@ def _kernel_passes(argv: list) -> None:
                         help="output directory for depth/normal/seg PNGs")
     parser.add_argument("--ids",    nargs="*",
                         help="render only these panel IDs; default: all visual panels")
-    parser.add_argument("--vace-frames", type=int, default=0,
-                        help="when >0, render an N-frame depth video sequence per panel")
+    parser.add_argument("--seq-frames", type=int, default=0,
+                        help="when >0, render an N-frame depth sequence per panel "
+                             "into <out>/seq_<sid>/")
+    # Deprecated spelling: same render, written to <out>/vace_<sid>/.
+    parser.add_argument("--vace-frames", type=int, default=0, help=argparse.SUPPRESS)
     parser.add_argument("--no-clean-depth", action="store_true",
                         help="skip the mannequin-hidden re-render")
     args = parser.parse_args(argv)
+    seq_frames = args.seq_frames or args.vace_frames
+    seq_prefix = "seq" if args.seq_frames else "vace"
 
     OUT = Path(args.out)
     OUT.mkdir(parents=True, exist_ok=True)
@@ -1203,7 +1217,7 @@ def _kernel_passes(argv: list) -> None:
                  if e["panel"].get("id") in args.ids or e["shot_id"] in args.ids]
 
     print(f"[blender_render] scene={scene_id}  panels={[e['panel'].get('id') for e in panels]}"
-          f"  vace_frames={args.vace_frames}")
+          f"  seq_frames={seq_frames}")
 
     scene = bpy.context.scene
     scene.render.resolution_x          = 1280
@@ -1296,20 +1310,21 @@ def _kernel_passes(argv: list) -> None:
             else:
                 print(f"[{pid}] cam={cam_id} → {OUT}/depth_{sid_cam}_0001.png")
 
-            # ── VACE depth sequence: N eased keyframes via plan_camera_track ──
-            if args.vace_frames > 0:
-                num_frames = args.vace_frames
+            # ── depth sequence: N eased keyframes via plan_camera_track ──
+            if seq_frames > 0:
+                num_frames = seq_frames
                 planner_shot_for_track = _synthesize_shot(entry, scene_id, narrative_meta)
                 label = (mv.get("kinds") or [mv.get("kind")]) if mv else ["static"]
                 ease  = (mv or {}).get("easing", "linear")
-                print(f"[{pid}] cam={cam_id} VACE: {num_frames} frames "
+                print(f"[{pid}] cam={cam_id} seq: {num_frames} frames "
                       f"({'+'.join(label)} easing={ease})")
-                _render_vace_sequence(cam_obj, scene, planner_shot_for_track,
-                                       OUT, sid_cam, num_frames)
-                cam_log["vace_frames"] = num_frames
-                cam_log["vace_dir"]    = str(OUT / f"vace_{sid_cam}")
-                cam_log["vace_easing"] = ease
-                cam_log["vace_kinds"]  = list(label)
+                seq_dir = _render_frame_sequence(cam_obj, scene, planner_shot_for_track,
+                                                 OUT, sid_cam, num_frames, seq_prefix)
+                # Keys follow the flag spelling so legacy readers keep working.
+                cam_log[f"{seq_prefix}_frames"] = num_frames
+                cam_log[f"{seq_prefix}_dir"]    = str(seq_dir)
+                cam_log[f"{seq_prefix}_easing"] = ease
+                cam_log[f"{seq_prefix}_kinds"]  = list(label)
             log_entry["cameras"].append(cam_log)
 
         # Backward-compat flat fields for single-cam consumers

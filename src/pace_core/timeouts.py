@@ -3,7 +3,7 @@
 Every job-bounding operation reads its budget from here, so an operator can
 extend any of them via an env var without touching code — e.g.
 
-    PAI_TIMEOUT_RECON_PIPELINE=2400  PAI_TIMEOUT_VACE=1800  pai-studio
+    PAI_TIMEOUT_RECON_PIPELINE=2400  PAI_TIMEOUT_VIDEO=1800  <host command>
 
 Defaults preserve the prior hardcoded values, so behaviour is unchanged unless
 an env var is set. Only the *job-bounding* timeouts live here (the ones that, if
@@ -26,8 +26,10 @@ def _t(var: str, default: int) -> int:
 RECON_PIPELINE = _t("PAI_TIMEOUT_RECON_PIPELINE", 1200)   # VGGT→Poisson on the box
 RECON_FETCH    = _t("PAI_TIMEOUT_RECON_FETCH",     520)   # fetch the raw mesh (45MB+)
 
-# ── VACE video render (playground_video) ───────────────────────────────────────
-VACE_WAIT      = _t("PAI_TIMEOUT_VACE",            1200)  # wait for ComfyUI to finish a render
+# ── video render ───────────────────────────────────────────────────────────────
+# PAI_TIMEOUT_VACE is the deprecated spelling of PAI_TIMEOUT_VIDEO.
+VIDEO_WAIT     = _t("PAI_TIMEOUT_VIDEO", _t("PAI_TIMEOUT_VACE", 1200))  # wait for ComfyUI to finish a render
+VACE_WAIT      = VIDEO_WAIT                                # deprecated alias
 COMFY_WAIT     = _t("PAI_TIMEOUT_COMFY_JOB",        600)  # poll a single ComfyUI prompt
 # Liveness probe before a queued job is handed to its worker. A single short
 # probe decided whether the job lived, so a worker busy with a large render

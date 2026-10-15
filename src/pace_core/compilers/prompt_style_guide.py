@@ -1,15 +1,14 @@
 """Per-model prompting conventions, in prose — single source of truth for
 anything that needs to explain "what makes a good prompt for this model"
-in natural language (currently: the Playground/Library's LLM-powered
-"✨ Enhance" prompt button, src/studio/routers/prompt_assist.py).
+in natural language (e.g. an LLM-powered prompt-enhance action in a host UI).
 
 This is deliberately NOT the same thing as compile_flux2.py / compile_
-nano_banana.py / compile_gpt_image_2.py / movement_io.py's Wan motion
+nano_banana.py / compile_gpt_image_2.py / movement_io.py's motion
 phrasing — those are deterministic compilers over STRUCTURED PACE scene/
 shot/panel data. This module distills the same underlying per-model
 knowledge (documented in those files' comments) into free-text guidance
 usable when there's no structured panel behind the prompt, e.g. a
-Playground node's hand-typed textarea.
+hand-typed prompt.
 """
 from __future__ import annotations
 
@@ -26,17 +25,6 @@ MODEL_PROMPT_GUIDES: dict[str, str] = {
         "well, so a few targeted exclusions beat a long redundant list. One or two "
         "clear sentences describing subject, action, setting, lighting, and camera "
         "framing outperform keyword-stuffing."
-    ),
-    "wan_vace": (
-        "Wan VACE is a video model — describe both the SCENE and the MOTION (subject, "
-        "action, camera movement) in fluent English motion language, e.g. 'slow camera "
-        "push-in', 'tracking shot following the subject', 'gentle handheld camera "
-        "shake', rather than abstract motion tokens. If a reference image or control "
-        "GLB is wired into this render, describe what's already shown there — VACE's "
-        "control_strength only trades structure-fidelity vs. reference-fidelity, it "
-        "never adds people or objects the reference doesn't already depict. Describe "
-        "ONE consistent scene held across the whole clip, not a sequence of different "
-        "scenes."
     ),
     "wan_animate": (
         "Wan2.2-Animate replaces the performer in a driving video with a reference "

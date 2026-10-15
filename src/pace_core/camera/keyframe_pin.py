@@ -1,6 +1,6 @@
 """Pinning one render as a panel's canonical keyframe.
 
-Everything downstream of a panel -- Wan I2V, VACE, the previs keyframe the 3D
+Everything downstream of a panel -- image-to-video, control passes, the previs keyframe the 3D
 control stage matches its GLB against -- is supposed to consume the render the
 operator chose, not whichever file is newest in the directory. Without a pin
 the fallback to "newest" is the only behaviour, which means a re-render

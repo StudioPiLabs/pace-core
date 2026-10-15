@@ -13,7 +13,7 @@ Two kinds of helpers:
     assembler still expects (SCINE English `shot_size` → Chinese label
     used in the Flux table; SCINE Movement2D/3D → planner Movement list).
 
-Writes go through studio_server's pillar-native PATCH endpoints, not
+Writes go through the host's pillar-native PATCH endpoints, not
 this module.
 """
 
@@ -27,7 +27,7 @@ from typing import Any, Iterator
 # ─────────────────  vocab translation tables  ─────────────────
 
 # SCINE Movement2D / Movement3D + gear + extrinsics.position  →  flat
-# Movement Literal vocab the planner / Wan-VACE compiler grew up with.
+# Movement Literal vocab the planner and motion-phrase compiler grew up with.
 _V10_MOVEMENT_REVERSE: dict[str, str] = {
     "push_in":   "push_in",
     "pull_out":  "pull_out",
