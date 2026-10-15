@@ -29,6 +29,7 @@ compiler) consumes the validated 24-token line.
 """
 
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import re
 from dataclasses import dataclass
@@ -304,8 +305,7 @@ def build_messages(narrative: str, *, kind: str = "camera") -> list[dict]:
 
 
 # ── LLM layer (thin; `call` is injectable for tests) ───────────────────
-DEFAULT_MODEL = "claude-sonnet-5-rb"  # in-house by default — keeps film IP off
-                                     # external services. Override per call.
+DEFAULT_MODEL = default_model("writer")  # $PACE_MODEL_WRITER; override per call.
 
 # An LLM call: takes a messages list, returns (text, cost_usd).
 LlmCall = Callable[[list[dict]], "tuple[str, float]"]

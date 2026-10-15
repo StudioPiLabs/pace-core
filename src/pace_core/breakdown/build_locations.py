@@ -26,11 +26,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+from pace_core.llm_client import default_model
 from pace_core.llm_client import strip_fences
 
 PIPELINE_DIR     = Path(__file__).resolve().parent
-from pace_core.paths import paths_for, MODELS_FILE, BOX  # noqa: E402
-BLENDER_BIN      = BOX.blender_bin    # default: $PATH lookup
+from pace_core import paths
+from pace_core.paths import paths_for  # noqa: E402
 
 # Import the schemas without loading bpy
 from pace_core.breakdown.primitives import PRIMITIVE_SCHEMAS  # noqa: E402
@@ -93,10 +94,10 @@ def _build_user_prompt(location_id: str, scenes_in_loc: list[dict]) -> str:
 def _llm_call(messages: list, model_key: str) -> tuple[str, float]:
     """Returns (raw_text, cost_usd). Uses llm_client.call_model which
     routes api-key resolution through llm_tokens.py (same path the rest
-    of the pipeline uses), so studio_server doesn't need env vars."""
+    of the pipeline uses), so a host server doesn't need env vars."""
     from pace_core.llm_client import call_model  # type: ignore
 
-    models = json.loads(MODELS_FILE.read_text())
+    models = json.loads(paths.MODELS_FILE.read_text())
     if model_key not in models:
         raise ValueError(f"unknown model '{model_key}'. options: {list(models)}")
     cfg = models[model_key]
@@ -178,7 +179,7 @@ def render_blend_from_spec(bible: dict, location_id: str, project: str) -> Path 
     spec_tmp.write_text(json.dumps(spec, ensure_ascii=False))
 
     cmd = [
-        BLENDER_BIN, "--background",
+        paths.BOX.blender_bin, "--background",
         "--python", str(PIPELINE_DIR / "primitives.py"),
         "--", str(spec_tmp), str(out_blend),
     ]
@@ -196,7 +197,7 @@ def render_blend_from_spec(bible: dict, location_id: str, project: str) -> Path 
 
 
 def run(*, project: str = "main",
-        model: str = "claude-sonnet-5-rb",
+        model: str = default_model("writer"),
         location: str | None = None,
         overwrite: bool = False,
         dry_run: bool = False) -> dict:
@@ -207,7 +208,7 @@ def run(*, project: str = "main",
     unless `overwrite=True`). `location="<id>"` ⇒ generate just that one
     (always regenerates).
 
-    Raises ValueError on bad input (translates to HTTP 400 in studio_server).
+    Raises ValueError on bad input (translates to HTTP 400 in a host server).
     """
     from pace_core.breakdown import scenes_kb
     scenes_data = scenes_kb.load_all_scenes(project=project)

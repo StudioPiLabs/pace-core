@@ -12,7 +12,7 @@ is an ordered list of named operations, each with a duration:
      {"skill":"tilt","degrees":28,"frames":13}]
 
 `compile_shot(skills, subject_track=...)` walks a camera state through the
-segments and emits the N-frame track that BlenderBox.render_depth / Wan VACE
+segments and emits the N-frame track that BlenderBox.render_depth / a video control pass
 consume (the `--track-json` shape). The camera always looks AT the subject;
 "relative" skills (orbit / track / push_in) read the subject's per-frame
 position, so they automatically track a MOVING subject (e.g. a driving car).
@@ -27,6 +27,7 @@ a natural-language shot description onto this list — sugar on top, not
 required.
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model, strip_fences
 
 import math
 from typing import Optional, Sequence
@@ -288,14 +289,11 @@ def _llm_classify(text: str, *, n_frames: int, model: str) -> list | dict:
     user = f"Clip length: {n_frames} frames (16 fps). Shot: {text.strip()}"
     out, _cost = call([{"role": "system", "content": system},
                        {"role": "user", "content": user}])
-    out = out.strip()
-    if out.startswith("```"):
-        out = out.split("```")[1].lstrip("json").strip()
-    return json.loads(out)
+    return json.loads(strip_fences(out))
 
 
 def nl_to_skills(text: str, *, n_frames: int = 81,
-                 model: str = "gpt-4o-mini-rb",
+                 model: str = default_model("classifier"),
                  dramatic_function: str | None = None) -> list[dict]:
     """Map a shot description to a skills list.
 
@@ -326,7 +324,7 @@ def nl_to_skills(text: str, *, n_frames: int = 81,
 
 
 def classify_dramatic_function(text: str, *, n_frames: int = 81,
-                               model: str = "gpt-4o-mini-rb") -> str | None:
+                               model: str = default_model("classifier")) -> str | None:
     """The classification half of `nl_to_skills`, without resolving into
     camera_skills' own vocabulary — for a caller (camera_movement_deriver)
     that writes a different field (movement_io's flat Movement tags) and

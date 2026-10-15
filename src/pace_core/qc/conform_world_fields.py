@@ -35,7 +35,7 @@ import sys
 from pathlib import Path
 
 from pace_core.pai_compat import resolve_shot
-from pace_core.paths import PAI_PROJECTS_ROOT
+from pace_core import paths
 
 WORLD_FIELDS = ("era", "region", "culture")
 
@@ -147,12 +147,12 @@ def main() -> int:
     ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
 
-    kb = (a.projects_root or PAI_PROJECTS_ROOT) / a.project / "kb"
-    paths = sorted((kb / "scenes").glob("scene_*.json"))
-    if not paths:
+    kb = (a.projects_root or paths.PAI_PROJECTS_ROOT) / a.project / "kb"
+    scene_files = sorted((kb / "scenes").glob("scene_*.json"))
+    if not scene_files:
         print(f"no scenes for {a.project!r}", file=sys.stderr)
         return 1
-    scenes = [json.loads(p.read_text()) for p in paths]
+    scenes = [json.loads(p.read_text()) for p in scene_files]
     stubs_file = kb / "location_stubs.json"
     doc = json.loads(stubs_file.read_text()) if stubs_file.is_file() else {}
     stubs = doc.get("stubs", doc)

@@ -562,7 +562,6 @@ def main(argv=None) -> int:
     s.add_argument("--out")
 
     a = ap.parse_args(argv)
-    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
 
     if a.cmd == "score":
         mus = [Mutation(**m) for m in json.loads(

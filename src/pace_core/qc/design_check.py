@@ -55,11 +55,9 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.pai_compat import resolve_prop_key, resolve_shot   # noqa: E402
-from pace_core.paths import PAI_PROJECTS_ROOT               # noqa: E402
+from pace_core import paths               # noqa: E402
 
 #: Rig behaviour. Describes how the camera is held, not where the frame goes,
 #: and so lives in `trajectory.gear` -- the distinction densify_panels.py
@@ -222,7 +220,7 @@ def main() -> int:
                     help="exit non-zero when anything is flagged")
     a = ap.parse_args()
 
-    kb = (a.projects_root or PAI_PROJECTS_ROOT) / a.project / "kb"
+    kb = (a.projects_root or paths.PAI_PROJECTS_ROOT) / a.project / "kb"
     scenes = sorted((kb / "scenes").glob("scene_*.json"))
     if not scenes:
         print(f"no scenes for {a.project!r}", file=sys.stderr)

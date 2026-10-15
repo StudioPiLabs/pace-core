@@ -22,6 +22,7 @@ give back exactly the incoherence the single call exists to avoid. If any
 panel is missing from the reply, nothing is saved.
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import json
 import shutil
@@ -30,7 +31,8 @@ from pathlib import Path
 
 from pace_core.compilers import prompt_meta
 from pace_core.compilers.prompt_projection import PROJECTION_VERSION, project_scene
-from pace_core.paths import MODELS_FILE, paths_for
+from pace_core import paths
+from pace_core.paths import paths_for
 
 #: What the writer stamps on every prompt it authors. The canvas uses
 #: "canvas:Compilation" in the same field, so provenance says which of the
@@ -39,9 +41,9 @@ AUTHORED_BY = "llm_writer"
 
 
 def load_model_cfg(model_key: str) -> dict:
-    registry = json.loads(MODELS_FILE.read_text())
+    registry = json.loads(paths.MODELS_FILE.read_text())
     if model_key not in registry:
-        raise ValueError(f"model {model_key!r} not in {MODELS_FILE}; "
+        raise ValueError(f"model {model_key!r} not in {paths.MODELS_FILE}; "
                          f"have {sorted(registry)}")
     return registry[model_key]
 
@@ -88,7 +90,7 @@ def _apply(scene: dict, written: dict[str, str], *, model_key: str,
     return scene
 
 
-def write_scene(project: str, scene_id: str, *, model_key: str = "claude-sonnet-5-rb",
+def write_scene(project: str, scene_id: str, *, model_key: str = default_model("writer"),
                 execute: bool = False, api_key: str | None = None) -> dict:
     """Write every panel prompt for one scene.
 

@@ -30,11 +30,8 @@ from __future__ import annotations
 
 import argparse
 import json
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.qc.design_check import _FRAME_MOVES, _GEAR_MOVES   # noqa: E402
 from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402

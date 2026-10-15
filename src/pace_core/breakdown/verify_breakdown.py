@@ -15,6 +15,7 @@ Usage:
         --script-ir script_ir.json --project <slug> --dry-run
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import argparse
 import json
@@ -23,7 +24,7 @@ import sys
 import time
 
 # A different vendor from the Script IR generator; see the module docstring.
-ESTIMATOR_DEFAULT = "gpt-5.6-terra-rb"
+ESTIMATOR_DEFAULT = default_model("estimator")
 
 # Coverage credit for an event the breakdown states only in general terms.
 # A starting value, not a measured one; the paper reports it as such.

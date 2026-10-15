@@ -23,6 +23,7 @@ score stays on [0,1] and a corpus missing one feature does not silently become
 unable to reach the split threshold.
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import json
 from dataclasses import dataclass, field
@@ -235,17 +236,16 @@ def apply_adjudication(boundaries: list[Boundary], decisions: list[dict]) -> Non
 
 
 def main(argv=None) -> int:
-    import argparse, pathlib, sys
+    import argparse, pathlib
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--script-ir", required=True)
     ap.add_argument("--out")
-    ap.add_argument("--model", default="claude-sonnet-5-rb")
+    ap.add_argument("--model", default=default_model("writer"))
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--dry-run", action="store_true")
     g.add_argument("--execute", action="store_true")
     a = ap.parse_args(argv)
 
-    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
     from pace_core.breakdown.extract_script_ir import load_model, estimate_tokens
     from pace_core.breakdown.world_state import build as build_timeline
     import re

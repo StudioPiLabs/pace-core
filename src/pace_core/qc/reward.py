@@ -27,8 +27,8 @@ because a scalar that hides which half moved is not debuggable.
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
-from typing import Iterable, Optional, Sequence
+from dataclasses import dataclass
+from typing import Iterable, Optional
 
 # Clauses that were observed to vary across graded perturbations of real
 # declarations. Only these carry gradient; the rest are constants or are never

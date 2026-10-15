@@ -21,6 +21,7 @@ already measured:
 What the model does decide is blocking and framing, which need judgement.
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import argparse
 import json
@@ -29,7 +30,7 @@ import sys
 
 from pace_core.types_v1 import SCHEMA_VERSION
 
-GENERATOR_DEFAULT = "claude-opus-5-rb"
+GENERATOR_DEFAULT = default_model("generator")
 
 # A beat names entities in the screenplay's words ("the panels"); the registry
 # names props by id. The project supplies the map (--prop-map), kept apart by
@@ -267,7 +268,6 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     pm = json.loads(pathlib.Path(a.prop_map).read_text()) if a.prop_map else {}
 
-    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[3] / "src"))
     from pace_core.paths import paths_for
     from pace_core.breakdown.extract_script_ir import load_model, estimate_tokens
 

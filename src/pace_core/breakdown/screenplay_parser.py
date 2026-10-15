@@ -28,7 +28,7 @@ and context rather than by column:
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, asdict, field
+from dataclasses import dataclass, asdict
 from typing import Iterator
 
 SCENE_RE = re.compile(r"^(INT\.?/EXT\.?|EXT\.?/INT\.?|INT\.?|EXT\.?|EST\.?)[\s.]", re.I)
