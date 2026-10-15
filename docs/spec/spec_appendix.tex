@@ -664,7 +664,7 @@ The table below is generated from the schema source: 44 sub-schemas, 276 fields.
 \texttt{act} & text, optional & which act of the film: "I" /\allowbreak{} "II" /\allowbreak{} "III" or "prologue" /\allowbreak{} "epilogue" \\
 \texttt{narrative\_\allowbreak meta} & NarrativeMeta & roster + beats + dialogue ledger (outside pillars) \\
 \texttt{shot\_\allowbreak defaults} & ShotDefaults, optional & PACE ---\allowbreak{} scene-wide shared fields. Every shot deep-merges these as its baseline before reading its own (sparse) overrides. None means the scene has no defaults; every shot is fully self-describing. \\
-\texttt{physical\_\allowbreak layout} & PhysicalLayout, optional & PACE prototype ---\allowbreak{} optional scene-wide world coordinates. When set, per-subject screen\_\allowbreak position can be derived from camera + world\_\allowbreak xy instead of authored per shot. See pipeline/\allowbreak{}derive\_\allowbreak screen\_\allowbreak position.py. \\
+\texttt{physical\_\allowbreak layout} & PhysicalLayout, optional & PACE prototype ---\allowbreak{} optional scene-wide world coordinates. When set, per-subject screen\_\allowbreak position can be derived from camera + world\_\allowbreak xy instead of authored per shot (see setup.composition\_\allowbreak solver). \\
 \texttt{shots} & list of Shot & ordered list of shots in this scene \\
 \texttt{compile\_\allowbreak hints} & list of CompileHints & per-panel sidecar hints (one entry per panel that needs hints) \\
 \texttt{semantics} & Semantics, optional & PACE pace-0.2 blocks. Optional so pai-1.0/\allowbreak{}1.1 documents load unchanged. \\
