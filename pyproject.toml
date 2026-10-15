@@ -27,7 +27,7 @@ dependencies = [
     # a criterion cannot be changed in one place and stay put in the other.
     # A git direct reference: this package cannot be published to PyPI until
     # pace-scene-skills is, and consumers must allow direct references too.
-    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@v0.2.2",
+    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@0.2.2",
 ]
 
 [project.optional-dependencies]
