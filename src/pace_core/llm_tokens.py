@@ -30,7 +30,7 @@ TOKENS_FILE = Path(os.environ.get(
 
 # Provider catalogue. `env_fallback` is the shell var consulted if no
 # token is stored. `test_model` is a cheap model used by the /api/llm/test
-# round-trip; `client` matches llm_client.py's dispatch.
+# round-trip; `client` is the llm_client provider it is called through.
 PROVIDERS: dict[str, dict] = {
     "anthropic": {
         "env_fallback": "ANTHROPIC_API_KEY",
@@ -193,14 +193,11 @@ def test_provider(provider: str, *, prompt: str = "Reply with the single word: p
         "cost_per_1k_out":  cfg["test_cost_per_1k_out"],
     }
     messages = [{"role": "user", "content": prompt}]
-    from pace_core.llm_client import _call_anthropic, _call_openai_compatible  # noqa: E402
+    from pace_core.llm_client import call_model  # noqa: E402
 
     t0 = time.time()
     try:
-        if cfg["client"] == "anthropic":
-            text, cost = _call_anthropic(model_cfg, messages, api_key)
-        else:
-            text, cost = _call_openai_compatible(model_cfg, messages, api_key)
+        text, cost = call_model(model_cfg, messages, api_key)
         return {
             "ok":         True,
             "model":      cfg["test_model"],

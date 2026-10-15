@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pace-core"
-version = "0.6.0"
+version = "0.7.0"
 description = "PACE: typed storyboard specification, script breakdown, solved camera geometry and self-auditing checks."
 readme = "README.md"
 # The Blender kernels run in Blender 4.2's bundled Python 3.11.
@@ -19,6 +19,9 @@ authors = [{name = "Studio Π"}]
 dependencies = [
     "numpy>=1.26",
     "Pillow>=10.0",
+    # Every LLM call (llm_client): one interface over Anthropic, OpenAI-compatible
+    # gateways, local servers and the providers LiteLLM adds.
+    "litellm>=1.103.1,<2",
     # The breakdown's decomposition criteria. They are skills, not constants:
     # the same SKILL.md an agent follows is the prompt these modules send, so
     # a criterion cannot be changed in one place and stay put in the other.
