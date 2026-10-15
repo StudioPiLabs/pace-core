@@ -1,22 +1,28 @@
-"""Thin LLM client used by every build_*.py phase.
+"""LLM client used by every breakdown phase: one call, any provider.
 
-Exposes two dispatch functions matching the model registry shape in
-assets/models.json (`paths.MODELS_FILE`):
+Requests go through LiteLLM (https://github.com/BerriAI/litellm), so a model
+registry entry (assets/models.json, `paths.MODELS_FILE`) can name any provider
+LiteLLM supports. Three registry shapes are understood:
 
-  _call_anthropic(model_cfg, messages, api_key) → (text, cost)
-  _call_openai_compatible(model_cfg, messages, api_key) → (text, cost)
+  provider "anthropic"           Anthropic Messages API
+  provider "openai" / "local"    any OpenAI-compatible endpoint (OpenAI,
+                                 RouterBase, vLLM, a local Qwen server)
+  provider "codex"               the ChatGPT subscription the Codex CLI is
+                                 signed in with (pace_core.codex_auth)
 
-Plus a uniform helper that picks the right one based on `model_cfg["provider"]`:
+and any other entry may set `litellm_model` (e.g. "gemini/gemini-2.5-pro")
+to be passed to LiteLLM as given. Every caller uses
 
-  call_model(model_cfg, messages, api_key=None) → (text, cost)
+  call_model(model_cfg, messages, api_key=None) -> (text, cost_usd)
 
-This file replaces the dispatch helpers that used to live in agents.py
-(now removed along with the review framework).
+with OpenAI-style messages. Cost is priced from the registry's cost_per_1k_*,
+not LiteLLM's price list, so a registry entry stays the one source of truth.
 """
 
 import json
 import os
 import re
+import urllib.error
 import urllib.request
 from typing import Optional
 
@@ -87,28 +93,18 @@ def _timeout_error(model_cfg: dict, seconds) -> RuntimeError:
 
 
 def _resolve_api_key(provider: str, model_cfg: dict) -> Optional[str]:
-    """Consult llm_tokens.py for a stored key; fall back to model_cfg's
-    api_key_env. Importing here is lazy so this module stays usable
-    when llm_tokens hasn't been initialized."""
+    """A stored key from llm_tokens (RouterBase is recognised by its
+    api_key_env hint), else the registry's api_key_env variable."""
     try:
         from pace_core import llm_tokens
-        # Map model_cfg provider → tokens.PROVIDERS key. Most names match.
-        # For routerbase: model_cfg says provider="openai" but model_cfg may
-        # carry an explicit api_key_env=ROUTERBASE_API_KEY hint.
-        cand = provider
-        env = model_cfg.get("api_key_env", "")
-        if env == "ROUTERBASE_API_KEY":
-            cand = "routerbase"
-        key = llm_tokens.get(cand)
+        name = "routerbase" if model_cfg.get("api_key_env") == "ROUTERBASE_API_KEY" else provider
+        key = llm_tokens.get(name)
         if key:
             return key
     except ImportError:
         pass
-    # Last resort: direct env-var read (legacy path).
     env = model_cfg.get("api_key_env")
-    if env:
-        return os.environ.get(env)
-    return None
+    return os.environ.get(env) if env else None
 
 
 def _estimate_cost(model_cfg: dict, usage: dict) -> float:
@@ -118,233 +114,199 @@ def _estimate_cost(model_cfg: dict, usage: dict) -> float:
             out_k * model_cfg.get("cost_per_1k_out", 0.0))
 
 
-def _read_sse(resp) -> dict:
-    """Collect a streamed chat completion into the shape a whole one has.
+# ── ChatGPT subscription (Codex) ─────────────────────────────────────
 
-    Callers downstream want one object with choices[0].message.content and a
-    usage block, so the difference between streamed and not stays inside this
-    module rather than spreading into every phase that makes a model call.
-    """
-    parts: list[str] = []
-    usage: dict = {}
-    for raw in resp:
-        line = raw.decode("utf-8", errors="replace").strip()
-        if not line.startswith("data:"):
-            continue
-        data = line[5:].strip()
-        if data == "[DONE]":
-            break
-        try:
-            chunk = json.loads(data)
-        except json.JSONDecodeError:
-            continue                       # keep-alive or comment frame
-        if chunk.get("usage"):
-            usage = chunk["usage"]
-        for ch in chunk.get("choices") or []:
-            piece = (ch.get("delta") or {}).get("content")
-            if piece:
-                parts.append(piece)
-    return {"choices": [{"message": {"content": "".join(parts)}}], "usage": usage}
-
-
-def _call_openai_compatible(model_cfg: dict, messages: list, api_key: str) -> tuple[str, float]:
-    """OpenAI-compatible chat completions. Used for OpenAI proper, vLLM, local Qwen, etc.
-
-    If model_cfg includes a "response_format" key (e.g.
-    {"type":"json_object"} for OpenAI JSON mode), it's forwarded
-    verbatim into the request body. Callers can force JSON-only output
-    without prose / markdown wrappers — useful for structured pipelines
-    like the SCINE enrichment that expect strict JSON."""
-    payload = {
-        "model":    model_cfg["model_name"],
-        "messages": messages,
-    }
-    # Temperature 0 is what this pipeline wants: a breakdown that changes
-    # between runs of the same script is not a measurement. But some models
-    # refuse the parameter outright -- the GPT-5.6 family returns
-    # "does not support 0 with this model, only the default (1)" -- and a
-    # hardcoded 0.0 made every call to them a 400. A model may set
-    # "temperature": null in the registry to have it omitted; anything else is
-    # sent as given, defaulting to 0.
-    if "temperature" in model_cfg:
-        if model_cfg["temperature"] is not None:
-            payload["temperature"] = model_cfg["temperature"]
-    else:
-        payload["temperature"] = 0.0
-    if "response_format" in model_cfg:
-        payload["response_format"] = model_cfg["response_format"]
-    # Stream unless a model opts out.
-    #
-    # This does NOT solve the 524 that long calls hit, and it was added
-    # believing it would. Measured against this gateway, a 30s generation
-    # delivered its first SSE frame at 28.1s: the frames are produced but
-    # buffered, so the connection is idle for the whole generation and
-    # Cloudflare's ~100s limit still applies. The remedy for a long call is to
-    # make it a shorter one -- see the chunking in split_script.
-    #
-    # It stays on because it is free, it returns the same text and usage, and
-    # it starts working the day the gateway stops buffering.
-    stream = bool(model_cfg.get("stream", True))
-    if stream:
-        payload["stream"] = True
-        # `stream_options` is OpenAI's way of asking for usage on a streamed
-        # response, and it is not sent by default because the gateway this
-        # pipeline actually uses rejects it -- "only allowed when 'stream' is
-        # enabled", even with stream true -- and returns usage without being
-        # asked. A provider that needs it can put it in the registry.
-        if model_cfg.get("stream_options"):
-            payload["stream_options"] = model_cfg["stream_options"]
-    req = urllib.request.Request(
-        model_cfg["endpoint"],
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type":  "application/json",
-            "Authorization": f"Bearer {api_key}",
-            "User-Agent":    _USER_AGENT,
-        },
-    )
-    _t = _timeout_for(model_cfg)
-    try:
-        with urllib.request.urlopen(req, timeout=_t) as resp:
-            body = (_read_sse(resp) if stream else json.loads(resp.read()))
-    except TimeoutError as e:
-        raise _timeout_error(model_cfg, _t) from e
-    except urllib.error.HTTPError as e:
-        raw = e.read().decode("utf-8", errors="replace")
-        if e.code == 524:
-            raise RuntimeError(
-                f"HTTP 524 from {model_cfg.get('endpoint')}: Cloudflare gave up "
-                f"waiting for the model. It fires at roughly 100s, it is the "
-                f"gateway's limit and not ours, and streaming does NOT avoid it "
-                f"here -- this gateway buffers, so the first SSE frame of a 30s "
-                f"generation measured at 28.1s and the connection is idle until "
-                f"then. The fix is a smaller request: send less per call. "
-                f"Script splitting chunks for this reason (PAI_SPLIT_CHUNK_CHARS).")
-        # Retry once, dropping whichever parameter the server named, instead
-        # of failing a paid run over one field. Two are known to be refused by
-        # some models: stream_options (usage reporting) and temperature.
-        drop = None
-        if stream and e.code in (400, 422) and "stream_options" in raw:
-            drop = "stream_options"
-        elif e.code in (400, 422) and "temperature" in raw:
-            drop = "temperature"
-        if drop:
-            payload.pop(drop, None)
-            req2 = urllib.request.Request(
-                model_cfg["endpoint"], data=json.dumps(payload).encode("utf-8"),
-                headers=dict(req.headers))
-            with urllib.request.urlopen(req2, timeout=_t) as resp:
-                body = _read_sse(resp)
-        else:
-            raise RuntimeError(f"HTTP {e.code} {e.reason}: {raw}")
-    except urllib.error.URLError as e:
-        # A read timeout arrives as TimeoutError and is caught above; a
-        # CONNECT timeout arrives wrapped in URLError, and would otherwise
-        # print as "URL error: timed out" with no hint of the cause.
-        if isinstance(e.reason, TimeoutError):
-            raise _timeout_error(model_cfg, _t) from e
-        raise RuntimeError(f"URL error: {e.reason}")
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"JSON decode error: {e.msg}")
-    except Exception as e:
-        raise RuntimeError(f"Unexpected error: {str(e)}")
-    text  = body["choices"][0]["message"]["content"]
-    usage = body.get("usage", {})
-    cost  = _estimate_cost(model_cfg, usage)
-    return text, cost
-
-
-def _call_anthropic(model_cfg: dict, messages: list, api_key: str) -> tuple[str, float]:
-    """Anthropic /v1/messages. Splits system from user/assistant; converts content blocks."""
-    sys_msgs = [m for m in messages if m["role"] == "system"]
-    usr_msgs = [m for m in messages if m["role"] != "system"]
-    payload = {
-        "model":      model_cfg["model_name"],
-        "max_tokens": model_cfg.get("max_tokens", 1024),
-        "system":     "\n\n".join(m["content"] if isinstance(m["content"], str)
-                                  else "" for m in sys_msgs),
-        "messages":   _convert_messages_to_anthropic(usr_msgs),
-    }
-    req = urllib.request.Request(
-        model_cfg["endpoint"],
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type":      "application/json",
-            "x-api-key":         api_key,
-            "anthropic-version": "2023-06-01",
-            "User-Agent":        _USER_AGENT,
-        },
-    )
-    _t = _timeout_for(model_cfg)
-    try:
-        with urllib.request.urlopen(req, timeout=_t) as resp:
-            body = json.loads(resp.read())
-    except TimeoutError as e:
-        raise _timeout_error(model_cfg, _t) from e
-    text  = body["content"][0]["text"]
-    usage = body.get("usage", {})
-    cost  = _estimate_cost(model_cfg, {
-        "prompt_tokens":     usage.get("input_tokens", 0),
-        "completion_tokens": usage.get("output_tokens", 0),
-    })
-    return text, cost
-
-
-def _convert_messages_to_anthropic(msgs: list) -> list:
-    """Convert OpenAI-style content arrays to Anthropic content blocks (image_url → image)."""
-    out = []
-    for m in msgs:
+def _responses_input(messages: list) -> tuple[str, list]:
+    """OpenAI chat messages -> (instructions, Responses API input items)."""
+    instructions, items = [], []
+    for m in messages:
         content = m["content"]
-        if isinstance(content, str):
-            out.append({"role": m["role"], "content": content})
+        if m["role"] == "system":
+            instructions.append(content if isinstance(content, str) else
+                                "\n".join(c.get("text", "") for c in content if c.get("type") == "text"))
             continue
-        blocks = []
-        for c in content:
-            if c["type"] == "text":
-                blocks.append({"type": "text", "text": c["text"]})
-            elif c["type"] == "image_url":
-                url = c["image_url"]["url"]
-                if url.startswith("data:"):
-                    mime, b64 = url.split(",", 1)
-                    media_type = mime.split(";")[0].split(":")[1]
-                    blocks.append({
-                        "type": "image",
-                        "source": {"type": "base64", "media_type": media_type, "data": b64}
-                    })
-        out.append({"role": m["role"], "content": blocks})
-    return out
+        kind = "output_text" if m["role"] == "assistant" else "input_text"
+        blocks = ([{"type": kind, "text": content}] if isinstance(content, str) else
+                  [{"type": kind, "text": c["text"]} if c["type"] == "text" else
+                   {"type": "input_image", "image_url": c["image_url"]["url"]} for c in content])
+        items.append({"type": "message", "role": m["role"], "content": blocks})
+    return "\n\n".join(instructions), items
+
+
+def _call_codex(model: str, messages: list, options: dict, timeout) -> tuple[str, dict]:
+    """One Responses call on the subscription backend; returns (text, OpenAI-style usage).
+
+    The backend only streams (store=false, stream=true are required), so the
+    SSE is read to `response.completed` here and handed back whole.
+    """
+    from pace_core import codex_auth
+    instructions, items = _responses_input(messages)
+    payload = {"model": model, "instructions": instructions or "Follow the user's request exactly.",
+               "input": items, "store": False, "stream": True}
+    if options.get("reasoning_effort"):
+        payload["reasoning"] = {"effort": options["reasoning_effort"]}
+    request = urllib.request.Request(f"{codex_auth.API_BASE}/responses", data=json.dumps(payload).encode(),
+                                     headers=codex_auth.headers(stream=True))
+    parts, usage = [], {}
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            for raw in response:
+                line = raw.decode("utf-8", errors="replace").strip()
+                if not line.startswith("data:"):
+                    continue
+                try:
+                    event = json.loads(line[5:])
+                except json.JSONDecodeError:
+                    continue
+                kind = event.get("type")
+                if kind == "response.output_text.delta":
+                    parts.append(event.get("delta", ""))
+                elif kind == "response.completed":
+                    usage = event["response"].get("usage") or {}
+                    break
+                elif kind in ("response.failed", "error"):
+                    error = event.get("error") or (event.get("response") or {}).get("error") or event
+                    raise RuntimeError(f"Codex backend error: {error}")
+    except urllib.error.HTTPError as e:
+        raise RuntimeError(f"Codex backend HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:400]}") from None
+    return "".join(parts), {"prompt_tokens": usage.get("input_tokens", 0),
+                            "completion_tokens": usage.get("output_tokens", 0)}
+
+
+_litellm_module = None
+
+
+def _litellm():
+    """LiteLLM, imported on first use with the `codex` provider registered.
+
+    Lazy so that importing this module (for default_model) stays cheap and
+    works where LiteLLM is not installed, e.g. inside Blender.
+    """
+    global _litellm_module
+    if _litellm_module is None:
+        os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")  # no price-list fetch at import
+        import litellm
+        from litellm import CustomLLM, ModelResponse, Usage
+
+        class CodexSubscription(CustomLLM):
+            def completion(self, model, messages, api_base, custom_prompt_dict, model_response: ModelResponse,
+                           print_verbose, encoding, api_key, logging_obj, optional_params, acompletion=None,
+                           litellm_params=None, logger_fn=None, headers={}, timeout=None, client=None):
+                options = ((litellm_params or {}).get("metadata") or {}).get("codex") or {}
+                text, usage = _call_codex(model, messages, options, timeout)
+                model_response.choices[0].message.content = text
+                model_response.model = model
+                model_response.usage = Usage(prompt_tokens=usage["prompt_tokens"],
+                                             completion_tokens=usage["completion_tokens"],
+                                             total_tokens=usage["prompt_tokens"] + usage["completion_tokens"])
+                return model_response
+
+        litellm.custom_provider_map = [item for item in litellm.custom_provider_map if item["provider"] != "codex"]
+        litellm.custom_provider_map.append({"provider": "codex", "custom_handler": CodexSubscription()})
+        litellm.suppress_debug_info = True
+        _litellm_module = litellm
+    return _litellm_module
+
+
+# ── dispatch ──────────────────────────────────────────────────────────
+
+def _api_base(endpoint: str | None, suffix: str) -> str | None:
+    return endpoint[: -len(suffix)] if endpoint and endpoint.endswith(suffix) else endpoint
+
+
+def _request(model_cfg: dict, messages: list, api_key: Optional[str]) -> dict:
+    """LiteLLM completion() arguments for a registry entry."""
+    provider = model_cfg["provider"]
+    name = model_cfg.get("model_name")
+    kwargs: dict = {"messages": messages, "num_retries": 0}  # retries live a layer up, per scene
+    timeout = _timeout_for(model_cfg)
+    if timeout:
+        kwargs["timeout"] = timeout
+    if provider == "codex":
+        # No JSON mode: the backend demands the word "json" in the input, not the
+        # instructions, and every caller strips fences and parses anyway.
+        options = {k: model_cfg[k] for k in ("reasoning_effort",) if model_cfg.get(k)}
+        return {**kwargs, "model": f"codex/{name or 'gpt-6.1-sol'}", "metadata": {"codex": options}}
+    if model_cfg.get("litellm_model"):
+        kwargs["model"] = model_cfg["litellm_model"]
+    elif provider == "anthropic":
+        kwargs["model"] = f"anthropic/{name}"
+        kwargs["api_base"] = _api_base(model_cfg.get("endpoint"), "/v1/messages")
+    elif provider in ("openai", "local"):
+        kwargs["model"] = f"openai/{name}"
+        kwargs["api_base"] = _api_base(model_cfg.get("endpoint"), "/chat/completions")
+        kwargs["extra_headers"] = {"User-Agent": _USER_AGENT}
+    else:
+        raise ValueError(f"provider '{provider}' not supported; set litellm_model on the registry entry")
+    if api_key:
+        kwargs["api_key"] = api_key
+    if "max_tokens" in model_cfg:
+        kwargs["max_tokens"] = model_cfg["max_tokens"]
+    elif provider == "anthropic":
+        kwargs["max_tokens"] = 1024  # the Messages API requires one
+    # Temperature 0 by default: a breakdown that changes between runs of the
+    # same script is not a measurement. A model that refuses the parameter sets
+    # "temperature": null in the registry to have it omitted.
+    temperature = model_cfg.get("temperature", 0.0)
+    if temperature is not None:
+        kwargs["temperature"] = temperature
+    if "response_format" in model_cfg:
+        kwargs["response_format"] = model_cfg["response_format"]
+    # Streaming does not avoid Cloudflare's ~100 s 524 on a buffering gateway
+    # (first frame of a 30 s generation measured at 28.1 s); shorter calls do,
+    # see split_script's chunking. It stays on because it costs nothing.
+    if model_cfg.get("stream", True):
+        kwargs["stream"] = True
+    return kwargs
+
+
+def _complete(litellm, kwargs: dict):
+    response = litellm.completion(**kwargs)
+    if kwargs.get("stream"):
+        response = litellm.stream_chunk_builder(list(response), messages=kwargs["messages"])
+    return response
 
 
 def call_model(model_cfg: dict, messages: list,
                api_key: Optional[str] = None) -> tuple[str, float]:
-    """Single entry-point that picks the right dispatcher per provider.
+    """Complete `messages` with the registry entry `model_cfg`; returns (text, cost_usd).
 
-    For local providers the api_key may be omitted (defaults to "EMPTY").
-    For anthropic / openai, if api_key is None we look up
-    `os.environ[model_cfg["api_key_env"]]` and SystemExit if absent.
+    Keys: `api_key`, else llm_tokens / the entry's api_key_env (MissingAPIKey
+    when neither has one). Local endpoints need none and Codex uses its login.
     """
     provider = model_cfg["provider"]
     if provider == "local":
-        return _call_openai_compatible(model_cfg, messages, api_key or "EMPTY")
-    if api_key is None:
-        # Look up via llm_tokens.py (consults host-managed store +
-        # env-var fallback in one place). model_cfg["api_key_env"] is the
-        # legacy hint we map to a provider name.
+        api_key = api_key or "EMPTY"
+    elif provider != "codex" and not model_cfg.get("litellm_model") and api_key is None:
         api_key = _resolve_api_key(provider, model_cfg)
         if not api_key:
-            # Catchable (NOT SystemExit) so HTTP handlers return a clean error
-            # instead of dying with an empty body, and CLIs can pretty-print it.
             from pace_core import llm_tokens
-            env = model_cfg.get("api_key_env", "?")
             raise llm_tokens.MissingAPIKey(
-                f"no API key for provider={provider}. Set it in the studio "
-                f"LLM Tokens tab (POST /api/llm/token) or export {env}."
-            )
-    if provider == "anthropic":
-        return _call_anthropic(model_cfg, messages, api_key)
-    if provider == "openai":
-        return _call_openai_compatible(model_cfg, messages, api_key)
-    raise ValueError(f"provider '{provider}' not supported")
+                f"no API key for provider={provider}. Set it in the studio LLM Tokens tab "
+                f"(POST /api/llm/token) or export {model_cfg.get('api_key_env', '?')}.")
+    litellm = _litellm()
+    kwargs = _request(model_cfg, messages, api_key)
+    try:
+        try:
+            response = _complete(litellm, kwargs)
+        except litellm.BadRequestError as e:
+            # Some models refuse temperature (GPT-5.6: "only the default (1)").
+            if "temperature" not in kwargs or "temperature" not in str(e):
+                raise
+            kwargs.pop("temperature")
+            response = _complete(litellm, kwargs)
+    except litellm.Timeout as e:
+        raise _timeout_error(model_cfg, kwargs.get("timeout")) from e
+    except litellm.APIError as e:
+        if getattr(e, "status_code", None) == 524:
+            raise RuntimeError(
+                f"HTTP 524 from {model_cfg.get('endpoint')}: Cloudflare gave up waiting for the "
+                f"model (~100 s gateway limit; streaming does not avoid it). Send less per call; "
+                f"script splitting chunks for this reason (PAI_SPLIT_CHUNK_CHARS).") from e
+        raise RuntimeError(f"{type(e).__name__}: {e}") from e
+    text = response.choices[0].message.content or ""
+    usage = response.usage.model_dump() if getattr(response, "usage", None) else {}
+    return text, _estimate_cost(model_cfg, usage)
 
 
 def strip_fences(raw: str) -> str:

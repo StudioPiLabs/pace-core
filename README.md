@@ -54,6 +54,8 @@ host application, which registers their directory with
 
 LLM provider keys are read from the environment, for example `ANTHROPIC_API_KEY`, or from `~/.config/pai/llm_tokens.json`. A host application can call `pace_core.paths.configure(...)` instead of setting variables.
 
+Model calls go through [LiteLLM](https://github.com/BerriAI/litellm). A registry entry uses provider `anthropic`, `openai` (any OpenAI-compatible endpoint), `local`, or `codex`, or sets `litellm_model` to any LiteLLM model string (for example `gemini/gemini-2.5-pro`). Provider `codex` calls the ChatGPT subscription that the Codex CLI is signed in with: `pace_core.codex_auth` reads `$CODEX_HOME/auth.json` (default `~/.codex`) and refreshes the token under a file lock when it nears expiry. Run `codex login` once; no API key is needed.
+
 ## Tests
 
 ```
