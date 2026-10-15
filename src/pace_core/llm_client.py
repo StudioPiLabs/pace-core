@@ -6,6 +6,8 @@ assets/models.json (`paths.MODELS_FILE`):
   _call_anthropic(model_cfg, messages, api_key) → (text, cost)
   _call_openai_compatible(model_cfg, messages, api_key) → (text, cost)
 
+  _call_codex_cli(model_cfg, messages) → (text, 0.0)   provider "codex_cli"
+
 Plus a uniform helper that picks the right one based on `model_cfg["provider"]`:
 
   call_model(model_cfg, messages, api_key=None) → (text, cost)
@@ -17,7 +19,10 @@ This file replaces the dispatch helpers that used to live in agents.py
 import json
 import os
 import re
+import subprocess
+import tempfile
 import urllib.request
+from pathlib import Path
 from typing import Optional
 
 # RouterBase (routerbase.com) is Cloudflare-fronted — the default urllib UA gets
@@ -315,6 +320,49 @@ def _convert_messages_to_anthropic(msgs: list) -> list:
     return out
 
 
+_CODEX_PREAMBLE = ("You are used as a plain text-completion model. Do not run commands, read or edit "
+                   "files, or browse. Answer the conversation below with only the final reply.")
+
+
+def _call_codex_cli(model_cfg: dict, messages: list) -> tuple[str, float]:
+    """Complete through the Codex CLI on its signed-in (subscription) account.
+
+    `codex exec` runs in a throwaway empty directory with a read-only, ephemeral
+    sandbox; the conversation goes in on stdin and the final message comes back
+    via --output-last-message. Text content only. Cost is reported as 0.0: the
+    subscription, not a per-token key, pays for it.
+    """
+    parts = [_CODEX_PREAMBLE]
+    for message in messages:
+        content = message.get("content")
+        if isinstance(content, list):
+            if any(block.get("type") != "text" for block in content):
+                raise ValueError("codex_cli provider accepts text content only")
+            content = "\n".join(block.get("text", "") for block in content)
+        parts.append(f"[{message.get('role', 'user').upper()}]\n{content}")
+    binary = model_cfg.get("binary") or os.environ.get("PACE_CODEX_BIN", "codex")
+    with tempfile.TemporaryDirectory(prefix="pace-codex-") as workdir:
+        out = Path(workdir) / "reply.txt"
+        cmd = [binary, "exec", "--skip-git-repo-check", "--ephemeral", "-s", "read-only",
+               "--color", "never", "-C", workdir, "-o", str(out)]
+        if model_cfg.get("model_name"):
+            cmd += ["-m", model_cfg["model_name"]]
+        if model_cfg.get("reasoning_effort"):
+            cmd += ["-c", f"model_reasoning_effort={model_cfg['reasoning_effort']}"]
+        timeout = _timeout_for(model_cfg)
+        try:
+            run = subprocess.run([*cmd, "-"], input="\n\n".join(parts), capture_output=True,
+                                 text=True, timeout=timeout, cwd=workdir)
+        except subprocess.TimeoutExpired:
+            raise _timeout_error(model_cfg, timeout) from None
+        except FileNotFoundError:
+            raise RuntimeError(f"Codex CLI not found ({binary}); install it and run `codex login`") from None
+        if run.returncode != 0 or not out.exists():
+            detail = (run.stderr or run.stdout or "").strip()[-600:]
+            raise RuntimeError(f"codex exec failed (exit {run.returncode}): {detail}")
+        return out.read_text(), 0.0
+
+
 def call_model(model_cfg: dict, messages: list,
                api_key: Optional[str] = None) -> tuple[str, float]:
     """Single entry-point that picks the right dispatcher per provider.
@@ -324,6 +372,8 @@ def call_model(model_cfg: dict, messages: list,
     `os.environ[model_cfg["api_key_env"]]` and SystemExit if absent.
     """
     provider = model_cfg["provider"]
+    if provider == "codex_cli":  # signed-in CLI account; no API key
+        return _call_codex_cli(model_cfg, messages)
     if provider == "local":
         return _call_openai_compatible(model_cfg, messages, api_key or "EMPTY")
     if api_key is None:

@@ -54,6 +54,8 @@ host application, which registers their directory with
 
 LLM provider keys are read from the environment, for example `ANTHROPIC_API_KEY`, or from `~/.config/pai/llm_tokens.json`. A host application can call `pace_core.paths.configure(...)` instead of setting variables.
 
+A model registry entry with `"provider": "codex_cli"` needs no API key: calls go through the signed-in [Codex CLI](https://github.com/openai/codex) (`codex login`, ChatGPT subscription) via `codex exec` in an empty read-only, ephemeral sandbox. Optional fields: `model_name`, `reasoning_effort`, `binary` (or `PACE_CODEX_BIN`), `timeout_s`. Text content only; reported cost is 0.
+
 ## Tests
 
 ```
