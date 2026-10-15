@@ -16,19 +16,19 @@ not.
 Usage:
     uv run python -m pace_core.breakdown.extract_script_ir SCRIPT.txt --dry-run
     uv run python -m pace_core.breakdown.extract_script_ir SCRIPT.txt --execute \
-        --model claude-sonnet-5-rb --out script_ir.json
+        --model <registry-key> --out script_ir.json
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import argparse
 import json
 import pathlib
 import sys
-from typing import Any
 
 from pace_core.breakdown.screenplay_parser import parse, scenes
 
-GENERATOR_DEFAULT = "claude-opus-5-rb"
+GENERATOR_DEFAULT = default_model("generator")
 
 SYSTEM = """You extract a Canonical Script IR from ONE screenplay scene.
 

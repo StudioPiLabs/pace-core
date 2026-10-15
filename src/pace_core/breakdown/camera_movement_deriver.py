@@ -29,6 +29,7 @@ KB-sourced write from a hand-authored one without re-deriving it.
     uv run python -m pace_core.breakdown.camera_movement_deriver --project <slug> --scene <id> --apply
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 from datetime import datetime, timezone
 
@@ -51,7 +52,7 @@ def _shot_text(shot: dict) -> str:
     return ""
 
 
-def derive_shot(shot: dict, *, model: str = "gpt-4o-mini-rb") -> dict:
+def derive_shot(shot: dict, *, model: str = default_model("classifier")) -> dict:
     """Classify one shot. Pure — never mutates `shot`. Returns a report:
 
         {"dramatic_function": None, "reason": "..."}                 unclassified
@@ -100,7 +101,7 @@ def apply_shot(shot: dict, report: dict, *, model: str) -> bool:
     return True
 
 
-def derive_scene(scene: dict, *, model: str = "gpt-4o-mini-rb",
+def derive_scene(scene: dict, *, model: str = default_model("classifier"),
                  apply: bool = False) -> dict:
     """Walk every shot in `scene`, classify it, and — only if `apply` —
     write the result. Never touches `scene` when `apply=False`. Returns
@@ -141,7 +142,7 @@ def main() -> int:
     ap.add_argument("--project", required=True)
     ap.add_argument("--scene", default=None, help="limit to one scene id")
     ap.add_argument("--projects-root", type=Path, default=None)
-    ap.add_argument("--model", default="gpt-4o-mini-rb")
+    ap.add_argument("--model", default=default_model("classifier"))
     ap.add_argument("--apply", action="store_true")
     a = ap.parse_args()
 

@@ -103,8 +103,7 @@ def test_flux2_panel_events_override_wins_over_shot_action(scene_with_flux2_trap
     primary_focus_of/excluded_of already followed. It didn't: every compiler
     called action0_of(shot) alone, so a panel like "the man disappears
     beneath the car" silently rendered its shot's default action instead,
-    with nothing saying so. One corpus panel is
-    the real panel this was caught on."""
+    with nothing saying so."""
     scene = scene_with_flux2_traps
     shot = scene["shots"][0]
     panel = dict(shot["panels"][0])
@@ -232,14 +231,14 @@ def test_dispatcher_always_routes_to_flux2(scene_with_flux2_traps, ctx, base_mod
 def _three_subject_scene():
     """Same shape as the fixture above, with three declared subjects."""
     return {
-        "scene_id": "scene_car_test",
-        "narrative_meta": {"location_raw": "interior of a family autonomous car",
+        "scene_id": "scene_cabin_test",
+        "narrative_meta": {"location_raw": "interior of a train compartment",
                            "time_of_day": "day"},
         "shots": [{
             "shot_id": "shot_01",
             "setup": {
                 "backdrop": {"setting": "int",
-                             "location": "interior of a family autonomous car",
+                             "location": "interior of a train compartment",
                              "time_of_day": "day"},
                 "subjects": [
                     {"character_id": "fay", "age_state": "adult_50"},
@@ -253,19 +252,19 @@ def _three_subject_scene():
                        "creative_intent": {"shot_size": "wide", "framing": "crowd"}},
             "events": {"actions": [{"description_en": "the two adults sing together",
                                     "intensity": "subtle"}]},
-            "panels": [{"id": "scene_car_test_shot_01_panel_0001", "panel_number": 1,
-                        "scene_id": "scene_car_test", "shot_id": "shot_01"}],
+            "panels": [{"id": "scene_cabin_test_shot_01_panel_0001", "panel_number": 1,
+                        "scene_id": "scene_cabin_test", "shot_id": "shot_01"}],
         }],
     }
 
 
 def test_multi_person_cast_is_enumerated_with_the_count_first(ctx):
     """A comma-run of appearance descriptions leaves the encoder to guess
-    where one person's description ends and the next begins, and a family-car
-    prompt resolves that ambiguity by adding a body.
+    where one person's description ends and the next begins, and a crowded
+    interior prompt resolves that ambiguity by adding a body.
 
-    Measured on one corpus shot (three declared subjects,
-    seed 1693641188, everything else held identical): the run-on form
+    Measured with three declared subjects and a fixed seed, everything else
+    held identical: the run-on form
     rendered FOUR people with 8 reference plates, with 7, and with none at
     all — so the extra person came from the text, not the reference channel.
     Count-first plus enumeration, with the per-character hints left word for
@@ -293,8 +292,8 @@ def test_single_subject_is_not_enumerated(scene_with_flux2_traps, ctx):
 def test_every_declared_prop_reaches_the_prompt(ctx):
     """The reference channel attaches a plate for EVERY declared prop, so a
     capped prompt hands the model a picture of an object it was never told
-    about. One corpus scene declares five; the swivel seat sat past the
-    old cap of four in all four panels."""
+    about. A scene declaring five props lost the fifth to the old cap of
+    four in every panel."""
     scene = _three_subject_scene()
     shot = scene["shots"][0]
     shot["setup"]["props"] = [{"prop_id": f"p{i}", "name": f"prop {i}"} for i in range(6)]
@@ -310,7 +309,7 @@ def test_every_declared_prop_reaches_the_prompt(ctx):
 
 def test_environment_insert_keeps_its_props_but_not_its_people(ctx):
     """"No people or animals in frame" is not the same claim as "no objects".
-    scene_04's highway inserts declare the car console and the reference
+    An insert of a vehicle interior declares its console, and the reference
     channel attaches its plate to every one of them."""
     scene = _three_subject_scene()
     shot = scene["shots"][0]
@@ -330,9 +329,9 @@ def test_environment_insert_does_not_get_facial_close_up_prose(ctx):
     environment-only insert has none, so the person-shaped ladder contradicts
     the shot rather than merely failing to help it.
 
-    Measured: scene_04's three highway inserts compiled to "an environment-only
+    Measured: road-traffic inserts compiled to "an environment-only
     insert shot with no people or animals in frame" AND "an extreme close-up, a
-    single facial feature filling 70-90% of the frame", and all three rendered
+    single facial feature filling 70-90% of the frame", and each rendered
     an enormous eye over the traffic. The model resolved the contradiction the
     only way it could."""
     scene = _three_subject_scene()

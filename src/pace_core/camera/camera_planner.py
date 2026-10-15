@@ -1,9 +1,9 @@
 """Camera planner — single source of truth for per-shot camera geometry.
 
 Pure functions, no I/O. Consumed by:
-  - blender_render.py  (sets cam.location, cam.rotation, cam.data.lens)
-  - studio_server.py /api/shot/<s>/<sh>/trajectory (UI debug + Wan VACE control)
-  - Wan motion-prompt compilers (read the plan to inform motion text)
+  - Blender kernels   (set cam.location, cam.rotation, cam.data.lens)
+  - host trajectory endpoints (UI debug + video control passes)
+  - video motion-prompt compilers (read the plan to inform motion text)
 
 Design rule: the planner owns ALL the geometry math that used to live in
 blender_render._position_camera_for_shot. blender_render becomes a consumer.
@@ -23,8 +23,8 @@ Output shapes
   N-keyframe track   ─ plan_camera_track(shot, n_frames, easing=...)
                        returns a list of N dicts with per-frame
                        {frame_index, t, position, rotation_deg, lens_mm}
-                       — Blender's depth-pass renderer + Wan VACE
-                       control_video both consume this.
+                       — Blender's depth-pass renderer and any
+                       per-frame video control pass consume this.
 
 Schema alignment
 ──────────────────
@@ -50,12 +50,12 @@ The Movement Literal vocabulary splits three ways:
 
   stylistic    handheld, steadicam, rapid
                → no geometric delta. Get a motion-blur / shake prompt
-               hint for Flux + Wan but don't move the camera.
+               hint for image/video prompts but don't move the camera.
 
-  Wan-only     orbit, from_behind, reverse_shot
+  text-only    orbit, from_behind, reverse_shot
                → planner emits static keyframes; the directive flows to
-               Wan VACE's text prompt and (for orbit) is intended to
-               drive the VACE control_video via a future arc sampler.
+               the video model's text prompt and (for orbit) is intended
+               to drive a control pass via a future arc sampler.
 
 Easing
 ──────
@@ -167,7 +167,7 @@ MOVEMENT_KINDS = {
     "steadicam",      # treat as handheld jitter
     "from_behind",    # rear-position camera — degraded to static
     "reverse_shot",   # 180° flip — degraded to static (caller swaps subjects)
-    "rapid",          # fast cuts / shaky — handled by Wan, planner stays static
+    "rapid",          # fast cuts / shaky — handled by the video model, planner stays static
 }
 
 # Per-movement displacement (meters / degrees) over the full clip duration.
@@ -187,17 +187,17 @@ MOVEMENT_DELTAS = {
     "crane_down":  {"z_delta_m":      -0.5},
     "zoom_in":     {"lens_zoom_pct":  40},   # 50mm -> 70mm
     "zoom_out":    {"lens_zoom_pct": -40},
-    "handheld":    {"_note": "subtle jitter, no fixed delta — handled by Wan I2V"},
+    "handheld":    {"_note": "subtle jitter, no fixed delta — handled by the video model"},
     # PACE Movement deltas
     "push_in_slow":{"distance_delta_m": -0.4, "lens_zoom_pct": 0},   # gentler push
     "tracking":    {"y_delta_m": -0.5},                              # mapped to dolly_left
     "pan_lr":      {"yaw_delta_deg":   10},                          # left→right
     "pan_rl":      {"yaw_delta_deg":  -10},                          # right→left
-    "orbit":       {"_note": "circular — planner emits static; Wan VACE handles arc"},
+    "orbit":       {"_note": "circular — planner emits static; the video model handles the arc"},
     "steadicam":   {"_note": "treated as handheld; no fixed delta"},
     "from_behind": {"_note": "rear-position — caller must rotate scene 180° or set negative subject offset"},
     "reverse_shot":{"_note": "180° flip — caller swaps Subject_A/B before planning"},
-    "rapid":       {"_note": "fast jitter — Wan handles; planner stays static"},
+    "rapid":       {"_note": "fast jitter — the video model handles it; planner stays static"},
 }
 
 # Three-way classification of the Movement vocabulary — drives downstream
@@ -211,7 +211,8 @@ GEOMETRIC_KINDS = {
     "zoom_in", "zoom_out",
 }
 STYLISTIC_KINDS = {"handheld", "steadicam", "rapid"}
-WAN_ONLY_KINDS  = {"orbit", "from_behind", "reverse_shot"}
+TEXT_ONLY_KINDS = {"orbit", "from_behind", "reverse_shot"}
+WAN_ONLY_KINDS  = TEXT_ONLY_KINDS   # deprecated alias
 
 EASING_KINDS = ("linear", "ease_in", "ease_out", "ease_in_out")
 
@@ -567,7 +568,7 @@ def _build_movement_block(*, kinds: list[str], start_position: list[float],
 
 
 # ──────────────────────────────────────────────────────────────────────
-#  N-keyframe sampling — for Blender depth-pass + Wan VACE control_video
+#  N-keyframe sampling — for Blender depth-pass + per-frame video control
 # ──────────────────────────────────────────────────────────────────────
 
 
@@ -584,7 +585,7 @@ def plan_camera_track(shot: dict, n_frames: int = 16,
     ----
     shot      same dict accepted by plan_camera()
     n_frames  number of keyframes (>= 1). 16 maps cleanly to 1s @ 16fps
-              for Wan I2V; 24 maps to 1s @ 24fps for standard cinema.
+              for 16 fps video models; 24 maps to 1s @ 24fps for cinema.
     easing    override the shot's frame.movement_easing. Useful for
               quick A/B testing in the studio UI. None = use shot's value.
     bible     same as plan_camera()
@@ -702,7 +703,7 @@ def plan_camera_track_from_world(
 # ──────────────────────────────────────────────────────────────────────
 #  Object motion + follow-shot composition (world-space tracks)
 #
-#  The depth renderer (render_depth_vace.py) is a dumb playback engine: it
+#  The depth renderer (the host's depth kernel) is a dumb playback engine: it
 #  plays a per-frame camera track and per-frame OBJECT tracks. It computes
 #  no motion. Anything that moves — the camera, a car, a pedestrian — is
 #  driven by an explicit per-frame transform list produced HERE.
@@ -865,7 +866,7 @@ LAMP_DEFAULT_UNITS_PER_METER = 25.0
 # the mesh right below it) but a depth map with 2 distinct values instead of
 # 26 -- a silhouette carrying no shape. With no mesh, a scene render over the
 # deliberately-flat centre lane of the ground contour, it produced a blank
-# control: 4 distinct values across the frame. VACE was then bound to that
+# control: 4 distinct values across the frame. The video model was then bound to that
 # featureless target at control_strength 0.7 and invented a large orange mass
 # to fill it.
 #
@@ -893,8 +894,8 @@ def plan_camera_track_from_dsl(
     `lamp_compile._move_to_world`, just rescaled to meters and anchored
     to `anchor_position` instead of LAMP's (256,256,256) cube centre.
 
-    Output matches `plan_camera_track` so vace_pipeline, blender_render,
-    and VACE motion-prompts can consume both shapes identically.
+    Output matches `plan_camera_track` so the depth kernel, the passes
+    kernel and motion-prompt compilers can consume both shapes identically.
     """
     # Lazy import — these modules transitively import LLM clients.
     from pace_core.camera.lamp_dsl import parse_dsl, N_SEGMENTS

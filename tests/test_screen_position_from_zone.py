@@ -10,10 +10,9 @@ every subject sorts to the same place and the seat assignment spreads them
 evenly -- which is how a scene of a hundred people working late staged as
 three figures standing in a row.
 
-The zone is a better source than the alternative. The paper's own corpus fills
-these by hand and reports the result: three distinct x values across 58
-subjects and one y, corpus-wide. A model reading the scene put nine different
-zones in another production's.
+The zone is a better source than the alternative. Filled by hand, these
+collapse to a few x values and a single y; a model reading the scene varies
+the zone with the staging.
 """
 from __future__ import annotations
 
@@ -55,7 +54,7 @@ def test_the_horizontal_mapping_is_symmetric():
     assert ZONE_X["center"] == 0.5
 
 
-def test_the_inner_pair_matches_what_the_existing_corpus_declares():
+def test_the_inner_pair_sits_inside_the_third_lines():
     """0.39/0.61 rather than the third lines themselves: a shot composed to a
     derived position and one composed to an authored position should not
     disagree by an accident of rounding."""

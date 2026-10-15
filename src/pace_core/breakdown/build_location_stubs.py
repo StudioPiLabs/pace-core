@@ -42,8 +42,6 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402
 
@@ -100,7 +98,7 @@ _OFFICE_WORDS = ("office", "open-plan", "open plan", "workstation", "cubicle",
                  "desk", "办公区", "工位")
 
 #: Spaces that sit BESIDE an office and are not one. They match the office
-#: words -- "Chairman's Office Doorway", "写字楼办公区 · 会议室外走廊" -- and an
+#: words -- "Manager's Office Doorway", "办公楼 · 会议室外走廊" -- and an
 #: open-plan shell is the wrong geometry for a corridor or a threshold, so a
 #: name carrying one of these is left unclassified rather than guessed.
 _NOT_A_ROOM = ("corridor", "doorway", "threshold", "lobby", "reception",

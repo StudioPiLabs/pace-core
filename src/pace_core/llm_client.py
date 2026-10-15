@@ -18,7 +18,6 @@ import json
 import os
 import re
 import urllib.request
-from pathlib import Path
 from typing import Optional
 
 # RouterBase (routerbase.com) is Cloudflare-fronted — the default urllib UA gets
@@ -47,6 +46,22 @@ _USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.3
 # worker thread indefinitely, and setting either restores a bound.
 _DEFAULT_TIMEOUT_S = (int(os.environ["PAI_LLM_TIMEOUT_S"])
                       if os.environ.get("PAI_LLM_TIMEOUT_S") else None)
+
+
+#: Model-registry key used for each role when the host names none. A host
+#: whose registry uses other keys sets PACE_MODEL_<ROLE> (e.g.
+#: PACE_MODEL_GENERATOR) or edits this dict before the importing module loads.
+DEFAULT_MODELS = {
+    "generator":  "claude-opus-5",    # script IR, beat panels, shot design
+    "estimator":  "gpt-5.5",          # breakdown verifier; another vendor on purpose
+    "writer":     "claude-sonnet-5",  # splitting, prompts, characters, LAMP
+    "classifier": "gpt-4o-mini",      # cheap per-shot labelling
+}
+
+
+def default_model(role: str) -> str:
+    """Registry key for `role`: $PACE_MODEL_<ROLE>, else DEFAULT_MODELS."""
+    return os.environ.get(f"PACE_MODEL_{role.upper()}") or DEFAULT_MODELS[role]
 
 
 def _timeout_for(model_cfg: dict) -> int | None:
@@ -312,7 +327,7 @@ def call_model(model_cfg: dict, messages: list,
     if provider == "local":
         return _call_openai_compatible(model_cfg, messages, api_key or "EMPTY")
     if api_key is None:
-        # Look up via llm_tokens.py (consults studio_server-managed store +
+        # Look up via llm_tokens.py (consults host-managed store +
         # env-var fallback in one place). model_cfg["api_key_env"] is the
         # legacy hint we map to a provider name.
         api_key = _resolve_api_key(provider, model_cfg)

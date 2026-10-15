@@ -489,7 +489,7 @@ _POSE_WORDS = (
     # "motionless" was here and describes STILLNESS, not posture: a body can
     # be motionless standing, sitting or lying. It only ever looked right
     # because the breakdown that taught this table wrote "lying motionless",
-    # where "lying" already matches. On another production it put 10 subjects on the floor,
+    # where "lying" already matches. Elsewhere it put standing subjects on the floor,
     # including "standing tall, motionless, watching building".
     ("lying",    ("lying", "lies", "lay", "prone", "supine",
                   "collapsed", "sprawled", "unconscious", "on the ground")),
@@ -1920,7 +1920,7 @@ def _build_interior(box, *, style, half_w, mid_y, depth, top_z, back_y, lens):
 def _render_depth_twin(sc, spec: dict) -> str:
     """Render the current scene's Z pass to `<out>.depth.png`, near=white.
 
-    Mirrors vace_pipeline's depth setup — MapRange from near to far, inverted so
+    Mirrors the depth kernel's setup — MapRange from near to far, inverted so
     near reads white — because the two produce the same kind of image for the
     same consumer, and a control that means one thing in a still and another in
     a sequence would be worse than no control.
@@ -3069,8 +3069,8 @@ def _kernel_greybox(spec: dict) -> dict:
     # Aiming at the named focus subject centres that subject and hands the
     # entire disagreement to everyone else, because the frame has one
     # horizontal degree of freedom and the panel declared several positions.
-    # That is an arbitration, and leaving it implicit is what put 7 of this
-    # corpus's 76 staged subjects off the side of the frame while the subject
+    # That is an arbitration, and leaving it implicit is what put staged
+    # subjects off the side of the frame while the subject
     # beside them sat exactly on its mark.
     #
     # Moving the aim is a lateral dolly, not a pan: the camera is placed
@@ -3540,7 +3540,7 @@ def _kernel_greybox(spec: dict) -> dict:
     #
     # The set is placed where the location says and the camera where the fit
     # says, and nothing checked that one leaves a line of sight to the other:
-    # ten of another production's 78 panels put a desk, a partition or a building between
+    # panels put a desk, a partition or a building between
     # the lens and the face the panel is about, and the gate only reported it.
     shell_built["occlusion"] = _see_past_set(
         cam=cam, focus=focus, bodies=bodies, heads=heads, set_names=set_names,
@@ -3692,7 +3692,7 @@ def _kernel_greybox(spec: dict) -> dict:
 
     # ── the same geometry as DEPTH, for use as a video control ──
     # The clay render above is a beauty pass: Workbench shading, studio light,
-    # cavity. Fed to VACE as control_video it carries that appearance along with
+    # cavity. Fed to a video model as control it carries that appearance along with
     # the structure, and the clip comes back as clay mannequins at a strength
     # high enough to hold the cast, or loses the cast entirely at a strength low
     # enough to look photoreal. Measured on one corpus shot: cs 0.50 kept three

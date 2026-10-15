@@ -3,8 +3,8 @@ import_3d_assets.py — Import .glb / .gltf / .obj 3D meshes into Blender scenes
 
 Purpose: bridge between AI-generated 3D meshes (from Hunyuan3D-2, TripoSR,
 Trellis, Meshy, etc., all of which output .glb) and our Blender greybox
-pipeline. Called from build_scenes.py to drop AI-generated props into a
-location instead of the current cube/cylinder primitives.
+pipeline. Called from `primitives.build_from_spec` (kind `imported_mesh`) to
+drop generated props into a location instead of cube/cylinder primitives.
 
 Why a helper module:
   - Hunyuan3D outputs in arbitrary scale/orientation; we have to normalize
@@ -12,7 +12,7 @@ Why a helper module:
   - Imported .glb meshes come with their own materials and pass_index=0,
     breaking our segmentation passes. We have to re-tag pass_index per
     asset and optionally swap materials.
-  - Want a single signature `import_3d_asset()` that build_scenes.py can
+  - Want a single signature `import_3d_asset()` that a scene builder can
     call exactly like add_cube/add_cylinder.
 
 Usage from inside Blender python:
@@ -26,9 +26,8 @@ Usage from inside Blender python:
     )
 
 If the .glb file is missing: returns None and logs a warning. Caller decides
-whether to fall back to a primitive. This keeps build_scenes.py's logic
-unchanged while letting us incrementally replace primitives with AI-generated
-meshes as the kb/3d_models/ library grows.
+whether to fall back to a primitive, so a scene builder can replace
+primitives with generated meshes incrementally.
 """
 
 import bpy
@@ -59,13 +58,12 @@ def import_3d_asset(
         rotation:            Euler rotation (rx, ry, rz) in radians applied
                              after import.
         pass_index:          Object index for the segmentation render pass.
-                             Use 0 for non-character assets, 1 for jia, 2 for
-                             wei (matching build_characters.py convention).
+                             Use 0 for non-character assets, 1.. for the
+                             cast in order (the seg pass masks index 1).
         parent:              Optional Empty to parent the import to (lets
                              callers re-position via parent.location later
-                             without affecting the child's local transform —
-                             see build_characters.py's matrix_parent_inverse
-                             pattern).
+                             without affecting the child's local transform,
+                             via matrix_parent_inverse).
         fallback_factory:    Optional callable(name, location, ...) that
                              builds a primitive if glb_path is missing. If
                              None and file is missing, returns None.
@@ -135,7 +133,7 @@ def import_3d_asset(
             obj.scale = (obj.scale[0] * s, obj.scale[1] * s, obj.scale[2] * s)
 
     # Parent (with matrix_parent_inverse so child world position is preserved
-    # — same fix as in build_characters.py)
+    # under the parent)
     if parent is not None:
         bpy.context.view_layer.update()
         obj.parent = parent

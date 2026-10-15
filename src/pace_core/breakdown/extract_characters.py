@@ -4,8 +4,7 @@ Extracts character mentions from a project's PACE scene files via an LLM
 and writes stub entries into `kb/on_scene/characters.json` (preserves
 user edits — only fills blank fields and adds new entries).
 
-Entry point: `pai kb characters extract` → studio_server
-              POST /api/kb/characters/extract → run().
+Entry point: `run()`, called by a host CLI or server.
 
 This module **does not** train LoRAs — that's a separate ML pipeline.
 It produces the metadata stubs (anchor, costumes, lora.path placeholder,
@@ -30,10 +29,12 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from pace_core.llm_client import default_model
 from pace_core.llm_client import strip_fences
 
 PIPELINE_DIR = Path(__file__).resolve().parent
-from pace_core.paths import MODELS_FILE, paths_for  # noqa: E402
+from pace_core import paths
+from pace_core.paths import paths_for  # noqa: E402
 
 CHAR_REFS    = PIPELINE_DIR / "character_refs"
 
@@ -76,7 +77,7 @@ def extract_characters_from_scenes(scenes_breakdown: dict, model_key: str) -> tu
     (same path the rest of the pipeline uses)."""
     from pace_core.llm_client import call_model  # type: ignore
 
-    models = json.loads(MODELS_FILE.read_text())
+    models = json.loads(paths.MODELS_FILE.read_text())
     if model_key not in models:
         raise ValueError(f"unknown model '{model_key}'. options: {list(models)}")
     cfg = models[model_key]
@@ -178,7 +179,7 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
 
 
 def run(*, project: str = "main",
-        model: str = "claude-sonnet-5-rb",
+        model: str = default_model("writer"),
         reference_strategy: str = "user-only",
         dry_run: bool = False) -> dict[str, Any]:
     """Library entry point for `pai kb characters extract` (HTTP-callable).
@@ -186,7 +187,7 @@ def run(*, project: str = "main",
     Args mirror the old CLI flags exactly; returns a structured result
     dict instead of printing+exiting.
 
-    Raises ValueError on bad input (caller — studio_server — translates
+    Raises ValueError on bad input (caller — a host server — translates
     to HTTP 400). Other exceptions bubble as 500.
     """
     if reference_strategy not in ("user-only", "flux", "prompt-only"):

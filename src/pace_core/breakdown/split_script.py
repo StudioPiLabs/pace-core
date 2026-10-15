@@ -29,6 +29,7 @@ import logging
 
 from pace_scene_skills import load as _skill
 
+from pace_core.llm_client import default_model
 from pace_core.types_v1 import SCHEMA_VERSION
 
 logging.basicConfig(
@@ -47,8 +48,8 @@ logging.basicConfig(
 # Longest-first within each language: "大特写" must be tested before "特写",
 # and "extreme close" before "close". The table was Chinese-only, so an
 # English screenplay could not match any pattern and every panel fell to the
-# "medium" default, which is how a 27-panel corpus came to author one shot
-# size throughout and lost the ability to test anything that varies with it.
+# "medium" default, so a whole breakdown could author one shot size
+# throughout and lose the ability to test anything that varies with it.
 _SHOT_SIZE_PATTERNS = [
     ("extreme close", "extreme_close_up"),
     ("establishing", "establishing"),
@@ -548,7 +549,7 @@ def _models_file_default() -> str:
         return "assets/models.json"
 
 # Multi-tenant: no module-level path defaults. main() resolves them per
-# --project via paths_for() at call time; library callers (studio_server's
+# --project via paths_for() at call time; library callers (a host server's
 # /api/split-script handler) build paths themselves and pass them in.
 # Keys exist with None sentinels for back-compat with existing code that
 # checks `dest or DEFAULTS[k]` — None falls through to require an explicit arg.
@@ -851,7 +852,7 @@ def script_bytes_to_text(raw: bytes, filename: str = "script.md") -> tuple[str, 
 
 
 def split_text_to_pai(text: str, *, source_label: str = "<memory>",
-                      model: str = "claude-sonnet-5-rb",
+                      model: str = default_model("writer"),
                       output_dir: Path | str | None = None,
                       locations_dir: Path | str | None = None,
                       models_file: Path | str | None = None,
@@ -859,7 +860,7 @@ def split_text_to_pai(text: str, *, source_label: str = "<memory>",
                       dry_run: bool = False) -> dict:
     """Split script text (via LLM) and optionally write scene_NN.json files.
 
-    This is the non-CLI API used by studio_server background jobs. It mirrors
+    This is the non-CLI API used by host background jobs. It mirrors
     main() but returns structured metadata instead of exiting the process.
     """
     out_dir = Path(output_dir) if output_dir else DEFAULTS["out_dir"]
@@ -902,7 +903,7 @@ def split_text_to_pai(text: str, *, source_label: str = "<memory>",
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("script_path", help="path to script.md / .txt; use '-' for stdin")
-    ap.add_argument("--model", default="claude-sonnet-5-rb",
+    ap.add_argument("--model", default=default_model("writer"),
                     help="model key from the models registry")
     ap.add_argument("--output-dir", "--output", default=None,
                     help=f"dir to write per-scene JSONs. Default: {DEFAULTS['out_dir']}")

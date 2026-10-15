@@ -37,10 +37,8 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "src"))
 
-from pace_core.paths import PAI_PROJECTS_ROOT  # noqa: E402
+from pace_core import paths  # noqa: E402
 
 # A character named two ways in one sentence reads as two people.
 _REFERENT = re.compile(
@@ -73,7 +71,7 @@ def main() -> int:
                     help="exit non-zero when anything is flagged")
     a = ap.parse_args()
 
-    scenes = sorted(((a.projects_root or PAI_PROJECTS_ROOT) / a.project
+    scenes = sorted(((a.projects_root or paths.PAI_PROJECTS_ROOT) / a.project
                      / "kb" / "scenes").glob("*.json"))
     if not scenes:
         print(f"no scenes for {a.project!r}", file=sys.stderr)

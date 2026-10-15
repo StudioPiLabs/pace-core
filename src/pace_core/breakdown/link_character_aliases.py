@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Join what the panels call a character to what the registry calls it.
 
-`split_script` writes subjects by the name the screenplay uses -- 林小雨, 王秘书
+`split_script` writes subjects by the name the screenplay uses -- 陈明, 张经理
 -- and `extract_characters` keys the registry by a romanised slug --
-`lin_xiaoyu`, `secretary_wang`. Nothing joins them, so in a Chinese screenplay the overlap
+`chen_ming`, `manager_zhang`. Nothing joins them, so in a Chinese screenplay the overlap
 between the two sets of identifiers is EMPTY, and everything downstream of a
 character lookup quietly does nothing:
 
   * `_character_hint` resolves no entry and falls back to emitting the raw
-    identifier, so every compiled prompt reads "on the left, 李秘书" instead of
+    identifier, so every compiled prompt reads "on the left, 张经理" instead of
     the appearance the registry holds. The anchors are extracted, checked, and
     reach no image.
   * `GET /api/project/{p}/characters` filters to characters referenced by
@@ -22,13 +22,13 @@ them.
 The join is on SCENE CO-OCCURRENCE, not on the names. `_extracted.scenes`
 records where the extractor saw each character and the panels record where each
 reference appears, so the two sets identify the same person without anyone
-transliterating anything: 林小雨 and `lin_xiaoyu` appear in exactly the same
-nine scenes. Names in two scripts and two languages are exactly what this
+transliterating anything: 陈明 and `chen_ming` appear in exactly the same
+scenes. Names in two scripts and two languages are exactly what this
 should not depend on.
 
 Two things it refuses to guess:
 
-  A reference that is not one person. 旁白 is narration, 众人 and 其余同事 are
+  A reference that is not one person. 旁白 is narration, 众人 and 其他人 are
   crowds. They co-occur with whoever is on screen, so a similarity score will
   always find them a partner, and every partner is wrong.
 
@@ -57,8 +57,6 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402
 
@@ -163,8 +161,8 @@ def link(registry: dict, scenes: list[dict],
 
     linked: dict[str, list[str]] = collections.defaultdict(list)
     unresolved: list[dict] = []
-    # Strongest first, so a qualifier like 白泽（异兽） can attach to the plain
-    # 白泽 that has already been matched on its own evidence.
+    # Strongest first, so a qualifier like 青鸟（神兽） can attach to the plain
+    # 青鸟 that has already been matched on its own evidence.
     for ref, rs in sorted(refs.items(), key=lambda kv: -len(kv[1])):
         if kind == "character" and not is_person(ref):
             unresolved.append({"ref": ref, "reason": "not one person",
@@ -177,7 +175,7 @@ def link(registry: dict, scenes: list[dict],
         if score >= threshold:
             linked[key].append(ref)
             continue
-        # A qualified form of a reference already linked: 白泽（异兽）, 白泽（林小雨的
+        # A qualified form of a reference already linked: 青鸟（神兽）, 青鸟（陈明的
         # 脸）. The base name is the evidence, not the co-occurrence.
         base = next((k for k, aliases in linked.items()
                      for a in aliases if ref.startswith(a) and ref != a), None)

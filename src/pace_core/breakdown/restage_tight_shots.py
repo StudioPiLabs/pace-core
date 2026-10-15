@@ -32,13 +32,10 @@ import argparse
 import copy
 import json
 import re
-import sys
 import tempfile
 from pathlib import Path
 from typing import Callable
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.pai_compat import primary_focus_of, resolve_shot   # noqa: E402
 from pace_core.paths import paths_for                                     # noqa: E402

@@ -941,7 +941,7 @@ class NarrativeMeta:
 # Optional layer for scenes where multiple shots share a stage and the
 # user wants per-shot screen_position to be derived from camera + world
 # coordinates instead of LLM-guessed every time. Also the natural input
-# to Blender greybox (`build_scenes.py`).
+# to the Blender greybox.
 #
 # Use only when the scene has 3+ shots that share blocking. For single-
 # shot or one-off scenes, just leave subjects[].screen_position authored
@@ -1151,7 +1151,7 @@ class SceneDoc:
     shot_defaults:    Optional[ShotDefaults] = None
     # PACE prototype — optional scene-wide world coordinates. When set,
     # per-subject screen_position can be derived from camera + world_xy
-    # instead of authored per shot. See pipeline/derive_screen_position.py.
+    # instead of authored per shot (see setup.composition_solver).
     physical_layout:  Optional[PhysicalLayout] = None
     shots:            list[Shot]    = field(default_factory=list)             # ordered list of shots in this scene
     compile_hints:    list[CompileHints] = field(default_factory=list)        # per-panel sidecar hints (one entry per panel that needs hints)

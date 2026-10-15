@@ -32,9 +32,16 @@ uv add "pace-core @ git+https://github.com/StudioPiLabs/pace-core"
 Optional extras:
 
 - `usd`: OpenUSD export.
-- `render`: scipy, for trajectory interpolation.
+- `pdf`: pypdf, for PDF screenplays in `breakdown.split_script`.
 
-Staging needs Blender 4.2 or later.
+`pace-scene-skills` is a git direct dependency (pinned tag), so installs need
+network access to GitHub and a resolver that allows direct references.
+
+Staging needs Blender 4.2 or later. `BlenderBox` ships the convert, passes and
+panel-greybox kernels; the scene-assembly, shot-preview, depth-sequence and
+GLB-export kernels (`KERNELS` in `pace_core.node.blender_box`) come from the
+host application, which registers their directory with
+`blender_box.register_kernel_dir(...)`. A missing kernel raises `KernelNotFound`.
 
 ## Configuration
 
@@ -43,6 +50,7 @@ Staging needs Blender 4.2 or later.
 | `PAI_PROJECTS_ROOT` | `./production/projects` | parent of project directories (`<slug>/kb/scenes/…`) |
 | `MODELS_FILE` | `./assets/models.json` | LLM model registry used by the breakdown and the LaMP parser |
 | `BLENDER_BIN` | `blender` | Blender executable |
+| `PACE_MODEL_GENERATOR`, `PACE_MODEL_ESTIMATOR`, `PACE_MODEL_WRITER`, `PACE_MODEL_CLASSIFIER` | see `llm_client.DEFAULT_MODELS` | registry keys used when a caller names no model |
 
 LLM provider keys are read from the environment, for example `ANTHROPIC_API_KEY`, or from `~/.config/pai/llm_tokens.json`. A host application can call `pace_core.paths.configure(...)` instead of setting variables.
 

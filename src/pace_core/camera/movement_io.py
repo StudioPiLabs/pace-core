@@ -1,14 +1,14 @@
 """Movement I/O — single source of truth for camera-movement adapter logic.
 
-All consumers (camera_planner, studio_server, blender_render, Wan VACE)
-delegate movement reads here. One import = one canonical interpretation.
+All consumers (camera_planner, host servers, Blender kernels, video
+prompt compilers) delegate movement reads here. One import = one canonical interpretation.
 
 Surface:
 
   read_movement(shot)              → (movements, easing)
   write_movement(shot, mvs, ease)  → shot (mutated in place, returned for chaining)
   shot_to_planner_dict(shot, ...)  → planner-shape dict
-  compile_wan_motion(movements, …) → natural-language motion directive
+  compile_motion_phrase(movements, …) → natural-language motion directive
 
 Operates on pai-1.0 shot dicts (the on-disk shape). Reads
 `camera.trajectory.{movement_2d, movement_3d, gear, easing}` and
@@ -208,13 +208,13 @@ def shot_to_narrative(shot: dict, scene: Optional[dict] = None,
     return head or framing_str
 
 
-# ── Wan VACE motion directive ─────────────────────────────────────────
+# ── video-model motion directive ──────────────────────────────────────
 
 
-# Each Movement Literal → its English motion phrase for Wan I2V / VACE
-# prompts. Wan's text encoder understands fluent English motion language
+# Each Movement Literal → its English motion phrase for video-model
+# prompts. Their text encoders understand fluent English motion language
 # better than the Literal token itself.
-_WAN_MOTION_PHRASE = {
+_MOTION_PHRASE = {
     "push_in":      "slow camera push-in",
     "push_in_slow": "gentle camera push-in",
     "pull_out":     "slow camera pull-out",
@@ -225,12 +225,12 @@ _WAN_MOTION_PHRASE = {
     "tilt_down":    "camera tilt downward",
     "crane_up":     "rising crane shot",
     "crane_down":   "descending crane shot",
-    # Stylistic — no geometric delta but still affects how Wan animates
+    # Stylistic — no geometric delta but still affects how the model animates
     "handheld":     "subtle handheld camera shake",
     "steadicam":    "smooth steadicam motion",
     "rapid":        "rapid handheld camera movement",
-    # Wan-only — planner stays static; only manifest through Wan's
-    # text-to-motion path.
+    # Text-only — planner stays static; only manifest through the video
+    # model's text-to-motion path.
     "orbit":        "slow orbital camera move around the subject",
     "from_behind":  "view from behind the subject",
     "reverse_shot": "reverse-angle shot of the subject",
@@ -281,7 +281,7 @@ def camera_brief(shot: dict, scene: Optional[dict] = None,
     movements, easing = read_movement(shot)
 
     parts: list[str] = []
-    motion = compile_wan_motion(movements, easing)
+    motion = compile_motion_phrase(movements, easing)
     gear = str(traj.get("gear") or "").strip().lower()
     if motion:
         parts.append(motion)
@@ -309,14 +309,14 @@ def camera_brief(shot: dict, scene: Optional[dict] = None,
     return brief
 
 
-def compile_wan_motion(movements: list[str], easing: str = DEFAULT_EASING) -> str:
-    """Build a natural-language motion directive for a Wan I2V / VACE prompt.
+def compile_motion_phrase(movements: list[str], easing: str = DEFAULT_EASING) -> str:
+    """Build a natural-language motion directive for a video-model prompt.
 
     Empty / static-only movement list → `""` (caller decides how to
     handle the empty case — usually by skipping the motion clause).
     """
-    phrases = [_WAN_MOTION_PHRASE[m] for m in movements
-               if m in _WAN_MOTION_PHRASE]
+    phrases = [_MOTION_PHRASE[m] for m in movements
+               if m in _MOTION_PHRASE]
     if not phrases:
         return ""
     if len(phrases) == 1:
@@ -387,6 +387,11 @@ _H3_MOTION_GERUND = {
 }
 
 
+#: Deprecated aliases, kept for existing importers.
+compile_wan_motion = compile_motion_phrase
+_WAN_MOTION_PHRASE = _MOTION_PHRASE
+
+
 def compile_h3_motion(movements: list[str], easing: str = DEFAULT_EASING, *,
                       intensity: str | None = None) -> str:
     """Build a MiniMax H3 camera-motion sentence — natural English action
@@ -422,7 +427,7 @@ def compile_h3_motion(movements: list[str], easing: str = DEFAULT_EASING, *,
     stated alone is never wrong to state.
 
     Empty / no-recognised-movement list → `""`, same contract as
-    `compile_wan_motion` — the caller decides how to handle no motion.
+    `compile_motion_phrase` — the caller decides how to handle no motion.
     """
     tokens = [m for m in movements if m in _H3_MOTION_VERB]
     if len(tokens) > 1 and "static" in tokens:

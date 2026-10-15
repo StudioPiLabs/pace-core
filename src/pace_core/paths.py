@@ -4,12 +4,12 @@ A project is a directory under PAI_PROJECTS_ROOT that contains `kb/`. Values
 come from the environment, or from `configure()` when a host application owns
 the layout.
 
-Layout inside one project (PAI_PROJECTS_ROOT/<slug>/):
+Layout inside one project (PAI_PROJECTS_ROOT/<slug>/), limited to what this
+package reads or writes:
 
   kb/              scenes/scene_NN.json, characters.json, props.json,
                    location_stubs.json, film.json, shot_design.json
-  02_assets/       project.toml, jobs.json, render_days/
-  06_reference/    storyboards/ (renders, control_geometry), character_sheets/
+  06_reference/storyboards/control_geometry/   greybox renders
   blender_scenes/  depth_maps/  meshes/  script/  05_output/  07_docs/
 """
 from __future__ import annotations
@@ -65,7 +65,7 @@ def configure(*, repo_root: str | Path | None = None,
 
 @dataclass(frozen=True, slots=True)
 class ProjectPaths:
-    """Every film-data path a caller needs, anchored to one project."""
+    """The project paths this package uses, anchored to one project."""
     slug: str
     storage: Path
     kb_dir: Path
@@ -75,24 +75,10 @@ class ProjectPaths:
     loc_stubs_file: Path
     film_file: Path
     shot_design_file: Path
-    voices_file: Path
-    assets_subdir: Path
-    project_meta_toml: Path
-    comfy_workers_yaml: Path
-    jobs_file: Path
-    site_config_env: Path
-    render_days_dir: Path
-    storyboards_dir: Path
-    renders_dir: Path
     greyboxes_dir: Path
-    render_log_file: Path
-    character_sheets_dir: Path
-    lora_refs_dir: Path
     blender_scenes_dir: Path
     depth_dir: Path
     meshes_dir: Path
-    dialogue_out_dir: Path
-    raw_dialogue_dir: Path
     script_dir: Path
     output_dir: Path
     docs_dir: Path
@@ -136,9 +122,7 @@ def paths_for(slug: str) -> ProjectPaths:
         raise FileNotFoundError(
             f"project {slug!r} not found at {root} "
             f"(expected {kb} to exist; registered: {list_projects() or 'none'})")
-    assets = root / "02_assets"
-    refs = root / "06_reference"
-    storyboards = refs / "storyboards"
+    storyboards = root / "06_reference" / "storyboards"
     return ProjectPaths(
         slug=slug,
         storage=root,
@@ -149,24 +133,10 @@ def paths_for(slug: str) -> ProjectPaths:
         loc_stubs_file=kb / "location_stubs.json",
         film_file=kb / "film.json",
         shot_design_file=kb / "shot_design.json",
-        voices_file=kb / "voices.json",
-        assets_subdir=assets,
-        project_meta_toml=assets / "project.toml",
-        comfy_workers_yaml=assets / "comfy_workers.yaml",
-        jobs_file=assets / "jobs.json",
-        site_config_env=assets / "site_config.env",
-        render_days_dir=assets / "render_days",
-        storyboards_dir=storyboards,
-        renders_dir=storyboards / "stage_b_renders",
         greyboxes_dir=storyboards / "control_geometry",
-        render_log_file=storyboards / "stage_b_render_log.json",
-        character_sheets_dir=refs / "character_sheets",
-        lora_refs_dir=refs / "lora_refs",
         blender_scenes_dir=root / "blender_scenes",
         depth_dir=root / "depth_maps",
         meshes_dir=root / "meshes",
-        dialogue_out_dir=root / "04_sfx" / "dialogue",
-        raw_dialogue_dir=root / "04_sfx" / "raw_dialogue",
         script_dir=root / "script",
         output_dir=root / "05_output",
         docs_dir=root / "07_docs",

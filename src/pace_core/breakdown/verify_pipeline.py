@@ -74,10 +74,9 @@ def identity_scene_map(script_scenes: list[dict], scene_ids: list[str]) -> dict[
     """One screenplay scene to one breakdown scene, in order.
 
     Correct exactly when the breakdown came from the split of this screenplay,
-    which is what `split_script` produces. It is NOT correct for a corpus whose
-    scenes were later split or reordered by hand -- the Automatic Drive corpus
-    in this paper is one, splitting three script scenes and reordering another
-    -- so those pass an explicit map instead.
+    which is what `split_script` produces. It is NOT correct for a breakdown
+    whose scenes were later split or reordered by hand; those pass an explicit
+    map instead.
     """
     return {str(s["index"]): [sid]
             for s, sid in zip(script_scenes, scene_ids)}

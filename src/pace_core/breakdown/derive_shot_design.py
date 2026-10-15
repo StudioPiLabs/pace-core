@@ -28,6 +28,7 @@ note, and "like a stranger at the window" draws a stranger at a window.
     uv run python -m pace_core.breakdown.derive_shot_design --project <slug> --execute
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import argparse
 import json
@@ -37,15 +38,12 @@ from pace_scene_skills import load as _skill
 from datetime import datetime, timezone
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.compilers.compile_common import film_of            # noqa: E402
-from pace_core.paths import (                                          # noqa: E402
-    MODELS_FILE, iter_canonical_scene_files, paths_for,
-)
+from pace_core import paths                                            # noqa: E402
+from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402
 
-GENERATOR_DEFAULT = "claude-opus-5-rb"
+GENERATOR_DEFAULT = default_model("generator")
 
 #: The schema's own vocabularies. The model picks from these rather than
 #: inventing a label the compilers cannot read -- an unknown shot_size falls
@@ -121,7 +119,7 @@ def run(*, project: str, model: str = GENERATOR_DEFAULT,
                 "prompt_chars": len(SYSTEM_PROMPT) + len(user), "prompt": user}
 
     from pace_core.llm_client import call_model, strip_fences
-    cfg = json.loads(MODELS_FILE.read_text())[model]
+    cfg = json.loads(paths.MODELS_FILE.read_text())[model]
     raw, cost = call_model(cfg, [{"role": "system", "content": SYSTEM_PROMPT},
                                  {"role": "user", "content": user}], api_key=None)
     try:

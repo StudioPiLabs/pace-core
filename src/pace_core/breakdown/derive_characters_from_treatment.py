@@ -32,6 +32,7 @@ says black is a fact, not an opinion.
     uv run python -m pace_core.breakdown.derive_characters_from_treatment --project <slug> --write
 """
 from __future__ import annotations
+from pace_core.llm_client import default_model
 
 import argparse
 import json
@@ -39,14 +40,12 @@ import re
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[4]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.pai_compat import resolve_character                # noqa: E402
 from pace_core.paths import paths_for                                  # noqa: E402
 
 #: `名字：描述` — a name, optionally with a parenthetical role, then a
-#: full-width colon. The name may carry a middle dot (AI·白泽) and Latin letters.
+#: full-width colon. The name may carry a middle dot (AI·青鸟) and Latin letters.
 _ENTRY = re.compile(
     r"(?P<name>[A-Za-z0-9·一-鿿]{1,16})"
     r"(?:（(?P<role>[^）]{0,20})）)?\s*[:：]\s*"
@@ -95,7 +94,7 @@ def hair_conflict(sheet_text: str, anchor: str) -> tuple[str, str] | None:
     return None
 
 
-RECONCILE_MODEL = "claude-sonnet-5-rb"
+RECONCILE_MODEL = default_model("writer")
 
 RECONCILE_SYSTEM = """You correct one sentence of a character's visual description.
 
@@ -190,7 +189,7 @@ def run(*, project: str, write: bool = False) -> dict:
     for name, body in sheet.items():
         rec = resolve_character(name, registry)
         if not rec:
-            # A creature cued 白泽 in the panels can be AI·白泽 on the sheet.
+            # A creature cued 青鸟 in the panels can be AI·青鸟 on the sheet.
             rec = next((r for n, r in registry.items()
                         if isinstance(r, dict)
                         and any(a and a in name for a in (r.get("aliases") or []))), {})

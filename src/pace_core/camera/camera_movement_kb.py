@@ -11,8 +11,8 @@ fields, and the fix is the same shape here: a typed, sourced table instead
 of prose a model may or may not attend to.
 
 Targets `camera_skills.py`, not `lamp_dsl.py` — checked, not assumed. Three
-compilers converge on the same render sink (BlenderBox depth pass / Wan
-VACE track-json): `camera_planner` (the default, geometric), `camera_skills`
+compilers converge on the same render sink (BlenderBox depth pass /
+per-frame track-json): `camera_planner` (the default, geometric), `camera_skills`
 (named-operation authoring, UI-wired in the canvas Trajectory node, the
 newer of the two motion vocabularies), and `lamp_dsl` (a compressed 24-token
 DSL adapted from LaMP, "a third compiler over the same camera block, and

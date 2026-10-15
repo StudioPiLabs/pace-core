@@ -1,10 +1,9 @@
 """State survives the event that caused it, and a prompt may not deny it.
 
-The corpus's measured failure mode was a compiled prompt that states its own
-beat and contradicts it in the same paragraph: `scene_03/shot_01` asserts the
-car has lost all power while the prop descriptors it is concatenated with say
-"glowing with interface graphics". Finding that cost a render campaign, a
-figure, and a section of the paper. It is a dictionary lookup.
+The measured failure mode was a compiled prompt that states its own beat and
+contradicts it in the same paragraph: a shot asserts the vehicle has lost all
+power while the prop descriptors it is concatenated with say "glowing with
+interface graphics". Catching that is a dictionary lookup.
 """
 from __future__ import annotations
 
@@ -63,7 +62,7 @@ def test_a_later_event_overwrites_an_earlier_one():
 
 
 def test_a_power_cut_in_one_car_does_not_reach_another_car():
-    """The corpus has three vehicles. Carrying a state across them would
+    """A script can have several vehicles. Carrying a state across them would
     invent continuity instead of checking it."""
     tl = build(_ir(
         _scene(1, "INT. CAR - CONTINUOUS",

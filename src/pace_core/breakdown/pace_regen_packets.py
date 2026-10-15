@@ -531,7 +531,7 @@ _BUILD_BETA1 = {
 # Where beta[4] has to sit for the chest to come out flat, as a function of
 # build. A fixed offset is calibrated at one build and drifts everywhere else:
 # at -2.0 a zero-build body lands at -0.4 mm of bust protrusion, but the
-# corpus's slim eighteen-year-old kept +21.5 mm, because build and sex act on
+# a slim young adult body kept +21.5 mm, because build and sex act on
 # the same tissue. Solving for the zero crossing across build gives a straight
 # line, residuals within 0.3 over beta[1] in [-1, 1]:
 #

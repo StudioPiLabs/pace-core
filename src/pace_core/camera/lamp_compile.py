@@ -406,7 +406,7 @@ def lamp_to_track(line: str, shot: dict, *, n_frames: int = 16,
     anchored at `plan_camera(shot)`'s static framing. `shot` is a *planner-input*
     dict (the shape `movement_io.shot_to_planner_dict` emits). Returns N dicts
     `{frame_index, t, position[m], rotation_deg, lens_mm}` — a drop-in for
-    Blender's depth-pass + Wan VACE control_video, identical in shape to
+    Blender's depth-pass + per-frame video control, identical in shape to
     camera_planner.plan_camera_track()."""
     from pace_core.camera.camera_planner import plan_camera  # one-directional, lazy
 

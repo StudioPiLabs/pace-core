@@ -51,7 +51,7 @@ freedom is spent restaging instead. `GREYBOX_INIT_DENOISE` in the render
 router is the other half of this module.
 
 Same conclusion the video side already reached about the same clay pass,
-recorded in `panel_greybox`: fed to VACE it "carries that appearance along with
+recorded in `panel_greybox`: fed to a video model as control it "carries that appearance along with
 the structure", and the fix there was to hand over a signal with no appearance
 in it, because "depth has no appearance to leak". A still needs an init that
 still reads as the picture, so it gets a flattened greybox rather than the

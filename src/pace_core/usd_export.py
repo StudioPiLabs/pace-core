@@ -34,7 +34,6 @@ inspected) without usd-core installed:  `uv sync --extra usd`.
 """
 from __future__ import annotations
 
-import math
 from pathlib import Path
 from typing import Any, Optional
 
