@@ -13,17 +13,15 @@ spreads them evenly -- which is how a scene of a hundred people working late
 staged as three figures standing in a row. The composition solve then has
 nothing to aim at that the specification chose.
 
-The paper's own corpus fills these by hand, and reports what that produced:
-three distinct x values across 58 subjects and one y, corpus-wide. Evenly
-spaced heads on a single line. The zone is a better source than a constant
-precisely because a model reading the scene put nine different values in it.
+Filled by hand, these collapse to a few x values and a single y: evenly
+spaced heads on one line. The zone is a better source than a constant because
+a model reading the scene varies it with the staging.
 
 The mapping is the rule of thirds, which is what `zone`'s own vocabulary
 names. Symmetric about centre so a left and a right subject are mirror images,
 and the inner pair sits at 0.39/0.61 rather than on the third lines
-themselves, matching the values the existing corpus declares -- a shot
-composed to this and a shot composed to that should not disagree by an
-accident of rounding.
+themselves, so derived and hand-authored placements agree rather than
+differing by an accident of rounding.
 
 Existing numbers are never overwritten: a value someone authored is a decision
 and this fills blanks.
@@ -36,21 +34,18 @@ from __future__ import annotations
 import argparse
 import collections
 import json
-import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(ROOT / "src"))
 
 from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402
 
-#: Horizontal thirds. 0.39/0.61 rather than 0.33/0.67 so these agree with the
-#: values the existing corpus declares by hand.
+#: Horizontal thirds. 0.39/0.61 rather than 0.33/0.67 so these agree with
+#: conventional hand-authored values.
 ZONE_X = {"left": 0.28, "center_left": 0.39, "center": 0.50,
           "center_right": 0.61, "right": 0.72}
 
-#: Vertical. 0.52 for centre is the corpus's own declared height, kept so a
-#: derived placement and an authored one are on the same line.
+#: Vertical. 0.52 for centre, slightly below the midline, so a derived
+#: placement and a typical authored one are on the same line.
 ZONE_Y = {"upper": 0.38, "center": 0.52, "lower": 0.66}
 
 

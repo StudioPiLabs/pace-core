@@ -362,7 +362,7 @@ def test_composition_tight_framing_keeps_single_anchor(fails: list[str]) -> None
     """A framing too tight to show the whole eye_level/mid_body span must
     keep the single-height aim, and put THAT point on the target.
 
-    Measured on scene_08's real panels (medium_close_up, 1.2 m): the
+    Measured on real panels (medium_close_up, 1.2 m): the
     two-point silhouette-midpoint objective is satisfiable with both
     endpoints off-screen in opposite directions, so applying it here tilts
     the camera down ~15 degrees and fills the frame with the subject's

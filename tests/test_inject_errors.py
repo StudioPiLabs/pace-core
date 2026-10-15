@@ -199,7 +199,7 @@ def test_recall_counts_only_signals_that_appeared():
 
 
 def test_an_error_already_in_the_baseline_is_not_credited():
-    """The corpus breakdown has 48 genuinely missing events. Scoring the
+    """A real breakdown already misses some events. Scoring the
     mutated run absolutely would credit the verifier for all of them."""
     base = _run(missing=["e1"])
     mus = [Mutation("DeleteEvent", 0, "scene_01", "scene_01/shot_01/a0",

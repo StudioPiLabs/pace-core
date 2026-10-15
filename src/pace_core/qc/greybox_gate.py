@@ -72,7 +72,7 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Measured over 81 staged bodies across 37 panels of one production: the
+# Measured over staged bodies across a production's panels: the
 # smallest any subject has ever projected is 0.0231 of the frame and the 5th
 # percentile is 0.0359. So 0.01 passes every body measured. That is
 # deliberate -- this is a floor against a subject VANISHING (staged outside the
@@ -110,8 +110,8 @@ MAX_SUBJECT_OVERLAP = 0.35
 # isolated head matte -- no extra render, and it is the fraction that decides
 # whether a panel has a read point at all.
 #
-# Measured over 76 staged subjects the answer is bimodal and not
-# close: 72 heads are 100% visible and 4 are 0%, with nothing between. The
+# Measured over staged subjects the answer is bimodal and not close: a
+# head is either fully visible or not visible at all, with nothing between. The
 # threshold is therefore not doing subtle work; it separates "there is a head
 # to compose around" from "there is not".
 MIN_READ_POINT_VISIBLE = 0.5

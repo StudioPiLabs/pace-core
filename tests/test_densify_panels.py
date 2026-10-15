@@ -30,8 +30,8 @@ def _scene(movement_3d, gear="tripod", static=False, n_panels=1):
 
 
 def test_gear_is_not_movement():
-    """handheld is rig character. It sat in movement_3d across 16 shots of the
-    corpus, where movement_of drops it -- and where a naive reader counts it as
+    """handheld is rig character. It sits in movement_3d, where movement_of
+    drops it -- and where a naive reader counts it as
     a camera move and densifies a frame that never travels."""
     assert framing_moves(_scene(["handheld"])["shots"][0]) == []
     assert framing_moves(_scene(["static"])["shots"][0]) == []

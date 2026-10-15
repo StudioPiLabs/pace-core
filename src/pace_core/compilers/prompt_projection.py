@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import enum
 import json
-from dataclasses import dataclass, field as _field
+from dataclasses import dataclass
 
 from pace_core.compilers.compile_common import _character_hint
 from pace_core.pai_compat import (
@@ -256,7 +256,7 @@ FIELDS: dict[str, Rule] = {
         "to it deterministically, or the writer path reintroduces the bug the "
         "compiler path just lost."),
     "setup.subjects[].gaze": Rule(
-        Mode.NEVER_FILLED, "0 of 58 subjects. Untested here, and flagged in "
+        Mode.NEVER_FILLED, "Never filled in the measured data. Untested here, and flagged in "
         "the source system as one of the hardest rules with the emptiest "
         "data — not evidence that it does not matter.", "untested"),
 
@@ -265,8 +265,8 @@ FIELDS: dict[str, Rule] = {
     # Found by comparing a written prompt against the compiled one: the
     # compiler pulls a character's physical description from a SECOND KB
     # file this projection never read, so every written prompt had been
-    # missing the only identity signal that exists — no LoRA is trained for
-    # any of the three leads (lora.path is null), so this prose is the sole
+    # missing the only identity signal that exists — when no LoRA is trained
+    # for the cast (lora.path is null), this prose is the sole
     # thing telling the model who is on screen.
     "character.descriptor": Rule(
         Mode.WRITE, "One character's canonical physical description — build, "
@@ -280,15 +280,15 @@ FIELDS: dict[str, Rule] = {
         "QUARANTINED — found to contradict this registry's own costume for "
         "the same character in the same shot) and from the scene-level "
         "continuity_anchor (QUARANTINED for contradicting this registry's "
-        "age_band on 4 of 5 cast). This field IS the registry, not a copy of "
+        "age_band on most of the cast). This field IS the registry, not a copy of "
         "it, and carries neither contradiction.", "measured", True),
     "character.trigger": Rule(
-        Mode.INPUT_ONLY, "A LoRA activation word for a model that, for this "
-        "cast, does not exist yet (lora.path is null for all three leads). "
+        Mode.INPUT_ONLY, "A LoRA activation word for a model that may not "
+        "exist yet (lora.path is null until one is trained). "
         "Kept as context rather than dropped, since it costs nothing and the "
         "day a LoRA lands here it should already know to expect a trigger "
         "convention — but writing an inert activation word into prose reads "
-        "as a name, and this cast is not named that in dialogue."),
+        "as a name the cast is not called in dialogue."),
 
     # ── props ────────────────────────────────────────────────────────────
     "setup.props[].name": Rule(Mode.WRITE, "What the thing is."),
@@ -296,16 +296,16 @@ FIELDS: dict[str, Rule] = {
         Mode.WRITE, "The prop's fixed identity phrase, verbatim."),
     "setup.props[].material": Rule(
         Mode.WRITE, "Bound to the named prop only — material bleeds: writing "
-        "'wooden' of a door turned the floor wooden too. Set on 8 of 76 props, "
+        "'wooden' of a door turned the floor wooden too. Rarely set, and then "
         "as snake_case tokens the writer has to render into English.",
         "measured", True),
     "setup.props[].size": Rule(Mode.WRITE, "Physical size of the prop."),
     "setup.props[].state": Rule(
         Mode.WRITE, "Its own sentence, never folded into the action: an action "
         "sentence freezes a prop mid-fall, where a state sentence lands it "
-        "('the chair lies on its side on the floor'). Thin here — set on 8 of "
-        "76 props, and the only value is the token 'active', which is not a "
-        "described state. Worth authoring properly.", "measured", True),
+        "('the chair lies on its side on the floor'). Often thin in practice — "
+        "a bare token such as 'active' is not a described state. Worth "
+        "authoring properly.", "measured", True),
     "setup.props[].cls": Rule(Mode.INPUT_ONLY, "Schema bookkeeping."),
     "setup.props[].prop_id": Rule(Mode.INPUT_ONLY, "Identity, not English."),
     "setup.props[].screen_position": Rule(

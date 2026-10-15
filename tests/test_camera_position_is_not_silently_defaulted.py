@@ -1,8 +1,8 @@
 """An unstated camera position is reported, not silently treated as 'front'.
 
 `BUILDABLE_POSITIONS.get(extr.get("position") or "front")` turned an absent
-field into a positive statement. scene_02 declares `three_quarter` on three of
-its four shots and left shot_03 empty, so that one shot swung 25 degrees onto
+field into a positive statement. A scene declaring `three_quarter` on three of
+its four shots and leaving shot_03 empty swung that one shot 25 degrees onto
 the axis mid-scene: measured off the body mattes, the cast's spread went from
 0.255 of frame width on its siblings to 0.400 on shot_03, with the flanking
 subjects landing on opposite sides of their declared marks. Nothing reported

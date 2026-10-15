@@ -32,8 +32,8 @@ from pace_core.node.panel_greybox import (  # noqa: E402
 
 
 def test_kneeling_is_its_own_pose_now():
-    """It used to answer "sitting", so every kneel in the corpus staged as a
-    seated body -- in scene_06 and scene_07 that is the grief beat."""
+    """It used to answer "sitting", so every authored kneel staged as a
+    seated body."""
     for text in ("kneeling or crouched grief pose", "crouching by the door",
                  "kneels on the road", "kneeling, hands on her shoulder"):
         assert pose_key_for(text) == "kneeling", text
@@ -105,9 +105,9 @@ def test_the_fallback_chain_terminates():
 
 def test_motionless_is_stillness_not_posture():
     """It was in the `lying` bucket at highest precedence, so "standing tall,
-    motionless, watching building" staged a body on the floor -- 10 of another production's
-    190 subjects. It only ever looked right because the corpus that taught the
-    table wrote "lying motionless", where "lying" already matches."""
+    motionless, watching building" staged a body on the floor. It only ever
+    looked right because the breakdown that taught the table wrote "lying
+    motionless", where "lying" already matches."""
     from pace_core.node.panel_greybox import pose_key_for
     assert pose_key_for("standing tall, motionless, watching building") == "standing"
     assert pose_key_for("seated motionless at the desk") == "sitting"

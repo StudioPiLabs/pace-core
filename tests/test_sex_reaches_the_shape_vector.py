@@ -33,7 +33,7 @@ def test_a_male_body_is_shaped_on_the_axis_that_carries_sex():
 
 def test_the_male_offset_tracks_build():
     """A fixed offset is calibrated at one build and drifts everywhere else:
-    at -2.0 the corpus's slim eighteen-year-old kept a female chest while the
+    at -2.0 a slim young adult body kept a female chest while the
     athletic lead went concave. Build and sex act on the same tissue, so the
     offset has to move with build -- more of it for a slim body, less for a
     heavy one."""
