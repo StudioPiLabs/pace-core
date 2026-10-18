@@ -80,3 +80,15 @@ def test_codex_refreshes_only_near_expiry_and_keeps_the_rotated_token(tmp_path, 
     saved = json.loads(path.read_text())
     assert calls == ["r1"] and saved["tokens"]["refresh_token"] == "r2" and saved["auth_mode"] == "chatgpt"
     assert path.stat().st_mode & 0o777 == 0o600
+
+
+def test_first_use_from_many_threads_imports_litellm_once():
+    """A split fans its chunks out over threads; concurrent first imports used to deadlock."""
+    import subprocess
+    import sys
+    code = ("import threading; from pace_core import llm_client as c; b = threading.Barrier(8); out = []\n"
+            "def go():\n    b.wait(); out.append(c._litellm())\n"
+            "ts = [threading.Thread(target=go) for _ in range(8)]; [t.start() for t in ts]; [t.join(60) for t in ts]\n"
+            "assert len(out) == 8 and len({id(m) for m in out}) == 1, out")
+    run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
+    assert run.returncode == 0, run.stderr[-800:]

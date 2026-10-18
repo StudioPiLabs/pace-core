@@ -22,6 +22,7 @@ not LiteLLM's price list, so a registry entry stays the one source of truth.
 import json
 import os
 import re
+import threading
 import urllib.error
 import urllib.request
 from typing import Optional
@@ -174,6 +175,9 @@ def _call_codex(model: str, messages: list, options: dict, timeout) -> tuple[str
 
 
 _litellm_module = None
+# Callers fan out across threads (split chunks, per-scene verification); two
+# threads importing LiteLLM at once deadlock in its circular imports.
+_litellm_lock = threading.Lock()
 
 
 def _litellm():
@@ -182,6 +186,13 @@ def _litellm():
     Lazy so that importing this module (for default_model) stays cheap and
     works where LiteLLM is not installed, e.g. inside Blender.
     """
+    if _litellm_module is None:
+        with _litellm_lock:
+            _load_litellm()
+    return _litellm_module
+
+
+def _load_litellm() -> None:
     global _litellm_module
     if _litellm_module is None:
         os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")  # no price-list fetch at import
@@ -205,7 +216,6 @@ def _litellm():
         litellm.custom_provider_map.append({"provider": "codex", "custom_handler": CodexSubscription()})
         litellm.suppress_debug_info = True
         _litellm_module = litellm
-    return _litellm_module
 
 
 # ── dispatch ──────────────────────────────────────────────────────────
