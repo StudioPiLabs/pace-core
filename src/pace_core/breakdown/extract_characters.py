@@ -42,19 +42,21 @@ LOCAL_PORT_COMFY  = 15000
 
 EXTRACTION_SYSTEM_PROMPT = """You are a casting director and production assistant. Read the scene breakdown and extract every CHARACTER who appears, even briefly.
 
-A character is a named human (or human-like entity) the camera frames. Skip:
-  - Anonymous extras / background crowds (described but not named)
-  - Animals (unless they have dialogue or a name)
-  - Voices off-screen with no body
+A character is any individually framed agent: human, animal, creature, robot,
+or animated object. Include unnamed animals and silent characters. Reuse every
+character_id already declared in setup.subjects exactly; do not rename it.
+Skip unindividuated background crowds and off-screen voices with no body.
 
 Return one JSON object: {"characters": [...]}. For each character:
   id                stable lowercase identifier with underscores (e.g. "jia", "elder_brother")
   name              human-readable label (e.g. "Jia", "Elder Brother")
+  entity_type       "human" | "animal" | "creature" | "robot" | "unknown"
+  species           source-supported species, or null; do not invent one
   trigger           short LoRA trigger string (e.g. "jia_woman", "wei_man") — 1-3 tokens
   anchor            30-50 word Flux prompt fragment describing physical appearance
                     (age, build, ethnicity, distinguishing features). NO emotion words,
                     NO clothing — those go in costumes / per-shot prompt.
-  age_estimate      integer
+  age_estimate      integer or null when unknown/inapplicable
   gender            "male" | "female" | "nonbinary" | "unknown"
   scenes            list of scene_id values where the character appears
   director_notes    one sentence: what role they play in the story / why they matter
@@ -104,6 +106,37 @@ def extract_characters_from_scenes(scenes_breakdown: dict, model_key: str) -> tu
 SCHEMA_KEYS = {"_schema_version", "_purpose", "_field_definitions", "ensemble_rules"}
 
 
+def declared_characters(scenes: list[dict]) -> list[dict]:
+    """Source-only entries for every typed subject, including panel overrides."""
+    from pace_core.pai_compat import resolve_shot
+
+    entries = {}
+    for scene in scenes:
+        for shot in scene.get("shots") or []:
+            for panel in [None, *(shot.get("panels") or [])]:
+                resolved = resolve_shot(scene, shot, panel)
+                for subject in (resolved.get("setup") or {}).get("subjects") or []:
+                    cid = subject.get("character_id")
+                    if not isinstance(cid, str) or not cid or cid in SCHEMA_KEYS:
+                        continue
+                    entry = entries.setdefault(cid, {"id": cid, "name": cid, "entity_type": "unknown",
+                        "scenes": [], "metadata_status": "source_only"})
+                    sid = scene.get("scene_id")
+                    if sid and sid not in entry["scenes"]:
+                        entry["scenes"].append(sid)
+    return list(entries.values())
+
+
+def seed_declared_characters(*, project: str) -> dict:
+    """Repair missing registry identities from typed shots without a model call."""
+    from pace_core.breakdown.scenes_kb import load_all_scenes
+
+    entries = declared_characters(load_all_scenes(project=project)["scenes"])
+    created, updated = merge_into_characters_json(entries, paths_for(project).chars_file)
+    return {"declared_ids": [c["id"] for c in entries], "registry_created": created,
+            "registry_updated": updated}
+
+
 def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple[int, int]:
     """Returns (created_count, updated_count). Never overwrites existing fields."""
     if chars_file.exists():
@@ -138,6 +171,7 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
                     "gender":        c.get("gender"),
                     "scenes":        c.get("scenes", []),
                     "extracted_at":  _now_iso(),
+                    "metadata_status": c.get("metadata_status", "extracted"),
                 },
             }
             created += 1
@@ -154,6 +188,13 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
             existing["costumes"] = existing_costumes
             if scenes_new != scenes_existing:
                 updated += 1
+        for key in ("entity_type", "species", "body_proxy_3d"):
+            if key == "entity_type" and existing is not None and c.get("metadata_status") == "source_only":
+                continue  # Source seeding must not reclassify an existing artist entry.
+            if c.get(key) and not registry[cid].get(key):
+                registry[cid][key] = c[key]
+        if c.get("metadata_status") != "source_only":
+            registry[cid].setdefault("_extracted", {})["metadata_status"] = "extracted"
 
     chars_file.write_text(json.dumps(registry, indent=2, ensure_ascii=False))
     return created, updated
@@ -202,6 +243,9 @@ def run(*, project: str = "main",
 
     print(f"== Phase 1: extracting characters from {len(scenes)} scenes via {model}")
     extracted, cost = extract_characters_from_scenes({"scenes": scenes}, model_key=model)
+    declared = declared_characters(scenes)
+    missing = [c for c in declared if c["id"] not in {item["id"] for item in extracted}]
+    extracted = [*extracted, *missing]
     print(f"   -> {len(extracted)} characters identified: {[c['id'] for c in extracted]}")
 
     chars_file = paths_for(project).chars_file
@@ -214,6 +258,7 @@ def run(*, project: str = "main",
         "model":              model,
         "extracted_count":    len(extracted),
         "extracted_ids":      [c.get("id") for c in extracted],
+        "source_only_ids":    [c["id"] for c in missing],
         "registry_created":   created,
         "registry_updated":   updated,
         "llm_cost_usd":       round(cost, 4),

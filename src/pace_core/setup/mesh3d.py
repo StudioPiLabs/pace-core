@@ -17,6 +17,7 @@ from typing import Literal, Optional
 
 
 MeshSource = Literal[
+    "procedural",       # coarse authored proxy; dimensions and pose require review
     "polyhaven",        # CC0 download from polyhaven.com (source_ref = polyhaven slug)
     "hunyuan3d_v2",     # Hunyuan3D-2 image→3D via ComfyUI (source_ref = gen_id)
     "trellis",          # Microsoft Trellis (future)

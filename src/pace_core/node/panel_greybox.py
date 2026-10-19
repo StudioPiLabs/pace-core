@@ -422,6 +422,27 @@ DEFAULT_SEAT_TOP = 0.45
 
 # ── host side: read the panel, measure the proxies, build the spec ────────
 
+def _subject_mesh_for(subject: dict, paths, pose: str) -> str:
+    """An explicit character mesh takes precedence over human stature fallbacks."""
+    from pace_core.pai_compat import resolve_character
+
+    cid = subject.get("character_id") or ""
+    chars_file = getattr(paths, "chars_file", None)
+    registry = json.loads(Path(chars_file).read_text()) if chars_file and Path(chars_file).is_file() else {}
+    entry = resolve_character(cid, registry) or {}
+    declared = entry.get("body_proxy_3d")
+    if isinstance(declared, dict):
+        declared = declared.get(pose) or declared.get("default") or declared.get("mesh_file")
+    if isinstance(declared, str) and declared:
+        path = Path(declared)
+        return str(path if path.is_absolute() else Path(paths.storage) / path)
+    meshes = Path(paths.meshes_dir) / "characters"
+    if entry.get("entity_type") in {"animal", "creature", "robot", "unknown"}:
+        # A missing animal/unknown proxy must never resolve to a human body.
+        return str(meshes / f"{cid}.obj")
+    return _mesh_for(subject.get("age_state") or "", meshes, pose, cid)
+
+
 def _mesh_for(age_state: str, meshes_dir: Path, pose: str = "sitting",
               character: str = "") -> str:
     """Character, stature and pose -> which SMPL-X mesh.
@@ -1223,13 +1244,10 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # like a standing one put its neighbour 0.95 m from its centre -- on
         # top of it. Each neighbour is spaced by what both of them occupy, so a
         # cast with nobody lying is spaced exactly as before.
-        _chars = Path(p.meshes_dir) / "characters"
-
         def _footprint_m(s: dict) -> float:
             if pose_key_for(s.get("pose"), pose) != "lying":
                 return SUBJECT_SPACING_M
-            mesh = Path(_mesh_for(s.get("age_state") or "", _chars, "lying",
-                                  s.get("character_id") or ""))
+            mesh = Path(_subject_mesh_for(s, p, "lying"))
             return _proxy_length_m(str(mesh)) if mesh.is_file() else 1.75
 
         n = len(subs)
@@ -1247,7 +1265,6 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     cam = shot.get("camera") or {}
     intr = cam.get("intrinsics") or {}
     extr = cam.get("extrinsics") or {}
-    meshes_dir = Path(p.meshes_dir) / "characters"
 
     # Where the camera stands is the panel's to say, the same as its lens and
     # its angle -- these are the schema's own literals (types_v1
@@ -1381,9 +1398,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # three identical crouching bodies in a row where one should have been on
     # the ground.
     subjects = [{"character_id": s.get("character_id") or f"subj{i}",
-                 "mesh": _mesh_for(s.get("age_state") or "", meshes_dir,
-                                   pose_key_for(s.get("pose"), pose),
-                                   s.get("character_id") or ""),
+                 "mesh": _subject_mesh_for(s, p, pose_key_for(s.get("pose"), pose)),
                  "pose": pose_key_for(s.get("pose"), pose),
                  "facing_deg": _facing_from_gaze(subs, places, i),
                  # The aim solve needs to know what each subject asked for,
@@ -1400,7 +1415,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
                  "declared_xy": _declared_xy(s)}
                 for i, s in enumerate(subs)]
     for sj in subjects:
-        if Path(sj["mesh"]).is_file():
+        if Path(sj["mesh"]).is_file() and Path(sj["mesh"]).suffix.lower() == ".obj":
             sj["seat_contact"] = _seat_contact_z(sj["mesh"])
     if dress:
         from pace_core.pai_compat import costume_text, wardrobe_of
@@ -1620,7 +1635,6 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
     _stub_doc = json.loads(Path(p.loc_stubs_file).read_text()) or {}
     stubs = _stub_doc.get("stubs") or {}
     _env_shape, _prefix_shape = shape_maps_from_doc(_stub_doc)
-    meshes_dir = Path(p.meshes_dir) / "characters"
     files = ([Path(p.scenes_dir) / f"{scene_id}.json"] if scene_id
              else sorted(Path(p.scenes_dir).glob("scene_*.json")))
 
@@ -1669,9 +1683,7 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
                 # names a mesh nobody was going to open.
                 loc_pose = "sitting" if shape == "subway" else "standing"
                 missing = [m for m in
-                           {_mesh_for(s.get("age_state") or "", meshes_dir,
-                                      pose_key_for(s.get("pose"), loc_pose),
-                                      s.get("character_id") or "")
+                           {_subject_mesh_for(s, p, pose_key_for(s.get("pose"), loc_pose))
                             for s in subs}
                            if not Path(m).is_file()]
                 if missing:
@@ -1735,8 +1747,8 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     missing = missing_meshes(spec)
     if missing:
         return {"ok": False, "_missing_meshes": missing,
-                "error": f"missing proxy mesh(es): {missing} — generate them "
-                         f"with an SMPL-X proxy builder"}
+                "error": f"missing proxy mesh(es): {missing} — assign a character mesh "
+                         f"or prepare a proxy appropriate to the character type"}
     Path(out_png).parent.mkdir(parents=True, exist_ok=True)
     out = BlenderBox().render_panel_greybox(
         PanelGreyboxSpec(spec=spec, out_png=str(out_png), export_glb=export_glb,
@@ -2721,7 +2733,13 @@ def _kernel_greybox(spec: dict) -> dict:
     joints_world = {}   # character_id -> {joint: world point}; see joint_points
     for i, subj in enumerate(spec["subjects"]):
         before = set(bpy.data.objects)
-        bpy.ops.wm.obj_import(filepath=subj["mesh"])
+        suffix = Path(subj["mesh"]).suffix.lower()
+        if suffix in {".glb", ".gltf"}:
+            bpy.ops.import_scene.gltf(filepath=subj["mesh"])
+        elif suffix == ".fbx":
+            bpy.ops.import_scene.fbx(filepath=subj["mesh"])
+        else:
+            bpy.ops.wm.obj_import(filepath=subj["mesh"])
         imported = [o for o in set(bpy.data.objects) - before if o.type == "MESH"]
         if not imported:
             continue
