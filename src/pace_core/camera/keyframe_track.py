@@ -35,7 +35,8 @@ def _vector(value, name: str) -> list[float]:
     return out
 
 
-def _normalise(keys: Sequence[dict]) -> list[dict]:
+def _normalise(keys: Sequence[dict], extra: Sequence[str] = ()) -> list[dict]:
+    """Validated keys sorted by time; `extra` names fields carried through as given."""
     if not keys:
         raise ValueError("no camera keys supplied")
     out = []
@@ -48,7 +49,8 @@ def _normalise(keys: Sequence[dict]) -> list[dict]:
             raise ValueError(f"key {n}: lens_mm must be positive")
         out.append({"time": time, "lens_mm": lens,
                     "position": _vector(key.get("position"), f"key {n} position"),
-                    "rotation_deg": _vector(key.get("rotation_deg"), f"key {n} rotation_deg")})
+                    "rotation_deg": _vector(key.get("rotation_deg"), f"key {n} rotation_deg"),
+                    **{k: key[k] for k in extra if k in key}})
     out.sort(key=lambda k: k["time"])
     if any(b["time"] - a["time"] <= 1e-9 for a, b in zip(out, out[1:])):
         raise ValueError("camera keys need distinct times")
