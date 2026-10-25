@@ -109,6 +109,9 @@ def _blender_env() -> dict:
             "PAI_BRANCH": _paths.PAI_BRANCH,
             "MODELS_FILE": str(_paths.MODELS_FILE)}
 
+# Scene files the convert kernel reads with Blender's USD importer.
+USD_EXTENSIONS = (".usd", ".usda", ".usdc", ".usdz")
+
 # Logical op → bpy kernel file. These run INSIDE Blender, not here. Single
 # source of truth for "which file carries each kernel". Some kernels are
 # embedded (dual-mode) in a host module and selected with `--kernel <name>`:
@@ -618,14 +621,14 @@ def default_preview_path(project: str, scene_id: str, shot_id: str) -> Path:
 # ════════════════════════════════════════════════════════════════════════
 
 
-# ── kernel: convert (FBX/OBJ/glTF → GLB, keeps embedded animation) ────────
+# ── kernel: convert (FBX/OBJ/USD/glTF → GLB, keeps embedded animation and cameras) ──
 
 def _kernel_convert(argv: list) -> None:
     """Import a mesh and re-export as one GLB with its embedded animation.
     Prints RESULT_JSON={ok, out, actions} for BlenderBox.convert."""
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("--in", dest="inp", required=True, help="source FBX/OBJ/glTF")
+    ap.add_argument("--in", dest="inp", required=True, help="source FBX/OBJ/USD/glTF")
     ap.add_argument("--out", required=True, help="destination .glb")
     args = ap.parse_args(argv)
 
@@ -644,12 +647,16 @@ def _kernel_convert(argv: list) -> None:
             bpy.ops.import_scene.gltf(filepath=args.inp)
         elif ext == ".obj":
             bpy.ops.wm.obj_import(filepath=args.inp)
+        elif ext in USD_EXTENSIONS:
+            bpy.ops.wm.usd_import(filepath=args.inp)
         else:
             raise SystemExit(f"unsupported input extension: {ext!r}")
 
     bpy.ops.object.select_all(action="SELECT")
+    # Cameras are off by default in the glTF exporter; a camera move shipped in
+    # the source is what camera-track extraction reads back out of this GLB.
     bpy.ops.export_scene.gltf(filepath=args.out, export_format="GLB",
-                              export_animations=True, use_selection=True)
+                              export_animations=True, use_selection=True, export_cameras=True)
     n_actions = len(bpy.data.actions)
     print("RESULT_JSON=" + json.dumps(
         {"ok": True, "out": args.out, "actions": n_actions}))
