@@ -47,3 +47,17 @@ def test_renamed_motion_compiler_keeps_its_old_name():
     from pace_core.camera import movement_io as m
     assert m.compile_wan_motion is m.compile_motion_phrase
     assert m.compile_motion_phrase(["push_in"]) == m.compile_wan_motion(["push_in"])
+
+
+@pytest.mark.parametrize("beauty", [False, True])
+def test_render_depth_asks_the_kernel_for_a_beauty_pass_only_when_set(monkeypatch, tmp_path, beauty):
+    monkeypatch.setattr(blender_box, "KERNEL_DIRS", [tmp_path])
+    (tmp_path / blender_box.KERNELS["render_depth"]).write_text("# kernel\n")
+    glb = tmp_path / "scene.glb"
+    glb.write_bytes(b"glTF")
+    calls = []
+    monkeypatch.setattr(blender_box.BlenderBox, "_invoke", lambda self, cmd, timeout: calls.append(cmd) or {"ok": True})
+    track = [{"position": [0, -3, 1], "rotation_deg": [90, 0, 0], "lens_mm": 35}]
+    blender_box.BlenderBox(bin="blender").render_depth(blender_box.DepthSeqSpec(
+        track=track, out_dir=str(tmp_path / "out"), glb_file=str(glb), emit_beauty=beauty))
+    assert ("--emit-beauty" in calls[0]) is beauty
