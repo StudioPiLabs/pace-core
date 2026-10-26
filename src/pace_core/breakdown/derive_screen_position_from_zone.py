@@ -7,7 +7,7 @@ are what a reader of a screenplay can say. It does not return `x` and `y`,
 because a number is not in the text, and nothing else fills them: on another production all
 190 subject placements carry `x: null`.
 
-The consequences are downstream and silent. `panel_greybox._declared_x` reads
+The consequences are downstream and silent. `panel_modeling._declared_x` reads
 a null as 0.5, so every subject sorts to the same place and the seat assignment
 spreads them evenly -- which is how a scene of a hundred people working late
 staged as three figures standing in a row. The composition solve then has

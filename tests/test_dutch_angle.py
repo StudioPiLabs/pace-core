@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from pace_core.compilers.compile_common import CompileContext
 from pace_core.compilers.compile_flux2 import compile_flux2
-from pace_core.node.panel_greybox import DUTCH_ROLL_DEG, _roll_of, anchor_version
+from pace_core.node.panel_modeling import DUTCH_ROLL_DEG, _roll_of, anchor_version
 
 
 def test_dutch_alone_implies_the_conventional_cant():
@@ -65,7 +65,7 @@ def test_the_vocabulary_spellings_of_high_and_low_reach_the_elevation_table():
     """`high`/`low` are the type vocabulary's words; the table was keyed only
     by the corpus's `high_angle`/`low_angle`, so a shot declared `high` was
     built at eye level."""
-    from pace_core.node.panel_greybox import _angle_class
+    from pace_core.node.panel_modeling import _angle_class
     assert _angle_class({"angle": "high"}) == "high_angle"
     assert _angle_class({"angle": "low"}) == "low_angle"
     assert _angle_class({"angle": "high_angle"}) == "high_angle"

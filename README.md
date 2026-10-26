@@ -19,7 +19,7 @@ It accompanies the paper *PACE: Script Breakdown and Precise Cinematic Geometry 
 | `pace_core.setup` | composition solver (read-point aiming), location shapes |
 | `pace_core.compilers` | prompt compilation (Flux 2), prompt projection |
 | `pace_core.qc` | pre-render gate on the staged anchor |
-| `pace_core.node` | Blender launcher, panel greybox kernel, control-image flattening |
+| `pace_core.node` | Blender launcher, panel 3D model kernel, control-image flattening |
 | `pace_core.types_v1`, `pace_core.pai_compat` | PACE schema types and field accessors |
 | `pace_core.usd_export` | OpenUSD export |
 
@@ -38,7 +38,7 @@ Optional extras:
 network access to GitHub and a resolver that allows direct references.
 
 Staging needs Blender 4.2 or later. `BlenderBox` ships the convert, passes and
-panel-greybox kernels; the scene-assembly, shot-preview, depth-sequence and
+panel-modeling kernels; the scene-assembly, shot-preview, depth-sequence and
 GLB-export kernels (`KERNELS` in `pace_core.node.blender_box`) come from the
 host application, which registers their directory with
 `blender_box.register_kernel_dir(...)`. A missing kernel raises `KernelNotFound`.

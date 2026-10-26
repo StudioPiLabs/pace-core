@@ -20,7 +20,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node.panel_greybox import _facing_from_gaze  # noqa: E402
+from pace_core.node.panel_modeling import _facing_from_gaze  # noqa: E402
 
 
 def _at(cid: str) -> dict:

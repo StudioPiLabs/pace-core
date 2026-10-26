@@ -2,7 +2,7 @@
 
 Takes `kb/on_scene/scenes_breakdown.json`, finds locations that don't yet have a bible
 file, asks an LLM to write the bible (anchor, lighting plan, camera positions,
-variable states, AND a `primitives_spec` for greybox geometry) — then runs
+variable states, AND a `primitives_spec` for 3D model geometry) — then runs
 Blender headless to materialize the .blend file from that spec.
 
 The LLM is constrained: it can only emit primitives from the small fixed
@@ -51,7 +51,7 @@ Output ONE JSON object with these fields:
   camera_positions    {<position_name>: <description>}     several named camera presets matching the scene's needs
   variable_states     {<state_name>: {options, default, constancy_rule}}    things that may differ shot-to-shot vs that must stay constant
   production_notes    one sentence on the trickiest thing to keep consistent
-  primitives_spec     {primitives: [...]}     greybox geometry for ControlNet depth pass — see PRIMITIVE_SCHEMAS below
+  primitives_spec     {primitives: [...]}     3D model geometry for ControlNet depth pass — see PRIMITIVE_SCHEMAS below
 
 The `primitives_spec` is the most important field for downstream automation. RULES:
 

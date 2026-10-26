@@ -1,4 +1,4 @@
-"""Blender greybox primitive library.
+"""Blender 3D model primitive library.
 
 A small, fixed vocabulary of geometric building blocks for ControlNet depth
 passes. The LLM in `build_locations.py` does NOT generate Blender code —

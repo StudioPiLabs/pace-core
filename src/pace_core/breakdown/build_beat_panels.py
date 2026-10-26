@@ -171,7 +171,7 @@ def props_on_subjects(beat: dict, shown: set[str],
 
 def to_panel(beat: dict, plan: dict, template: dict, n: int,
              scene_id: str, prop_map: dict | None = None) -> dict:
-    """A shot carrying one panel, in the shape the greybox stage reads.
+    """A shot carrying one panel, in the shape the 3D model stage reads.
 
     `prop_map` maps the beat's state and event names to registry prop ids.
     """
@@ -217,9 +217,9 @@ def to_panel(beat: dict, plan: dict, template: dict, n: int,
     else:
         ci.pop("framing", None)
     cam.setdefault("extrinsics", {})["angle"] = plan.get("angle") or "eye_level"
-    # Only a position the greybox can build. Anything else fails at the
+    # Only a position the 3D model can build. Anything else fails at the
     # geometry stage, after the model call that chose it has been paid for.
-    from pace_core.node.panel_greybox import BUILDABLE_POSITIONS
+    from pace_core.node.panel_modeling import BUILDABLE_POSITIONS
     pos = plan.get("camera_position")
     cam["extrinsics"]["position"] = pos if pos in BUILDABLE_POSITIONS else "three_quarter"
 

@@ -51,7 +51,7 @@ def _scene():
 
 
 def test_geometry_never_reaches_the_model():
-    """The load-bearing constraint. The greybox decides where things are; if
+    """The load-bearing constraint. The 3D model decides where things are; if
     prose re-decides it, that is two sources for one decision, which measured
     3/3 -> 2/3 on occlusion in the system this borrows from. A regression here
     would not raise anything — it would quietly make composition worse."""

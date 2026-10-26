@@ -25,8 +25,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node import panel_greybox  # noqa: E402
-from pace_core.node.panel_greybox import _FIXTURE_ANCHORS  # noqa: E402
+from pace_core.node import panel_modeling  # noqa: E402
+from pace_core.node.panel_modeling import _FIXTURE_ANCHORS  # noqa: E402
 
 
 def test_the_side_anchor_is_in_the_accepted_vocabulary():
@@ -36,7 +36,7 @@ def test_the_side_anchor_is_in_the_accepted_vocabulary():
 
 
 def test_a_side_fixture_is_placed_once_per_wall():
-    src = inspect.getsource(panel_greybox)
+    src = inspect.getsource(panel_modeling)
     block = src.split('if anchor == "shell_sides":', 1)[1].split("continue", 1)[0]
     # two instances, mirrored, each yawed to face inward
     assert "(-1.0, 1.0)" in block
@@ -47,7 +47,7 @@ def test_a_side_fixture_is_placed_once_per_wall():
 def test_the_span_contract_is_world_axes_after_rotation():
     """If fitted_mesh ever scales before it rotates, every shell_sides span in
     the KB silently means something else."""
-    src = inspect.getsource(panel_greybox)
+    src = inspect.getsource(panel_modeling)
     body = src.split("def fitted_mesh", 1)[1].split("def fixture", 1)[0]
     yaw_at = body.index("rotation_euler")
     scale_at = body.index("o.scale = (")

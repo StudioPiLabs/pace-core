@@ -323,10 +323,10 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     Hand-tuned overrides in `compile_hints[i].flux.prompt_override` still
     short-circuit when `positive` is non-empty (unchanged from Flux 1)."""
     hints = compile_hints_for_panel(scene, panel.get("id") or "")
-    # Props the greybox staged where its camera does not see them (see
+    # Props the 3D model staged where its camera does not see them (see
     # props_out_of_frame); the panel's own declaration outranks this record
     # once the shot is resolved below.
-    staged_out = props_out_of_frame(getattr(ctx, "greyboxes_dir", None), panel.get("id") or "")
+    staged_out = props_out_of_frame(getattr(ctx, "modeling_dir", None), panel.get("id") or "")
     flux_hints = (hints.get("flux") or {})
     override = flux_hints.get("prompt_override")
     if isinstance(override, dict) and override.get("positive"):
@@ -382,7 +382,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
             # child. Panels declare a handful of subjects, so the prompt-length
             # concern the cap addressed does not arise in practice.
             # Named in the order they stand on screen, each anchored to where
-            # the greybox stages it. The registry order this used to follow
+            # the 3D model stages it. The registry order this used to follow
             # carries no spatial information, so the text left it to the
             # sampler to decide which description belonged to which body: the
             # count and the positions came out right and the *people* moved

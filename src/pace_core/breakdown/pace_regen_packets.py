@@ -840,7 +840,7 @@ def build_packets(project: str, base_model: str | None) -> dict[str, Any]:
     prop_anchors = build_prop_anchors(paths.storage, props, images)
     location_anchors = build_location_anchors(paths.storage, loc_stubs, images, scene_to_loc)
     ctx = CompileContext(characters_kb=chars, props_kb=props, location_stubs=loc_stubs,
-                         film=film_of(paths.film_file), greyboxes_dir=paths.greyboxes_dir,
+                         film=film_of(paths.film_file), modeling_dir=paths.modeling_dir,
                          target_width=1280, target_height=544)
 
     regen_packets: list[dict[str, Any]] = []

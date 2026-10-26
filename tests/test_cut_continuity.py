@@ -16,7 +16,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.qc.greybox_gate import (                          # noqa: E402
+from pace_core.qc.modeling_gate import (                          # noqa: E402
     _continuity_of, cut_continuity_clause,
 )
 

@@ -1,4 +1,4 @@
-"""panel_greybox — a panel's control geometry: N bodies, in seats, under its own camera.
+"""panel_modeling — a panel's control geometry: N bodies, in seats, under its own camera.
 
 Text cannot hold a subject count. Measured on one corpus scene: an
 enumerated three-person cast rendered four people, and adding one prop clause
@@ -55,12 +55,12 @@ sized off the solved shell, and the floor is left open because the location
 says it is.
 
 Dual-mode module. Imported in the venv it is the host-side spec builder
-(`build_spec` reads the KB; `make_panel_greybox` drives BlenderBox). Run by
+(`build_spec` reads the KB; `make_panel_modeling` drives BlenderBox). Run by
 Blender --
 
-    blender --background --python panel_greybox.py -- --kernel greybox --spec S
+    blender --background --python panel_modeling.py -- --kernel 3D model --spec S
 
--- it is the greybox KERNEL (the bpy code at the bottom).
+-- it is the 3D model KERNEL (the bpy code at the bottom).
 """
 from __future__ import annotations
 
@@ -251,7 +251,7 @@ def _angle_class(extr: dict) -> str | None:
     return {"high": "high_angle", "low": "low_angle"}.get(a, a)
 # Below this share of a head's sample points reaching the lens the kernel
 # looks for another pose, and after the search it removes the furniture in
-# the way. The gate's floor (greybox_gate.MIN_READ_POINT_VISIBLE) is lower:
+# the way. The gate's floor (modeling_gate.MIN_READ_POINT_VISIBLE) is lower:
 # a head half behind a desk passes the gate and is still worth clearing.
 HEAD_CLEAR_SHARE = 0.9
 # Set pieces too large to be furniture, which the occlusion step never
@@ -452,7 +452,7 @@ def _mesh_for(age_state: str, meshes_dir: Path, pose: str = "sitting",
     the project ships 125 cm and 175 cm variants of each pose, and an adult and
     an 18-year-old both read as the taller one. That fallback is what every
     panel used before per-character proxies were baked, and it is why one body
-    stood in for the whole cast in every greybox: this function was never given
+    stood in for the whole cast in every 3D model: this function was never given
     a character to look up.
 
     A pose with no mesh on disk degrades along `_POSE_FALLBACK` rather than
@@ -595,7 +595,7 @@ def _proxy_length_m(mesh: str) -> float:
 # than metres so one placement survives a cabin of different proportions --
 # a console spans the width of whatever cabin it is in.
 # One list, kept in pai_compat because the prompt compiler reads it too: a
-# prop the greybox will not stage is one the compiler must not name away from
+# prop the 3D model will not stage is one the compiler must not name away from
 # the cast (prop_left_unstaged_away_from_cast).
 _FIXTURE_ANCHORS = FIXTURE_ANCHORS
 
@@ -871,10 +871,10 @@ def _unoccupied_slots(seat_count: int, occupied: list, cabin: list) -> list:
     Seats were staged one per SUBJECT, so a two-person shot in a four-seat car
     put two chairs on the floor and left the rest of it bare — and bare floor
     in a control image is an invitation rather than a constraint. Measured on
-    one shot: the greybox staged two seats, and the delivered panel
+    one shot: the 3D model staged two seats, and the delivered panel
     came back with a third chair and a wraparound console invented into the
     empty half of the cabin. How many seats a car has is a fact about the set,
-    and the set is what the greybox exists to state.
+    and the set is what the 3D model exists to state.
 
     Each occupied position claims the slot nearest it, so the empties are
     whatever the cast did not take, wherever the tuned placement put them.
@@ -921,13 +921,13 @@ def _facing_from_gaze(subs: list, places: list, i: int) -> float:
     return math.degrees(math.atan2(dy, dx)) - 90.0
 
 
-# Garment tones for the proxy, read off the registered costume. The greybox is
+# Garment tones for the proxy, read off the registered costume. The 3D model is
 # one flat grey, and denoised from it at 0.55 the sampler decides a garment
 # from the body's shape alone -- so the same declared shirt came back a
 # different shirt in every panel of one scene, with the character's own
 # plate as a reference and without. A tone in the control image is a decision
 # the sampler starts from rather than one it makes. Values are the grey the
-# garment should read as, on the 0..1 scale of the greybox's own 0.55.
+# garment should read as, on the 0..1 scale of the 3D model's own 0.55.
 _GARMENT_TOPS = ("t-shirt", "tshirt", "tee", "tank", "vest", "shirt", "blouse",
                  "sweater", "sweatshirt", "pullover", "cardigan", "jumper", "hoodie",
                  "jacket", "blazer", "parka", "coat", "tunic", "polo", "top", "dress")
@@ -1095,7 +1095,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # 0.10, and at a three-quarter azimuth that put a rear subject
         # directly behind the centre-front one: scene 2 rendered 67% of
         # one subject's silhouette under another's in every one of its four panels,
-        # and the greybox gate had to grow a clause to notice.
+        # and the 3D model gate had to grow a clause to notice.
         #
         # Widening the rear row is the other lever and this cabin no longer
         # has room for it -- at 2.05 m across, a rear subject is already
@@ -1526,7 +1526,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # recorded one. A measured shell is a build product and not a
         # declaration, so this is the only way a pure KB read can arrive at
         # the same `anchor_version` the build stamped -- see
-        # `_record_scene_shell`. `make_panel_greybox` overrides it when it is
+        # `_record_scene_shell`. `make_panel_modeling` overrides it when it is
         # given a shell, so a rebuild uses the new one, not this.
         **({"scene_shell": shell} if (shell := _recorded_scene_shell(out_png))
            else {}),
@@ -1625,7 +1625,7 @@ def missing_meshes(spec: dict) -> list[str]:
 
 
 def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
-    """Every panel in scope, with whether a greybox can be built for it.
+    """Every panel in scope, with whether a 3D model can be built for it.
 
     Answers without building, so a batch can report what it skipped and why
     instead of either failing at the first exterior panel or quietly filling a
@@ -1702,7 +1702,7 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
     return out
 
 
-def make_panel_greybox(project: str, scene_id: str, panel_id: str,
+def make_panel_modeling(project: str, scene_id: str, panel_id: str,
                        out_png: str | Path,
                        res: tuple[int, int] = DEFAULT_RES,
                        export_glb: str | None = None,
@@ -1714,7 +1714,7 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     """Build one panel's control frame. Returns the kernel's result dict.
 
     `scene_shell`: the cabin every panel of the scene is built in, as
-    make_scene_greyboxes measures it; omitted, the shell is sized for this
+    make_scene_modeling measures it; omitted, the shell is sized for this
     panel's camera alone.
 
     `scene`: build from this scene document rather than the installed one --
@@ -1724,7 +1724,7 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     `build_spec` took this, so anything going through here built undressed
     bodies, and a caller that wanted the dressed ones had to reach past this
     function -- which is how the paper's beat pilot came to be the one set of
-    greyboxes nothing could rebuild.
+    3D models nothing could rebuild.
 
     Blender is reached through BlenderBox, which is the only host-side caller
     allowed to spawn the binary -- imported here rather than at module scope
@@ -1736,7 +1736,7 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     shot's later frame off the same staged cast (Section 4.2's trajectory
     compiler names the move; this is what running it looks like on pixels).
     """
-    from pace_core.node.blender_box import BlenderBox, PanelGreyboxSpec
+    from pace_core.node.blender_box import BlenderBox, PanelModelingSpec
 
     spec = build_spec(project, scene_id, panel_id, out_png, res=res, scene=scene,
                       dress=dress)
@@ -1750,8 +1750,8 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
                 "error": f"missing proxy mesh(es): {missing} — assign a character mesh "
                          f"or prepare a proxy appropriate to the character type"}
     Path(out_png).parent.mkdir(parents=True, exist_ok=True)
-    out = BlenderBox().render_panel_greybox(
-        PanelGreyboxSpec(spec=spec, out_png=str(out_png), export_glb=export_glb,
+    out = BlenderBox().render_panel_modeling(
+        PanelModelingSpec(spec=spec, out_png=str(out_png), export_glb=export_glb,
                           export_glb_include_bodies=export_glb_include_bodies))
     # Stamp the anchor on the result. Every control signal a caller derives
     # from this build -- depth, mattes, the init frame -- comes from this
@@ -1769,7 +1769,7 @@ def make_panel_greybox(project: str, scene_id: str, panel_id: str,
     return out
 
 
-def make_scene_greyboxes(project: str, scene_id: str, out_for, *,
+def make_scene_modeling(project: str, scene_id: str, out_for, *,
                          panel_ids: list[str] | None = None,
                          res: tuple[int, int] = DEFAULT_RES,
                          dress: bool = False,
@@ -1808,12 +1808,12 @@ def make_scene_greyboxes(project: str, scene_id: str, out_for, *,
     first: dict[str, dict] = {}
     with tempfile.TemporaryDirectory() as tmp:
         for pid in all_ids:
-            first[pid] = make_panel_greybox(project, scene_id, pid,
+            first[pid] = make_panel_modeling(project, scene_id, pid,
                                             Path(tmp) / f"{pid}.png", res=res,
                                             scene=scene, dress=dress)
     bounds = [((r or {}).get("shell") or {}).get("bounds") for r in first.values()]
     if not all(bounds) or len({(r.get("shell") or {}).get("style") for r in first.values()}) != 1:
-        return {pid: make_panel_greybox(project, scene_id, pid, out_for(pid), res=res,
+        return {pid: make_panel_modeling(project, scene_id, pid, out_for(pid), res=res,
                                         scene=scene, dress=dress) for pid in ids}
     # Unrounded: a bound rounded down falls inside the panel that set it, and
     # that panel then keeps its own, a hair wider than everyone else's.
@@ -1821,7 +1821,7 @@ def make_scene_greyboxes(project: str, scene_id: str, out_for, *,
               "top_z": max(b["top_z"] for b in bounds),
               "back_y": min(b["back_y"] for b in bounds),
               "front_y": max(b["front_y"] for b in bounds)}
-    return {pid: make_panel_greybox(project, scene_id, pid, out_for(pid), res=res,
+    return {pid: make_panel_modeling(project, scene_id, pid, out_for(pid), res=res,
                                     scene=scene, dress=dress, scene_shell=shared)
             for pid in ids}
 
@@ -2011,7 +2011,7 @@ def _hair_cap(head_src, cid: str, style: dict):
     The proxy is bald, which costs nothing from the front, where the face
     carries the cues, and everything from behind: flattened to twelve grey
     levels a hairless crown is a smooth dome, and on the one over-the-shoulder
-    panel tried, the sampler repainted it as seat upholstery. The greybox
+    panel tried, the sampler repainted it as seat upholstery. The 3D model
     renders a single flat colour, so hair can only read through shape -- a
     grained surface for the cavity pass to catch, and the step where it ends.
 
@@ -2144,7 +2144,7 @@ def _hair_fall(head_src, cid: str, bounds, style: dict):
 
 
 # Garment tones ride on a colour attribute, and the beauty pass switches to
-# reading it only when some subject is dressed -- every other greybox renders
+# reading it only when some subject is dressed -- every other 3D model renders
 # exactly as it did.
 _TONE_ATTR = "pace_tone"
 _GREY = (0.55, 0.55, 0.56, 1.0)
@@ -2353,7 +2353,7 @@ def _see_past_set(*, cam, focus, bodies, heads, set_names, spec,
     return report
 
 
-def _kernel_greybox(spec: dict) -> dict:
+def _kernel_modeling(spec: dict) -> dict:
     W, D, H = spec["cabin"]          # metres: width, length, height
     # What each mesh fixture had to be scaled by to reach its declared span.
     # Collected during the build rather than derived after it, because the
@@ -2362,7 +2362,7 @@ def _kernel_greybox(spec: dict) -> dict:
     fit_report: list = []
     shell_built: dict = {}
     # Fixtures that asked for a surface this panel does not contain. Reported
-    # rather than dropped: "the monitor is not in the greybox" is a fact about
+    # rather than dropped: "the monitor is not in the 3D model" is a fact about
     # the panel's prop list, and a silent skip is how a fixture goes missing
     # for a whole corpus without anyone noticing.
     skipped_fixtures: list[dict] = []
@@ -2373,7 +2373,7 @@ def _kernel_greybox(spec: dict) -> dict:
     # renders each bible's `primitives_spec` into
     # `blender_scenes/<scene>.blend` -- another production's scene holds a floor, a
     # dropped ceiling, two walls, a window curtain wall, three desk row banks,
-    # a hero desk and a cubicle partition -- and nothing read it. The greybox
+    # a hero desk and a cubicle partition -- and nothing read it. The 3D model
     # built its own empty box beside it, so a scene about a hundred people at
     # workstations staged in a room with no workstations.
     #
@@ -2404,7 +2404,7 @@ def _kernel_greybox(spec: dict) -> dict:
                     set_names.append(ob.name)
                     set_objects += 1
         except Exception as e:                        # noqa: BLE001
-            print(f"[greybox] location set {blend} failed to append: {e}")
+            print(f"[3D model] location set {blend} failed to append: {e}")
             set_objects = 0
     shell_built["set_objects"] = set_objects
     shell_built["location_blend"] = str(blend) if set_objects else None
@@ -2581,7 +2581,7 @@ def _kernel_greybox(spec: dict) -> dict:
         Every fixture, not one anchor per call: the caller used to name the
         anchors it wanted, so adding `shell_center` to the vocabulary placed
         nothing until a matching call was added too. The fixture was read,
-        reported, and silently never built -- a greybox that rendered
+        reported, and silently never built -- a 3D model that rendered
         pixel-identical to one without it.
 
         Spans and offsets are fractions of the shell, not metres, so one
@@ -3327,7 +3327,7 @@ def _kernel_greybox(spec: dict) -> dict:
                         for fx, fy in feet):
             # Floors and ceilings are excluded by the height test: everyone
             # stands inside the floor's footprint, and removing it is how a
-            # greybox becomes the void this module's docstring is about.
+            # 3D model becomes the void this module's docstring is about.
             why = "a subject is standing inside it"
         if why:
             bpy.data.objects.remove(ob, do_unlink=True)
@@ -3379,7 +3379,7 @@ def _kernel_greybox(spec: dict) -> dict:
         # follows each camera, so the wide and the over-the-shoulders after it
         # were built 4.25 m and 4.10 m across, 6.5 m and 4.0 m long: the same
         # car with its walls, ribs and pillars somewhere else at every cut.
-        # make_scene_greyboxes measures what each panel needs and passes the
+        # make_scene_modeling measures what each panel needs and passes the
         # union, which contains every camera by construction.
         shared = spec.get("scene_shell") or {}
         if shared:
@@ -3498,7 +3498,7 @@ def _kernel_greybox(spec: dict) -> dict:
         # So: ground under and past the cast, a horizon line at a distance the
         # solve knows, and massing on it. The massing is not decoration -- this
         # location's own words are "overturned futuristic vehicle, scattered
-        # debris, responders", and blocks at that scale are the greybox of them.
+        # debris, responders", and blocks at that scale are the 3D model of them.
         # All of it sized off the camera distance, so a wide and a close-up get a
         # horizon in the same place relative to the frame rather than in metres
         # someone picked.
@@ -3509,7 +3509,7 @@ def _kernel_greybox(spec: dict) -> dict:
         # place_fixtures used to be called only from the cabin branch, so a
         # prop outdoors could not be staged however its placement was written:
         # a scene can declare a machine "rising out of the rubble" and the
-        # greybox hold two bodies and open ground, so the model invents both
+        # 3D model hold two bodies and open ground, so the model invents both
         # the rubble and the machine and put them where the composition had room —
         # across the chest of the subject in the middle. Metres, not fractions
         # of a shell, because out here there is no shell to take a fraction of.
@@ -3580,7 +3580,7 @@ def _kernel_greybox(spec: dict) -> dict:
         cam.matrix_world = mw @ mathutils.Matrix.Rotation(math.radians(roll), 4, "Z")
         bpy.context.view_layer.update()
 
-    # ── flat greybox render: shape only, no material or lighting cues ──
+    # ── flat 3D model render: shape only, no material or lighting cues ──
     sc = bpy.context.scene
     sc.render.engine = "BLENDER_WORKBENCH"
     sh = sc.display.shading
@@ -3589,7 +3589,7 @@ def _kernel_greybox(spec: dict) -> dict:
     sh.single_color = (0.55, 0.55, 0.56)
     # A dressed cast carries its garment tones as a colour attribute, and a
     # fixture the panel declares powered off carries its own; every other mesh
-    # gets the same attribute at the greybox's own grey, so the frame is
+    # gets the same attribute at the 3D model's own grey, so the frame is
     # unchanged wherever nothing was dressed and nothing was switched off.
     dark_ids = [fx["id"] for fx in (spec.get("fixtures") or []) if fx.get("dark")]
     if any(s.get("costume") or s.get("hair_tone") is not None
@@ -3724,7 +3724,7 @@ def _kernel_greybox(spec: dict) -> dict:
         depth_out = _render_depth_twin(sc, spec)
     except Exception as e:                                   # noqa: BLE001
         # A missing depth twin costs the video path its control, not the panel
-        # its greybox — the still render above is already written.
+        # its 3D model — the still render above is already written.
         print(f"depth twin not rendered: {e}")
     # What share of the frame the bodies actually occupy, counted in render
     # space rather than derived from a bounding box. This is the quantity the
@@ -3920,18 +3920,18 @@ def _kernel_greybox(spec: dict) -> dict:
 def _kernel_dispatch() -> None:
     argv = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     ap = argparse.ArgumentParser()
-    ap.add_argument("--kernel", required=True, choices=["greybox"])
+    ap.add_argument("--kernel", required=True, choices=["modeling"])
     ap.add_argument("--spec", required=True)
     a = ap.parse_args(argv)
     spec = json.loads(Path(a.spec).read_text())
     # Always emit a RESULT_JSON, including on the way out of a raise. Blender
     # exits quietly when a kernel throws: no result reaches the caller, the
     # taskq job still reports done, the route still returns 200, and the
-    # previous PNG stays on disk. A silently stale greybox is worse than a
+    # previous PNG stays on disk. A silently stale 3D model is worse than a
     # failed one, because every downstream check reads it as a fresh render
     # that happened not to change.
     try:
-        result = _kernel_greybox(spec)
+        result = _kernel_modeling(spec)
     except Exception as exc:                                   # noqa: BLE001
         import traceback
         result = {"ok": False, "error": f"{type(exc).__name__}: {exc}",

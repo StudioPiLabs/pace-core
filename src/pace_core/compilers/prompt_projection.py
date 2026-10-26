@@ -31,12 +31,12 @@ Two gates, not one — `Mode` is the distinction:
 **Geometry owns composition here, and the model does not.** This is where
 this projection departs from the system it borrows from: theirs has a
 prompt-writing model and no 3D, so its model has to write the blocking. Ours
-renders a greybox — exactly the declared cast, in the seats the location
+renders a 3D model — exactly the declared cast, in the seats the location
 describes, through the panel's own camera — and feeds it to `structure_flux2`
 as an init image. Two sources for one decision measurably degrades it
 (occlusion written alongside depth: 3/3 correct alone, 2/3 written together),
 so screen positions, coordinates and camera geometry are WITHHELD. The model
-writes what things look like. The greybox decides where they are.
+writes what things look like. The 3D model decides where they are.
 """
 from __future__ import annotations
 
@@ -117,14 +117,14 @@ FIELDS: dict[str, Rule] = {
         Mode.INPUT_ONLY, "Prose written for a human reader about the camera. "
         "Same reasoning as _design.intent."),
     "camera.intrinsics.lens_mm": Rule(
-        Mode.WITHHELD, "The greybox solves the camera from this. Writing '28mm' "
+        Mode.WITHHELD, "The 3D model solves the camera from this. Writing '28mm' "
         "as well is a second source for a decision geometry has already made."),
     "camera.intrinsics.sensor_width_mm": Rule(
         Mode.WITHHELD, "As lens_mm — solver input, not description."),
     "camera.intrinsics.fov_class": Rule(
         Mode.WITHHELD, "Restates shot_size in jargon."),
     "camera.extrinsics.position": Rule(
-        Mode.WITHHELD, "Which side the lens stands on is geometry; the greybox "
+        Mode.WITHHELD, "Which side the lens stands on is geometry; the 3D model "
         "already places it."),
     "camera.trajectory": Rule(
         Mode.WITHHELD, "A still panel has no motion. The video stage owns this."),
@@ -205,7 +205,7 @@ FIELDS: dict[str, Rule] = {
 
     # ── the room itself: geometry ────────────────────────────────────────
     "setup.space.scale_meters": Rule(
-        Mode.WITHHELD, "The greybox builds the shell from this. Prose about "
+        Mode.WITHHELD, "The 3D model builds the shell from this. Prose about "
         "room dimensions competes with a room that has already been built."),
     "setup.space.depth": Rule(Mode.WITHHELD, "As scale_meters."),
     "setup.space.orientation": Rule(Mode.WITHHELD, "As scale_meters."),
@@ -240,7 +240,7 @@ FIELDS: dict[str, Rule] = {
         "the anchor phrase, not out of this."),
     "setup.subjects[].cls": Rule(Mode.INPUT_ONLY, "Schema bookkeeping."),
     "setup.subjects[].screen_position": Rule(
-        Mode.WITHHELD, "Blocking is the greybox's. This is the field whose "
+        Mode.WITHHELD, "Blocking is the 3D model's. This is the field whose "
         "mirror bug produced a cast staged against its own declaration — "
         "fixed in geometry, and it stays fixed only if prose does not "
         "re-decide it. Withheld from the *writer* for that reason, which is "
@@ -309,7 +309,7 @@ FIELDS: dict[str, Rule] = {
     "setup.props[].cls": Rule(Mode.INPUT_ONLY, "Schema bookkeeping."),
     "setup.props[].prop_id": Rule(Mode.INPUT_ONLY, "Identity, not English."),
     "setup.props[].screen_position": Rule(
-        Mode.WITHHELD, "Blocking is the greybox's."),
+        Mode.WITHHELD, "Blocking is the 3D model's."),
 
     # ── the read point ───────────────────────────────────────────────────
     "setup.primary_focus.ref": Rule(

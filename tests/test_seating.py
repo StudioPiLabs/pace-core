@@ -1,7 +1,7 @@
 """Seat positions taken from the standard cars are measured by.
 
 The point of this module is independence, so that is what these pin. A mark
-derived from the declared box would be the greybox builder's own number, and
+derived from the declared box would be the 3D model builder's own number, and
 a clause comparing staged against declared would read zero on every panel by
 construction -- the no-gradient condition arriving inside the one clause added
 to escape it. These assert the lateral coordinate comes from W5 instead, that

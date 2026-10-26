@@ -7,7 +7,7 @@ on the floor -- including a shot whose only body verb is "approaches".
 """
 from __future__ import annotations
 
-from pace_core.node.panel_greybox import pose_key_for
+from pace_core.node.panel_modeling import pose_key_for
 
 
 def test_lay_inside_another_word_does_not_lay_the_subject_down():

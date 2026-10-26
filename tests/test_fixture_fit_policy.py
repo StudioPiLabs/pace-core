@@ -32,7 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node.panel_greybox import (  # noqa: E402
+from pace_core.node.panel_modeling import (  # noqa: E402
     _FIT_DEFAULT,
     _FIT_POLICIES,
     fit_scale,

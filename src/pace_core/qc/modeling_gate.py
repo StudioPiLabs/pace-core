@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""GreyboxGate: is this control frame fit to generate from?
+"""ModelingGate: is this control frame fit to generate from?
 
 The design (Script -> Beat -> Beat Image v1.1, section 7.5) puts a hard gate
-between the 3D anchor and the generator: only a greybox that passes enters
+between the 3D anchor and the generator: only a 3D model that passes enters
 image generation. Nothing enforced that here. Every panel that has ever been
 generated in this project was generated from whatever the geometry produced,
 including the ones where it produced the wrong thing -- and the verifier
@@ -61,8 +61,8 @@ cannot compute it.
 
 Thresholds come from measurement, not from preference; see the constants.
 
-    uv run python -m pace_core.qc.greybox_gate --project <slug>
-    uv run python -m pace_core.qc.greybox_gate --project <slug> --strict
+    uv run python -m pace_core.qc.modeling_gate --project <slug>
+    uv run python -m pace_core.qc.modeling_gate --project <slug> --strict
 """
 from __future__ import annotations
 
@@ -134,7 +134,7 @@ STALE_TOLERANCE_S = 5.0
 # for. Most built panels of a measured production had one on disk, the
 # oldest 41 hours older than its own frame. None of them can reach a render: the init is
 # derived lazily by `structure_init.structure_init_for`, which rebuilds it
-# whenever the greybox is newer, and that is the only path any consumer takes
+# whenever the 3D model is newer, and that is the only path any consumer takes
 # to reach one. Checking it here would report 23 failures for a hazard another
 # module already closes, which is worse than not checking it -- a gate whose
 # failures do not mean anything stops being read.
@@ -381,7 +381,7 @@ def background_line_clause(out: Path, need: set[str]) -> Clause:
     set_img = out.parent / (out.name + ".set.png")
     if not set_img.is_file():
         return Clause(name, None, detail="no set pass on this build; rebuild "
-                                          "the greybox to measure")
+                                          "the 3D model to measure")
     g = np.asarray(Image.open(set_img).convert("L")).astype(np.int16)
     H = g.shape[0]
     edge = np.zeros(g.shape, dtype=bool)
@@ -422,7 +422,7 @@ def joint_cut_clause(out: Path, need: set[str]) -> Clause:
     jf = out.parent / (out.name + ".joints.json")
     if not jf.is_file():
         return Clause(name, None, detail="no joint projection on this build; "
-                                          "rebuild the greybox to measure")
+                                          "rebuild the 3D model to measure")
     joints = json.loads(jf.read_text())
     cuts, measured = [], 0
     for cid in sorted(need):
@@ -629,15 +629,15 @@ def evaluate(spec: dict, out: str | Path, *,
              declared_in_frame: dict | None = None,
              declared_continuity: dict | None = None,
              previous_continuity: dict | None = None) -> GateReport:
-    """Run the gate on one built greybox.
+    """Run the gate on one built 3D model.
 
-    `spec` is what `panel_greybox.build_spec` produced; `out` is the beauty
+    `spec` is what `panel_modeling.build_spec` produced; `out` is the beauty
     frame it was rendered to. `required` names the entities that must be
     visible -- from a Beat Visual IR's required facts when there is one.
     Defaults to every subject the spec declares, which is the honest default:
     the geometry staged them, so it is asserting they are there.
     """
-    from pace_core.node.panel_greybox import anchor_version
+    from pace_core.node.panel_modeling import anchor_version
 
     out = Path(out)
     subs = spec.get("subjects") or []
@@ -775,7 +775,7 @@ def evaluate(spec: dict, out: str | Path, *,
     else:
         clauses.append(Clause(
             "read_point_visible", None,
-            detail="no visible-matte pass on this build; rebuild the greybox "
+            detail="no visible-matte pass on this build; rebuild the 3D model "
                    "to measure whether the set stands in front of a head"))
 
     # 6. control_versions_are_consistent
@@ -807,7 +807,7 @@ def evaluate(spec: dict, out: str | Path, *,
 
 
 def find_built(project: str, panel_id: str) -> Path | None:
-    """The beauty frame a panel's greybox was built to, if there is one.
+    """The beauty frame a panel's 3D model was built to, if there is one.
 
     Matched by glob on the panel id rather than by reconstructing the studio
     router's filename convention: the naming belongs to the caller that built
@@ -824,7 +824,7 @@ def find_built(project: str, panel_id: str) -> Path | None:
     """
     from pace_core.paths import paths_for
 
-    d = Path(paths_for(project).greyboxes_dir)
+    d = Path(paths_for(project).modeling_dir)
     hits = [p for p in sorted(d.glob(f"{panel_id}_*.png"))
             if p.name.count(".") == 1]
     return hits[0] if hits else None
@@ -839,7 +839,7 @@ def gate_panel(project: str, scene_id: str, panel_id: str,
     returns what was staged, and taking it as an argument would make every
     caller carry a 40-field dict to ask a yes/no question.
     """
-    from pace_core.node.panel_greybox import build_spec
+    from pace_core.node.panel_modeling import build_spec
 
     spec = build_spec(project, scene_id, panel_id, out)
     spec.setdefault("panel_id", panel_id)
@@ -965,14 +965,14 @@ def continuity_across_the_cut(project: str, scene_id: str,
 
 
 def gate_project(project: str, scene_id: str | None = None) -> list[GateReport]:
-    """Run the gate over every built greybox in scope.
+    """Run the gate over every built 3D model in scope.
 
     Panels the geometry cannot stage at all are skipped rather than failed:
-    `eligible_panels` already says why those have no greybox, and reporting
+    `eligible_panels` already says why those have no 3D model, and reporting
     them again as gate failures would drown the panels that DO have one and
     are wrong.
     """
-    from pace_core.node.panel_greybox import eligible_panels
+    from pace_core.node.panel_modeling import eligible_panels
 
     out: list[GateReport] = []
     for row in eligible_panels(project, scene_id):

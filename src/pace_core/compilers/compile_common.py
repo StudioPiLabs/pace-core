@@ -39,10 +39,10 @@ class CompileContext:
     # The film's own top matter -- genre, worldview, theme -- from
     # `kb/film.json`. Only `Film.compiled` reaches a prompt; see Film.
     film: "Film | None" = None
-    # Where the panels' greyboxes are, so a prop the greybox staged out of
+    # Where the panels' 3D models are, so a prop the 3D model staged out of
     # its camera's view is not named (pai_compat.props_out_of_frame). None
     # names every declared prop, as before.
-    greyboxes_dir: "Path | None" = None
+    modeling_dir: "Path | None" = None
     target_width: int = 1280
     target_height: int = 544
 
@@ -348,7 +348,7 @@ def seen_from_behind(shot: dict, chars: list, pf: dict) -> set:
 
     `behind` sees everyone's back. An over-the-shoulder frames the focus
     subject's face past another's shoulder, so everyone else is seen from
-    behind. With no focus declared an OTS names nobody: the greybox picks the
+    behind. With no focus declared an OTS names nobody: the 3D model picks the
     near subject from seat depth, which the text compiler cannot see, and
     guessing would describe the wrong person's back.
     """
@@ -449,7 +449,7 @@ def screen_x_phrase(x: float) -> str:
 def subjects_left_to_right(shot: dict) -> list[dict]:
     """Declared subjects in screen order, each with the phrase for where it sits.
 
-    The greybox stages every body from `screen_position`, and the compiled
+    The 3D model stages every body from `screen_position`, and the compiled
     prompt has historically named the same people in registry order with no
     spatial anchor at all. Geometry then says one thing and text says nothing,
     so which character lands in which seat is left to the sampler: across a
@@ -457,7 +457,7 @@ def subjects_left_to_right(shot: dict) -> list[dict]:
     different seats each time while the *positions* stayed correct, because
     nothing ever tied a description to a place.
 
-    Returning the subjects sorted by the same declared x the greybox stages
+    Returning the subjects sorted by the same declared x the 3D model stages
     from is what lets the prompt make that tie. A subject with no declared
     position sorts last and gets no phrase rather than an invented one: an
     unplaced subject is a KB gap, and guessing a side for it would put text and

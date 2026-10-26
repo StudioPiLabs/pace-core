@@ -19,9 +19,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node.panel_greybox import BUILDABLE_POSITIONS  # noqa: E402
+from pace_core.node.panel_modeling import BUILDABLE_POSITIONS  # noqa: E402
 
-SRC = (Path(__file__).resolve().parents[1] / "src/pace_core/node/panel_greybox.py").read_text()
+SRC = (Path(__file__).resolve().parents[1] / "src/pace_core/node/panel_modeling.py").read_text()
 
 
 def test_the_spec_carries_the_defaulted_flag():

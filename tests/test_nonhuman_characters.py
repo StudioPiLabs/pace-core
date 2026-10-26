@@ -2,7 +2,7 @@ import json
 from types import SimpleNamespace
 
 from pace_core.breakdown import extract_characters as extract
-from pace_core.node import panel_greybox as greybox
+from pace_core.node import panel_modeling as modeling
 
 
 def scene():
@@ -51,9 +51,9 @@ def test_animal_mesh_is_independent_of_human_fallback_files(tmp_path):
     meshes.mkdir(parents=True)
     (meshes / "smplx_standing_175.obj").write_text("human")
     chars.write_text(json.dumps({"rabbit": {"entity_type": "animal"}}))
-    selected = greybox._subject_mesh_for({"character_id": "rabbit"}, paths, "standing")
+    selected = modeling._subject_mesh_for({"character_id": "rabbit"}, paths, "standing")
     assert selected == str(meshes / "rabbit.obj")
     chars.write_text(json.dumps({"rabbit": {"entity_type": "animal",
         "body_proxy_3d": {"mesh_file": "meshes/characters/rabbit.obj"}}}))
-    assert greybox._subject_mesh_for({"character_id": "rabbit"}, paths, "standing") == selected
+    assert modeling._subject_mesh_for({"character_id": "rabbit"}, paths, "standing") == selected
 
