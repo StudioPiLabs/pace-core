@@ -3510,7 +3510,9 @@ def _kernel_modeling(spec: dict) -> dict:
         # horizon in the same place relative to the frame rather than in metres
         # someone picked.
         reach = max(dist * 3.0, 12.0)
-        box("ground", (focus.x, focus.y, -0.02), (reach * 2, reach * 2, 0.04))
+        # Top face 5 mm under z=0: a location .blend's own floor is coplanar with
+        # z=0, and two coplanar floors z-fight into banding in every render.
+        box("ground", (focus.x, focus.y, -0.025), (reach * 2, reach * 2, 0.04))
 
         # The set dressing an exterior declares, staged like any other fixture.
         # place_fixtures used to be called only from the cabin branch, so a
