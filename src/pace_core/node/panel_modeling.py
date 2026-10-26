@@ -2818,6 +2818,10 @@ def _kernel_modeling(spec: dict) -> dict:
             # describes and an extent the solve can frame.
             xform_rot = (math.radians(-90.0), 0.0,
                          math.radians(90.0 + subj.get("facing_deg", 0.0)))
+        # A glTF/FBX import is in QUATERNION mode, where rotation_euler is
+        # ignored (the fixture path above hit the same thing): a generated
+        # body stayed unturned and showed the camera its back.
+        body.rotation_mode = "XYZ"
         body.rotation_euler = xform_rot
         sx, sy = seats[i][0], seats[i][1]
         # Sit the mesh ON the seat by the point that actually rests on one. Its
@@ -2858,6 +2862,7 @@ def _kernel_modeling(spec: dict) -> dict:
             # The copy was taken pre-transform, in the same coordinate frame
             # as the body it was split from, so the identical rotation +
             # location keeps it seated on the same head it came off of.
+            head_copy.rotation_mode = "XYZ"
             head_copy.rotation_euler = xform_rot
             head_copy.location = body.location
         bpy.context.view_layer.update()
