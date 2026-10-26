@@ -74,7 +74,7 @@ def test_an_ots_sees_the_backs_of_everyone_but_the_focus():
 
 
 def test_an_ots_without_a_focus_names_nobody():
-    """The greybox picks the near subject from seat depth; the text compiler
+    """The 3D model picks the near subject from seat depth; the text compiler
     cannot see seats, and guessing would describe the wrong person's back."""
     assert seen_from_behind(_shot("ots"), ["gus", "hal"], {}) == set()
 

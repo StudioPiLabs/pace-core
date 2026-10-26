@@ -1,6 +1,6 @@
 """The sampler's starting image, with the clay render's appearance taken out.
 
-A greybox is described everywhere in this pipeline as "shape only": subject
+A 3D model is described everywhere in this pipeline as "shape only": subject
 count, pose, and composition, carrying no appearance. The render it actually
 produces is not that. Blender Workbench with STUDIO light and cavity on writes
 a smoothly shaded clay pass — 144 distinct grey levels on a three-body cabin
@@ -9,7 +9,7 @@ latents. Shading is appearance, so it survives the denoise alongside the
 structure and the delivered panel comes back photoreal no matter what the
 style field asked for.
 
-Across a production's staged panels, a greybox's own flat-region
+Across a production's staged panels, a 3D model's own flat-region
 share — the fraction of pixels equal to both their right and lower neighbour,
 which separates flat storyboard fill from photographic falloff — correlates
 with the delivered panel's at r = 0.843. The control image, not the style
@@ -19,7 +19,7 @@ Measured on one shot, one seed, one prompt, with a ``line_art_clean`` style
 clause. *pos* is the mean error in each
 subject's horizontal position against the mattes the kernel rendered, as a
 fraction of frame width; *top* is where each subject's head lands as a
-fraction of frame height, against the greybox's own 0.140:
+fraction of frame height, against the 3D model's own 0.140:
 
 =============  =======  =====  =====================  =====  ================
 init           denoise  flat%  top (a / b / c)         pos    delivered
@@ -47,14 +47,14 @@ medium.
 Flattening *and* dropping the denoise is what holds both, and the two belong
 together for one reason: 0.65 existed to give the sampler enough freedom to
 escape the clay init's shading. A flat init has no shading to escape, so that
-freedom is spent restaging instead. `GREYBOX_INIT_DENOISE` in the render
+freedom is spent restaging instead. `MODELING_INIT_DENOISE` in the render
 router is the other half of this module.
 
 Same conclusion the video side already reached about the same clay pass,
-recorded in `panel_greybox`: fed to a video model as control it "carries that appearance along with
+recorded in `panel_modeling`: fed to a video model as control it "carries that appearance along with
 the structure", and the fix there was to hand over a signal with no appearance
 in it, because "depth has no appearance to leak". A still needs an init that
-still reads as the picture, so it gets a flattened greybox rather than the
+still reads as the picture, so it gets a flattened 3D model rather than the
 depth map.
 """
 from __future__ import annotations
@@ -64,7 +64,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-# Grey levels the greybox is quantised to before it becomes the init.
+# Grey levels the 3D model is quantised to before it becomes the init.
 #
 # Both ends of this are real failures rather than a matter of taste. Too many
 # levels and the gradient survives, which is the photoreal leak this module
@@ -75,12 +75,12 @@ from PIL import Image
 # left to say which body is in front of which.
 DEFAULT_LEVELS = 12
 
-# Suffix for the derived init, written next to the greybox it comes from.
+# Suffix for the derived init, written next to the 3D model it comes from.
 SUFFIX = ".structure.png"
 
 
 def flatten(img: Image.Image, *, levels: int = DEFAULT_LEVELS) -> Image.Image:
-    """Quantise a greybox to `levels` grey steps, keeping its geometry.
+    """Quantise a 3D model to `levels` grey steps, keeping its geometry.
 
     Posterising rather than blurring or edge-detecting is deliberate: every
     silhouette boundary in the clay pass is a step between two regions, so
@@ -94,24 +94,24 @@ def flatten(img: Image.Image, *, levels: int = DEFAULT_LEVELS) -> Image.Image:
     return Image.fromarray(q.clip(0, 255).astype(np.uint8)).convert("RGB")
 
 
-def structure_init_for(greybox: str | Path, *, levels: int = DEFAULT_LEVELS,
+def structure_init_for(modeling: str | Path, *, levels: int = DEFAULT_LEVELS,
                        force: bool = False) -> Path:
-    """Path to the flattened init for one greybox, deriving it if needed.
+    """Path to the flattened init for one 3D model, deriving it if needed.
 
-    Cached next to the greybox and rebuilt whenever the greybox is newer, so a
+    Cached next to the 3D model and rebuilt whenever the 3D model is newer, so a
     re-staged panel cannot be rendered from the previous staging's init. The
-    greybox itself is left alone: it is what a human reviews, and a reviewer
+    3D model itself is left alone: it is what a human reviews, and a reviewer
     reading a posterised frame would be reading something the camera never
     rendered.
     """
-    greybox = Path(greybox)
-    if not greybox.is_file():
-        raise FileNotFoundError(f"no greybox at {greybox}")
-    out = greybox.with_name(greybox.name + SUFFIX)
+    modeling = Path(modeling)
+    if not modeling.is_file():
+        raise FileNotFoundError(f"no 3D model at {modeling}")
+    out = modeling.with_name(modeling.name + SUFFIX)
     if (not force and out.is_file()
-            and out.stat().st_mtime >= greybox.stat().st_mtime):
+            and out.stat().st_mtime >= modeling.stat().st_mtime):
         return out
-    with Image.open(greybox) as im:
+    with Image.open(modeling) as im:
         flatten(im, levels=levels).save(out)
     return out
 

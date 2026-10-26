@@ -1,7 +1,7 @@
 """Where a vehicle's seats are, from the dimensions vehicles are measured by.
 
 A declared mark is only worth scoring against if it came from somewhere the
-staging did not. The greybox builder derives its seat positions from the box
+staging did not. The 3D model builder derives its seat positions from the box
 the location declares -- half the cabin width times a spread fraction -- so a
 mark copied back out of it would be the builder's own number, and a clause
 comparing the two would read zero on every panel by construction. That is the

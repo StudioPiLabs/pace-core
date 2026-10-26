@@ -27,7 +27,7 @@ def test_a_large_unstaged_prop_away_from_the_cast_is_not_named():
     assert prop_left_unstaged_away_from_cast(arms, KB)
 
 
-def test_a_prop_the_greybox_stages_is_named():
+def test_a_prop_the_modeling_stages_is_named():
     car = {"prop_id": "fallen_crate", "screen_position": {"zone": "background_midground"}}
     assert not prop_left_unstaged_away_from_cast(car, KB)
 
@@ -140,21 +140,21 @@ def test_a_prop_staged_behind_the_lens_is_not_named(tmp_path):
     scene, shot = _cabin_scene()
     _record(tmp_path, {"main_console": {"in_frame": False, "frame_share": 0.0},
                        "game_device": {"in_frame": True, "frame_share": 0.02}})
-    pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(greyboxes_dir=tmp_path))
+    pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(modeling_dir=tmp_path))
     assert "console" not in pos
     assert "game device" in pos
 
 
 def test_the_same_prop_is_named_when_the_build_has_not_said(tmp_path):
     scene, shot = _cabin_scene()
-    pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(greyboxes_dir=tmp_path))
+    pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(modeling_dir=tmp_path))
     assert "main console" in pos
 
 
 # ── what the panel declares in frame outranks the build's record ──
 
 def _compile(tmp_path, shot, scene):
-    pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(greyboxes_dir=tmp_path))
+    pos, _ = compile_flux2(scene, shot, shot["panels"][0], CompileContext(modeling_dir=tmp_path))
     return pos
 
 

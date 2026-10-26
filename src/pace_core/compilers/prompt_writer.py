@@ -139,7 +139,7 @@ def write_scene(project: str, scene_id: str, *, model_key: str = default_model("
     # Check before keeping. The rules are instructions to a model, not a
     # guarantee from one: on the first real call every panel leaked the
     # phrase "read point" into the prose and three wrote positions the
-    # greybox had already decided. A reply that does that is worse than no
+    # 3D model had already decided. A reply that does that is worse than no
     # reply, because compile_flux2 would not have done it.
     n_subjects = max((len((sh.get("setup") or {}).get("subjects") or [])
                       for sh in scene.get("shots") or []), default=0)

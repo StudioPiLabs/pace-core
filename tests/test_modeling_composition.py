@@ -1,4 +1,4 @@
-"""Composition clauses of the greybox gate, and the kernel's pure helpers.
+"""Composition clauses of the 3D model gate, and the kernel's pure helpers.
 
 Mattes are drawn by hand so each clause is pinned on the fault it names and
 on the frame that does not have it.
@@ -11,8 +11,8 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from pace_core.qc import greybox_gate as gg
-from pace_core.node.panel_greybox import (
+from pace_core.qc import modeling_gate as gg
+from pace_core.node.panel_modeling import (
     DEFAULT_ELEVATION_RANGE_DEG, camera_search_order, inside_shell, joint_points)
 
 H, W = 272, 640

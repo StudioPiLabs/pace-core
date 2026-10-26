@@ -2,9 +2,9 @@
 frames, then choose the rig that carries the camera between them.
 
 `frame_subject` composes one frame on a subject from a shot size, an angle and
-a screen placement. Shot sizes use the bands the greybox stage itself fits
-(`panel_greybox.SHOT_SIZE_FRAMING`), so a "medium close-up" composed here is
-the frame the greybox would stage, at whatever lens is chosen.
+a screen placement. Shot sizes use the bands the 3D model stage itself fits
+(`panel_modeling.SHOT_SIZE_FRAMING`), so a "medium close-up" composed here is
+the frame the 3D model would stage, at whatever lens is chosen.
 
 `rig_track` turns timed frames into a camera_planner track. Each frame after
 the first names the rig and ease that brought the camera to it:
@@ -36,7 +36,7 @@ from pace_core.camera.camera_skills import (
     _SHAKE_RAMP_S, _ease, _shake_offsets, _shake_phases, _smoothed_levels, lens_value, look_at)
 from pace_core.camera.keyframe_track import (
     _centripetal, _euler_from_quat, _normalise, _quat_from_euler, _slerp, _unwrap, _vector)
-from pace_core.node.panel_greybox import SHOT_SIZE_FRAMING
+from pace_core.node.panel_modeling import SHOT_SIZE_FRAMING
 from pace_core.setup.composition_solver import SENSOR_WIDTH_MM, camera_axes, solve_rotation_for_screen_position
 
 RIGS = ("tripod", "dolly", "jib", "orbit", "steadicam", "handheld")

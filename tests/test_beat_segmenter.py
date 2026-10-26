@@ -125,16 +125,16 @@ def test_the_published_weights_are_kept_verbatim():
 def test_a_cast_less_panel_stages_the_space_instead_of_dying():
     """Beat segmentation produces environment beats -- "the vehicles hover
     motionless", "the panels close" -- which have no human actor. They are
-    real images of the place, so the greybox fits its camera to the location's
+    real images of the place, so the 3D model fits its camera to the location's
     own declared extent rather than to a cast.
 
     Before this it did neither: `max(1, len(subs))` made range(n) == [0] over
     an empty list and the seat anchor died with a bare IndexError."""
     import inspect
-    from pace_core.node import panel_greybox
-    src = inspect.getsource(panel_greybox)
+    from pace_core.node import panel_modeling
+    src = inspect.getsource(panel_modeling)
     assert "n = max(1, len(subs))" not in src
     assert "environment_only = not framed" in src
     # eligibility no longer refuses a cast-less panel
-    elig = inspect.getsource(panel_greybox.eligible_panels)
-    assert "a greybox of nobody" not in elig
+    elig = inspect.getsource(panel_modeling.eligible_panels)
+    assert "a 3D model of nobody" not in elig

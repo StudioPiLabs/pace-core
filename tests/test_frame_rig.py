@@ -6,7 +6,7 @@ import math
 import pytest
 
 from pace_core.camera.frame_rig import SHOT_SIZES, frame_subject, rig_track
-from pace_core.node.panel_greybox import SHOT_SIZE_FRAMING
+from pace_core.node.panel_modeling import SHOT_SIZE_FRAMING
 from pace_core.setup.composition_solver import camera_axes, project_to_screen
 
 BASE, HEIGHT = [1.0, 2.0, 0.0], 1.8
@@ -27,7 +27,7 @@ def timed(time, pose, rig="steadicam", ease="feather"):
 
 @pytest.mark.parametrize("size", ["close_up", "medium_close_up", "medium", "full"])
 @pytest.mark.parametrize("lens", [24, 50, 85])
-def test_shot_size_band_fills_the_greybox_share_of_the_frame(size, lens):
+def test_shot_size_band_fills_the_modeling_share_of_the_frame(size, lens):
     band, margin = SHOT_SIZE_FRAMING[size]
     pose = frame(size, 30, lens_mm=lens)
     cut = [1.0, 2.0, HEIGHT * (1 - band)]

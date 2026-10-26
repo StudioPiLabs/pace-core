@@ -1,6 +1,6 @@
 """Restaging a tight shot the camera cannot deliver, or splitting it into singles.
 
-The probe -- a greybox build in production -- is replaced by a scripted one,
+The probe -- a 3D model build in production -- is replaced by a scripted one,
 so these pin the decisions and the document edits, not Blender.
 """
 from __future__ import annotations

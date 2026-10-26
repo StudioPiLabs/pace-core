@@ -4,10 +4,10 @@
 no character in it -- so every panel in a production staged the same SMPL-X
 mesh whatever the registry said about the person. It was visible in the
 paper's own figures: a male lead came back with a female body, and the same
-body appeared for every other character in every greybox.
+body appeared for every other character in every 3D model.
 
 Two paths existed and only one knew about people. `scene_assembler` reads
-`body_proxy_3d` and stages a character's own mesh; `panel_greybox`, which is
+`body_proxy_3d` and stages a character's own mesh; `panel_modeling`, which is
 what actually builds every panel, did not. This is that path learning the
 same thing, with the stature proxies kept as the fallback so a project with
 no per-character bake behaves exactly as it did before.
@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node.panel_greybox import _mesh_for  # noqa: E402
+from pace_core.node.panel_modeling import _mesh_for  # noqa: E402
 
 
 def _lib(tmp_path: Path, *names: str) -> Path:
@@ -85,12 +85,12 @@ def test_the_eligibility_precheck_resolves_the_same_file_the_build_would(monkeyp
 
     pace-core's own suite did not catch it -- nothing here drove the precheck
     with a real scene document -- and it surfaced as a NameError in the host
-    repo's greybox tests. The point of this test is that the two callers stay
+    repo's 3D model tests. The point of this test is that the two callers stay
     reachable from the same place, so a signature change has to satisfy both.
     """
     import inspect
 
-    from pace_core.node import panel_greybox as pg
+    from pace_core.node import panel_modeling as pg
 
     src = inspect.getsource(pg)
     # Every _mesh_for call must pass a pose expression that is defined where it

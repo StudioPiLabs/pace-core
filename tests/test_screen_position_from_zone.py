@@ -5,7 +5,7 @@
 are not in the text and nothing else filled them, so all 190 of another production's
 subject placements carried `x: null`.
 
-That is silent downstream. `panel_greybox._declared_x` reads a null as 0.5, so
+That is silent downstream. `panel_modeling._declared_x` reads a null as 0.5, so
 every subject sorts to the same place and the seat assignment spreads them
 evenly -- which is how a scene of a hundred people working late staged as
 three figures standing in a row.
@@ -65,7 +65,7 @@ def test_the_inner_pair_sits_inside_the_third_lines():
 
 @pytest.mark.parametrize("zone", ["", None, "somewhere", "off_screen", "middle"])
 def test_an_unreadable_zone_yields_no_number(zone):
-    """A wrong position is worse than a missing one: the greybox stages a
+    """A wrong position is worse than a missing one: the 3D model stages a
     body at it and the composition audit then measures against it."""
     x, _y = xy_for(zone)
     assert x is None

@@ -9,7 +9,7 @@ package reads or writes:
 
   kb/              scenes/scene_NN.json, characters.json, props.json,
                    location_stubs.json, film.json, shot_design.json
-  06_reference/storyboards/control_geometry/   greybox renders
+  06_reference/storyboards/control_geometry/   3D model renders
   blender_scenes/  depth_maps/  meshes/  script/  05_output/  07_docs/
 """
 from __future__ import annotations
@@ -75,7 +75,7 @@ class ProjectPaths:
     loc_stubs_file: Path
     film_file: Path
     shot_design_file: Path
-    greyboxes_dir: Path
+    modeling_dir: Path
     blender_scenes_dir: Path
     depth_dir: Path
     meshes_dir: Path
@@ -133,7 +133,7 @@ def paths_for(slug: str) -> ProjectPaths:
         loc_stubs_file=kb / "location_stubs.json",
         film_file=kb / "film.json",
         shot_design_file=kb / "shot_design.json",
-        greyboxes_dir=storyboards / "control_geometry",
+        modeling_dir=storyboards / "control_geometry",
         blender_scenes_dir=root / "blender_scenes",
         depth_dir=root / "depth_maps",
         meshes_dir=root / "meshes",

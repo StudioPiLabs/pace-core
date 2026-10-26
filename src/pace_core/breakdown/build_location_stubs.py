@@ -2,14 +2,14 @@
 """Turn location bibles into the `location_stubs.json` everything reads.
 
 Nothing has ever written this file. Every reference to it in the source is a
-read -- the three prompt compilers, `panel_greybox`, `render_storyboard`, the
+read -- the three prompt compilers, `panel_modeling`, `render_storyboard`, the
 studio's compile context, `design_check` -- and the only writers are test
 fixtures and `mesh_builder`, which attaches a mesh record to a stub that must
 already exist. Where one was authored by hand, the
 `location_stubs.json.pre-*.bak` files beside it are a person tuning belt,
 seating, tray and wheel a field at a time. So the automated breakdown stops at
 `kb/locations/*.bible.json`, and the step to the file that gates everything 3D
-was manual. `panel_greybox` builds its shell from `scale_meters`, which only
+was manual. `panel_modeling` builds its shell from `scale_meters`, which only
 the stub carries.
 
 No model call. Every value here already exists on disk: the bible supplies
@@ -29,7 +29,7 @@ is already what `setup.backdrop.location` holds, so a compiler resolves the
 stub without anything being renamed. Bibles that describe one location are
 merged, and a disagreement about size is reported rather than averaged: the
 largest wins, because a room too small to hold its staged cast breaks the
-greybox while a room too large only wastes space.
+3D model while a room too large only wastes space.
 
     uv run python -m pace_core.breakdown.build_location_stubs --project <slug>
     uv run python -m pace_core.breakdown.build_location_stubs --project <slug> --write
@@ -70,7 +70,7 @@ def location_key_of(scene: dict) -> str:
 def _scale_list(bible: dict) -> list[float] | None:
     """[width, depth, height] in metres, the order the stub is read in.
 
-    The bible writes `{length, width, height_open}`; `panel_greybox` unpacks
+    The bible writes `{length, width, height_open}`; `panel_modeling` unpacks
     the stub as W, D, H. Length is the depth of the room.
     """
     sl = (bible.get("spatial_layout") or {}).get("scale_meters")
@@ -106,7 +106,7 @@ _NOT_A_ROOM = ("corridor", "doorway", "threshold", "lobby", "reception",
 
 
 def shape_of(bible: dict) -> str | None:
-    """The greybox shell this bible describes, or None.
+    """The 3D model shell this bible describes, or None.
 
     Written as `shape` rather than as an `environment_type`, because the shape
     is what the builder consumes and inventing an environment vocabulary to be

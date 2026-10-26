@@ -1,6 +1,6 @@
 """A multi-person prompt names its cast in the order they stand on screen.
 
-The greybox stages every body from `screen_position`. The compiled prompt used
+The 3D model stages every body from `screen_position`. The compiled prompt used
 to name the same people in registry order with no spatial anchor at all, so
 geometry said one thing and the text said nothing about place: across repeated
 renders of one panel the subject count and the positions came out right while

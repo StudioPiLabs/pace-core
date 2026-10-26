@@ -1,7 +1,7 @@
 """What shape of space a location is, read from what the KB declares.
 
 Two consumers need this answer and neither should own it: the scene assembler,
-which builds a room proxy inside Blender, and the panel greybox, which decides
+which builds a room proxy inside Blender, and the panel 3D model, which decides
 whether it can stage a panel at all. It lives here because it is a reading of
 authored data, not geometry -- scene_proxies imports bpy at module scope, so
 anything defined there is unavailable to the host side and untestable without

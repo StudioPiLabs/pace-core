@@ -3,7 +3,7 @@
 
 A declared close-up of two people side by side is over-constrained: the band a
 close-up names crops the frame vertically, the cast's width decides the
-distance, and the frame comes back as loose as a medium -- the greybox reports
+distance, and the frame comes back as loose as a medium -- the 3D model reports
 it as `shot_size_bound_by: width`. An operator reaches for two remedies, in
 order:
 
@@ -12,7 +12,7 @@ order:
 2. Split: give each subject a single of their own -- the shot / reverse-shot
    coverage a tight exchange is normally shot as.
 
-Every candidate is built before it is kept (`make_panel_greybox` on the scene
+Every candidate is built before it is kept (`make_panel_modeling` on the scene
 document in memory), and a restage is written only when the declared size
 binds on it and nobody ends up hidden behind anybody else. A split gives the
 focus subject the existing panel and every other subject a new one after it,
@@ -215,12 +215,12 @@ def restage_scene(scene: dict, scene_id: str, probe: Probe, characters: dict,
 
 def build_probe(project: str) -> Probe:
     """Build the panel from the document in memory and read what the camera did."""
-    from pace_core.qc.greybox_gate import _mask
-    from pace_core.node.panel_greybox import make_panel_greybox
+    from pace_core.qc.modeling_gate import _mask
+    from pace_core.node.panel_modeling import make_panel_modeling
 
     def probe(scene: dict, scene_id: str, panel_id: str) -> dict:
         with tempfile.TemporaryDirectory() as tmp:
-            r = make_panel_greybox(project, scene_id, panel_id,
+            r = make_panel_modeling(project, scene_id, panel_id,
                                    Path(tmp) / f"{panel_id}_90001_.png", scene=scene)
             if not r.get("ok"):
                 return {"ok": False, "bound_by": None, "overlap": None,
@@ -239,7 +239,7 @@ def build_probe(project: str) -> Probe:
 
 def run(project: str, scenes: list[str] | None = None, write: bool = False,
         probe: Probe | None = None) -> dict:
-    from pace_core.qc.greybox_gate import MAX_SUBJECT_OVERLAP
+    from pace_core.qc.modeling_gate import MAX_SUBJECT_OVERLAP
 
     p = paths_for(project)
     probe = probe or build_probe(project)

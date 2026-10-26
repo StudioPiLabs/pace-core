@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 
 from pace_core.breakdown import build_beat_panels as bbp
-from pace_core.node import panel_greybox as pg
+from pace_core.node import panel_modeling as pg
 
 CAST = {"gus", "hal"}
 CLIMAX = {"id": "b5", "source_event_ids": [], "evidence": [], "transition": [
@@ -70,7 +70,7 @@ def test_an_entity_with_no_map_entry_is_taken_as_a_prop_id():
     assert bbp.prop_states(beat, {"main_screen": ["a", "b"]}) == {"a": "powered_off", "b": "powered_off"}
 
 
-def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
+def test_the_modeling_carries_the_relation_onto_the_fixture(tmp_path):
     kb = {"fallen_crate": {"placement": {"anchor": "ground", "span": [4.3, 1.85, 1.45],
                                         "offset": [0.35, -1.7, 0.0]}}}
     (tmp_path / "props.json").write_text(json.dumps(kb))
@@ -87,7 +87,7 @@ def test_the_greybox_carries_the_relation_onto_the_fixture(tmp_path):
     assert "on_subject" not in plain[0]
 
 
-def test_the_panel_asks_only_for_a_camera_the_greybox_can_build():
+def test_the_panel_asks_only_for_a_camera_the_modeling_can_build():
     one = [{"character_id": "gus"}]
     assert _panel({"camera_position": "side", "subjects": one}
                   )["camera"]["extrinsics"]["position"] in pg.BUILDABLE_POSITIONS

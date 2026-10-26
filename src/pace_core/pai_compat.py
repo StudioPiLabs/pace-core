@@ -565,7 +565,7 @@ def resolve_prop_key(prop_id: str, props_kb: dict) -> str:
 
     Two references that name the same object -- `monitor` in one shot and
     `computer_monitor` in the next -- have to collapse to one identity before
-    anything can relate them to each other. The greybox needs exactly that to
+    anything can relate them to each other. The 3D model needs exactly that to
     put a prop on the surface of another prop: the host is written once in the
     registry, and the panel spells both it and the prop however the enrichment
     happened to that shot.
@@ -830,8 +830,8 @@ def prop_placement(p: dict) -> str:
     return f" {phrase}" if phrase else ""
 
 
-# The anchors a prop's registry `placement` may name for the greybox to stage
-# it. The greybox builder reads this list; the compiler reads it too, because
+# The anchors a prop's registry `placement` may name for the 3D model to stage
+# it. The 3D model builder reads this list; the compiler reads it too, because
 # it has to know what the control image will hold, and two copies of the list
 # is how the two would come to disagree.
 FIXTURE_ANCHORS = ("shell_front", "shell_rear", "shell_center", "floor",
@@ -843,7 +843,7 @@ _LARGE_PROP_M = 1.0
 
 
 def prop_left_unstaged_away_from_cast(p: dict, props_kb: dict | None = None) -> bool:
-    """True for a large prop, declared away from the cast, that the greybox
+    """True for a large prop, declared away from the cast, that the 3D model
     does not stage -- one the prompt should not name.
 
     Such a prop has nothing in the control image to be drawn on, so the
@@ -859,14 +859,14 @@ def prop_left_unstaged_away_from_cast(p: dict, props_kb: dict | None = None) -> 
     entry = resolve_prop((p.get("prop_id") or "").strip(), props_kb) if props_kb else None
     entry = entry if isinstance(entry, dict) else {}
     if (entry.get("placement") or {}).get("anchor") in FIXTURE_ANCHORS:
-        return False                      # the greybox stages it
+        return False                      # the 3D model stages it
     size = (entry.get("physical_attributes") or {}).get("size_m") or []
     longest = max((float(s) for s in size if isinstance(s, (int, float))), default=0.0)
     return longest >= _LARGE_PROP_M or "vehicle" in str(p.get("size") or "")
 
 
-def props_out_of_frame(greyboxes_dir, panel_id: str) -> frozenset[str]:
-    """Props the panel's greybox staged where its camera does not see them.
+def props_out_of_frame(modeling_dir, panel_id: str) -> frozenset[str]:
+    """Props the panel's 3D model staged where its camera does not see them.
 
     Staged is not the same as in frame. The cabin camera stands at the front
     looking back, so the console anchored at the front of the cabin is built
@@ -874,14 +874,14 @@ def props_out_of_frame(greyboxes_dir, panel_id: str) -> frozenset[str]:
     control image to be drawn, and one render put it on the back wall while
     the same seed with the console dark put a pane of glass across the cast.
     The build writes what its camera sees beside the frame; with no record
-    (no greybox yet, or an older build) nothing is left out.
+    (no 3D model yet, or an older build) nothing is left out.
     """
-    if not greyboxes_dir or not panel_id:
+    if not modeling_dir or not panel_id:
         return frozenset()
     import json
     from pathlib import Path
     try:
-        rec = json.loads((Path(greyboxes_dir) / f"{panel_id}_90001_.png.props.json").read_text())
+        rec = json.loads((Path(modeling_dir) / f"{panel_id}_90001_.png.props.json").read_text())
     except (OSError, ValueError):
         return frozenset()
     return frozenset(k for k, v in rec.items() if isinstance(v, dict) and v.get("in_frame") is False)
@@ -957,7 +957,7 @@ def costume_text(entry: dict | None, age_state: str | None = None,
     """What a character wears here: the shot's wardrobe entry, or the default.
 
     One reading for every consumer: the prompt compiler writes it into the
-    character's description, and the greybox tones the proxy's garments from
+    character's description, and the 3D model tones the proxy's garments from
     it, so the words and the control image cannot name two different outfits.
 
     A `wardrobe` entry wins over the registry, because a shot that names a

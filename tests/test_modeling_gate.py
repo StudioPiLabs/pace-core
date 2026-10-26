@@ -22,7 +22,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.qc.greybox_gate import (  # noqa: E402
+from pace_core.qc.modeling_gate import (  # noqa: E402
     MIN_SUBJECT_AREA, STALE_TOLERANCE_S, control_provenance, evaluate,
     matte_stats, screen_order_agreement,
 )
@@ -304,7 +304,7 @@ def test_a_head_the_camera_can_see_passes(tmp_path):
 
 
 def test_a_build_without_the_visible_pass_says_so(tmp_path):
-    """An older greybox has no visible-matte beside it. That is unmeasured,
+    """An older 3D model has no visible-matte beside it. That is unmeasured,
     not passing: reporting it as a pass would let a stale build clear a clause
     it was never rendered for."""
     out = _build(tmp_path, {"gus": (10, 50)})

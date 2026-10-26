@@ -12,7 +12,7 @@ adds a moving shot's end framing as a second panel, and the only place "the
 camera has finished the move" can be written is a camera override — so the
 second panel had nowhere to differ, and start and end rendered the same frame.
 
-The greybox is included here because it read `shot["camera"]` raw, so it
+The 3D model is included here because it read `shot["camera"]` raw, so it
 skipped scene defaults as well as panel overrides: the prompt and the staged
 geometry have to agree about which camera this panel is shot on, or the
 override would move one and not the other.
@@ -88,12 +88,12 @@ def test_an_empty_override_does_not_count_as_an_override():
         assert shot_size_of(resolve_shot(SCENE, SHOT, p)) == "wide"
 
 
-def test_the_greybox_resolves_the_same_ladder_as_the_compilers():
+def test_the_modeling_resolves_the_same_ladder_as_the_compilers():
     """The staged camera and the compiled prompt must agree about which camera
     this panel is on. build_spec read shot["camera"] raw."""
     import inspect
-    from pace_core.node import panel_greybox
-    src = inspect.getsource(panel_greybox.build_spec)
+    from pace_core.node import panel_modeling
+    src = inspect.getsource(panel_modeling.build_spec)
     assert "resolve_shot(scene, shot, panel)" in src, (
         "build_spec stopped resolving the panel's camera — the prompt and the "
-        "greybox can now disagree about the camera for the same panel")
+        "3D model can now disagree about the camera for the same panel")

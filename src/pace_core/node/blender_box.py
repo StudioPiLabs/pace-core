@@ -128,7 +128,7 @@ KERNELS = {
     "render_passes":  "blender_box.py",           # embedded — --kernel passes
     "export_glb":     "export_blend_glb.py",       # .blend → GLB (Phase 2)
     "list_parts":     "blender_box.py",            # embedded — --kernel list_parts
-    "panel_greybox":  "panel_greybox.py",          # embedded — --kernel greybox
+    "panel_modeling":  "panel_modeling.py",          # embedded — --kernel 3D model
 }
 
 
@@ -166,12 +166,12 @@ class ShotPreviewSpec:
 
 
 @dataclass
-class PanelGreyboxSpec:
-    """Inputs for BlenderBox.render_panel_greybox.
+class PanelModelingSpec:
+    """Inputs for BlenderBox.render_panel_modeling.
 
     `spec` is the whole control-geometry description -- cabin, seats, subject
     meshes with their measured seat contact, lens, solved azimuth/elevation --
-    built host-side by `panel_greybox.build_spec` off the panel and its
+    built host-side by `panel_modeling.build_spec` off the panel and its
     location stub. It arrives as one nested dict rather than as flags because
     it is a scene description, not a handful of knobs; the kernel reads it from
     a file in the job dir, the way render_depth passes its track.
@@ -386,26 +386,26 @@ class BlenderBox:
 
     # ---- op: render — one panel's control geometry ------------------------
 
-    def render_panel_greybox(self, spec: PanelGreyboxSpec | dict) -> dict:
+    def render_panel_modeling(self, spec: PanelModelingSpec | dict) -> dict:
         """Flat Workbench frame of a panel's declared cast, in its own camera.
 
         The frame feeds `structure_flux2` as an init image, where it carries
         the subject count and staging that a prompt cannot hold on its own.
         """
         if isinstance(spec, dict):
-            spec = PanelGreyboxSpec(**spec)
+            spec = PanelModelingSpec(**spec)
         out = Path(spec.out_png)
         out.parent.mkdir(parents=True, exist_ok=True)
         job = self._job_dir()
-        spec_json = job / "greybox_spec.json"
+        spec_json = job / "modeling_spec.json"
         spec_json.write_text(json.dumps({
             **spec.spec, "out": str(out),
             **({"export_glb": spec.export_glb,
                 "export_glb_include_bodies": spec.export_glb_include_bodies}
                if spec.export_glb else {})}))
         cmd = [self.bin, "--background",
-               "--python", str(self._kernel("panel_greybox")), "--",
-               "--kernel", "greybox", "--spec", str(spec_json)]
+               "--python", str(self._kernel("panel_modeling")), "--",
+               "--kernel", "modeling", "--spec", str(spec_json)]
         return self._invoke(cmd, timeout=300)
 
     # ---- op: motion + render — N-frame depth sequence --------------------

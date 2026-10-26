@@ -33,7 +33,7 @@ inherited, panel overrides applied. Return prompts for every panel of it.
 
 WHAT YOU ARE NOT DOING
 The picture's composition is already decided. Each panel is rendered from a \
-3D greybox — the exact declared cast, seated where the location puts them, \
+3D model — the exact declared cast, seated where the location puts them, \
 through that panel's own camera — which is fed to the image model as a \
 structural init image. It, not your text, decides who is where.
 
@@ -43,13 +43,13 @@ no "the camera looks past Z". Saying it competes with the geometry and makes \
 the result worse, not better — measured, writing occlusion alongside depth \
 dropped it from 3 correct out of 3 to 2 out of 3.
 
-You write what things LOOK LIKE. The greybox decides where they are.
+You write what things LOOK LIKE. The 3D model decides where they are.
 
 NEVER WRITE THESE WORDS. Not once, in any sentence, for any reason:
   foreground, background, front seat, rear seat, frame left, frame right,
   centre of the frame, left of the frame, right of the frame,
   read point, primary focus, shot size, panel.
-These place things in the FRAME, which is the greybox's decision.
+These place things in the FRAME, which is the 3D model's decision.
 
 Describing the world is different and is allowed: "a screen in front of him",
 "the slab resting against her knee". If the action text you are given says it,
@@ -183,7 +183,7 @@ she is. It never says where anyone sits, and it never names a field.
 """
 
 
-#: Prose that re-decides what the greybox already decided. Rejecting is the
+#: Prose that re-decides what the 3D model already decided. Rejecting is the
 #: point: on the first real call, gpt-4o wrote "foreground", "in front of"
 #: and "rear seat" despite the rule, so the rule alone does not hold and the
 #: output has to be checked rather than trusted.
@@ -240,7 +240,7 @@ def validate_prose(text: str, *, expect_count: bool = False,
             warnings.append(f"placement {m!r} carried over from the authored "
                             f"text — the beat itself stages the shot")
         else:
-            errors.append(f"invents frame position: {m!r} — the greybox decides placement")
+            errors.append(f"invents frame position: {m!r} — the 3D model decides placement")
     for m in sorted(set(m.group(0).lower() for m in _RELATIVE_POSITION.finditer(text))):
         warnings.append(f"object-relative placement: {m!r} — fine if the action "
                         f"says so, competing with geometry if invented")

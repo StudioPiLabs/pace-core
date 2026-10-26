@@ -1,8 +1,8 @@
-"""A registered costume reaches the greybox as garment tones.
+"""A registered costume reaches the 3D model as garment tones.
 
 On the paper's beat pilot the same declared shirt came back a different shirt
 in every panel, with the character's plate as a reference and without: the
-greybox is one flat grey, and denoised from it the sampler chose the garment
+3D model is one flat grey, and denoised from it the sampler chose the garment
 from the body's shape. The costume's own words now set the tone of the proxy's
 shirt and trousers in the control image.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from pace_core.pai_compat import costume_text  # noqa: E402
-from pace_core.node.panel_greybox import garment_tones  # noqa: E402
+from pace_core.node.panel_modeling import garment_tones  # noqa: E402
 
 
 def test_a_dark_shirt_and_dark_jeans():
@@ -23,7 +23,7 @@ def test_a_dark_shirt_and_dark_jeans():
     assert t["bottom"] == {"tone": 0.28}
 
 
-def test_a_faded_shirt_reads_lighter_than_the_greybox():
+def test_a_faded_shirt_reads_lighter_than_the_modeling():
     t = garment_tones("a faded graphic t-shirt and dark jeans")
     assert t["top"]["tone"] > 0.55 > t["bottom"]["tone"]
 
@@ -92,7 +92,7 @@ def test_any_named_hair_is_capped():
     prompt that names hair: short, curly or shoulder-length. A reverse shot
     over Alice's shoulder came back as a helmet before long hair had a
     shell."""
-    from pace_core.node.panel_greybox import HAIR_STYLES, hair_style
+    from pace_core.node.panel_modeling import HAIR_STYLES, hair_style
 
     assert hair_style("average build, Hispanic, with short black hair flecked "
                       "with grey and a relaxed demeanor.") == "short"
@@ -107,7 +107,7 @@ def test_hair_is_toned_from_its_named_colour():
     """An untoned shell is the cast's grey, pale lit from the front and dark
     from behind, so the sampler painted a different colour at each side of a
     cut."""
-    from pace_core.node.panel_greybox import hair_tone
+    from pace_core.node.panel_modeling import hair_tone
 
     blonde = hair_tone("with shoulder-length blonde hair and a thoughtful expression")
     black = hair_tone("with short black hair flecked with grey and a relaxed demeanor")
@@ -118,7 +118,7 @@ def test_hair_is_toned_from_its_named_colour():
 
 def test_long_hair_hangs_below_the_head():
     """A scalp cap alone, seen from behind, came back as short curly hair."""
-    from pace_core.node.panel_greybox import HAIR_STYLES
+    from pace_core.node.panel_modeling import HAIR_STYLES
 
     assert HAIR_STYLES["long"].get("fall", 0) > 0
     assert not any(s.get("fall") for k, s in HAIR_STYLES.items() if k != "long")

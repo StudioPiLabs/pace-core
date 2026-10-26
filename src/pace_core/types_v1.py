@@ -941,7 +941,7 @@ class NarrativeMeta:
 # Optional layer for scenes where multiple shots share a stage and the
 # user wants per-shot screen_position to be derived from camera + world
 # coordinates instead of LLM-guessed every time. Also the natural input
-# to the Blender greybox.
+# to the Blender 3D model.
 #
 # Use only when the scene has 3+ shots that share blocking. For single-
 # shot or one-off scenes, just leave subjects[].screen_position authored
@@ -972,7 +972,7 @@ class CameraSetup:
 @dataclass
 class PhysicalLayout:
     """Scene-wide world coordinates. The prompt compiler and a future Blender
-    bridge can derive screen positions, depth ordering, and even greybox
+    bridge can derive screen positions, depth ordering, and even 3D model
     geometry from this single source of truth."""
     frame_of_reference: Literal["stage_top_view", "world_xy"] = "stage_top_view"
     subjects:       list[WorldEntity] = field(default_factory=list)   # entries refer to characters by id@age

@@ -1,6 +1,6 @@
-"""A greybox reaching the sampler must have lost its shading first.
+"""A 3D model reaching the sampler must have lost its shading first.
 
-The greybox is a clay beauty pass, and the pipeline calls it "shape only"
+The 3D model is a clay beauty pass, and the pipeline calls it "shape only"
 everywhere while handing the sampler a smoothly shaded render. Shading is
 appearance, so it survives the denoise and lands in the delivered panel:
 measured on one corpus shot, one seed, one prompt, the same
@@ -66,7 +66,7 @@ def test_flat_region_share_separates_flat_from_gradient(tmp_path):
     assert structure_init.flat_region_share(flat) > structure_init.flat_region_share(src)
 
 
-def test_the_derived_init_is_cached_next_to_the_greybox(tmp_path):
+def test_the_derived_init_is_cached_next_to_the_modeling(tmp_path):
     src = _clay(tmp_path / "panel_90001_.png")
     out = structure_init.structure_init_for(src)
     assert out.parent == src.parent
@@ -78,7 +78,7 @@ def test_the_derived_init_is_cached_next_to_the_greybox(tmp_path):
     assert out.stat().st_mtime_ns == before
 
 
-def test_a_restaged_greybox_invalidates_the_cache(tmp_path):
+def test_a_restaged_modeling_invalidates_the_cache(tmp_path):
     """The failure this guards is a panel re-staged and then rendered from the
     previous staging's init, which would be geometry silently one revision
     behind the document that asked for it."""
@@ -95,7 +95,7 @@ def test_a_restaged_greybox_invalidates_the_cache(tmp_path):
     assert structure_init.structure_init_for(src).read_bytes() != first
 
 
-def test_a_missing_greybox_is_an_error_not_a_blank(tmp_path):
+def test_a_missing_modeling_is_an_error_not_a_blank(tmp_path):
     with pytest.raises(FileNotFoundError):
         structure_init.structure_init_for(tmp_path / "nope.png")
 

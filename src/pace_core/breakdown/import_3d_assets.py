@@ -2,7 +2,7 @@
 import_3d_assets.py — Import .glb / .gltf / .obj 3D meshes into Blender scenes.
 
 Purpose: bridge between AI-generated 3D meshes (from Hunyuan3D-2, TripoSR,
-Trellis, Meshy, etc., all of which output .glb) and our Blender greybox
+Trellis, Meshy, etc., all of which output .glb) and our Blender 3D model
 pipeline. Called from `primitives.build_from_spec` (kind `imported_mesh`) to
 drop generated props into a location instead of cube/cylinder primitives.
 

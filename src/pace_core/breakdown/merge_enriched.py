@@ -5,7 +5,7 @@
 and nothing reads a sibling. `paths.py` defines canonical as exactly
 `scene_<digits>.json` and 29 call sites use that filter, deliberately: an
 extra file in that directory doubles every scene in the studio sidebar. So the
-enrichment pass has always produced files that no compiler, greybox or route
+enrichment pass has always produced files that no compiler, 3D model or route
 would open, and the merge was done by hand -- scenes merged that way carry
 `_enriched_at` on the canonical files and no sidecars beside them.
 

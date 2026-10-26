@@ -2,7 +2,7 @@
 
 The vehicle shell is stretched to contain each panel's camera, so sized per
 panel it followed the lens: a wide and the over-the-shoulders after it were
-built at different widths and lengths, and the walls moved at every cut. make_scene_greyboxes builds each panel once to learn the
+built at different widths and lengths, and the walls moved at every cut. make_scene_modeling builds each panel once to learn the
 shell it needs and again inside the union.
 """
 from __future__ import annotations
@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-import pace_core.node.panel_greybox as G                          # noqa: E402
+import pace_core.node.panel_modeling as G                          # noqa: E402
 
 SCENE = {"scene_id": "s", "shots": [{"shot_id": "shot_01", "panels": [{"id": "a"}, {"id": "b"}]}]}
 
@@ -31,8 +31,8 @@ def test_the_second_pass_shares_the_union(monkeypatch):
     b = {"a": {"half_w": 2.13, "top_z": 2.3, "back_y": -1.5, "front_y": 4.8},
          "b": {"half_w": 2.05, "top_z": 2.4, "back_y": -2.2, "front_y": 1.8}}
     build, calls = _fake(b)
-    monkeypatch.setattr(G, "make_panel_greybox", build)
-    G.make_scene_greyboxes("p", "s", lambda pid: f"/out/{pid}.png", scene=SCENE)
+    monkeypatch.setattr(G, "make_panel_modeling", build)
+    G.make_scene_modeling("p", "s", lambda pid: f"/out/{pid}.png", scene=SCENE)
     final = [c for c in calls if c[1].startswith("/out/")]
     assert [c[0] for c in final] == ["a", "b"]
     shared = {"half_w": 2.13, "top_z": 2.4, "back_y": -2.2, "front_y": 4.8}
@@ -42,8 +42,8 @@ def test_the_second_pass_shares_the_union(monkeypatch):
 def test_a_scene_not_built_as_a_procedural_shell_shares_no_cabin(monkeypatch):
     b = {"a": None, "b": None}
     build, calls = _fake(b, style=None)
-    monkeypatch.setattr(G, "make_panel_greybox", build)
-    G.make_scene_greyboxes("p", "s", lambda pid: f"/out/{pid}.png", scene=SCENE)
+    monkeypatch.setattr(G, "make_panel_modeling", build)
+    G.make_scene_modeling("p", "s", lambda pid: f"/out/{pid}.png", scene=SCENE)
     assert all(c[2] is None for c in calls if c[1].startswith("/out/"))
 
 
@@ -57,8 +57,8 @@ def test_every_panel_is_measured_before_any_is_delivered(monkeypatch):
     """
     b = {"a": None, "b": None}
     build, calls = _fake(b, style=None)
-    monkeypatch.setattr(G, "make_panel_greybox", build)
-    G.make_scene_greyboxes("p", "s", lambda pid: f"/out/{pid}.png", scene=SCENE)
+    monkeypatch.setattr(G, "make_panel_modeling", build)
+    G.make_scene_modeling("p", "s", lambda pid: f"/out/{pid}.png", scene=SCENE)
     measured = [c for c in calls if not c[1].startswith("/out/")]
     delivered = [c for c in calls if c[1].startswith("/out/")]
     assert len(measured) == 2 and len(delivered) == 2
@@ -77,8 +77,8 @@ def test_rebuilding_one_panel_still_gets_the_whole_scenes_cabin(monkeypatch):
     b = {"a": {"half_w": 2.13, "top_z": 2.3, "back_y": -1.5, "front_y": 4.8},
          "b": {"half_w": 2.05, "top_z": 2.4, "back_y": -2.2, "front_y": 1.8}}
     build, calls = _fake(b)
-    monkeypatch.setattr(G, "make_panel_greybox", build)
-    G.make_scene_greyboxes("p", "s", lambda pid: f"/out/{pid}.png",
+    monkeypatch.setattr(G, "make_panel_modeling", build)
+    G.make_scene_modeling("p", "s", lambda pid: f"/out/{pid}.png",
                            panel_ids=["b"], scene=SCENE)
     measured = sorted(c[0] for c in calls if not c[1].startswith("/out/"))
     delivered = [c for c in calls if c[1].startswith("/out/")]
@@ -101,7 +101,7 @@ def test_a_panel_entry_with_no_id_does_not_take_the_scene_down():
 def test_the_shared_cabin_is_recorded_beside_the_frame(tmp_path):
     """Without the record the anchor is unreproducible.
 
-    `anchor_version` hashes `scene_shell`, and `greybox_gate` rebuilds the
+    `anchor_version` hashes `scene_shell`, and `modeling_gate` rebuilds the
     spec with `build_spec`, which is a pure KB read -- and a measured shell is
     not in the KB. So every shared-cabin panel hashed differently on the two
     sides and read as permanently stale.

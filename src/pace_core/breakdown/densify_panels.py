@@ -24,7 +24,7 @@ A clone alone states the START framing twice, which left the end framing as
 unstated as it was with one panel. On the video path that went unnoticed,
 because `plan_camera_track` interpolates between the pair; on the still path
 each panel renders on its own, and the two came back as one image — same
-prompt, same greybox, nothing to tell them apart. So a move that changes how
+prompt, same 3D model, nothing to tell them apart. So a move that changes how
 much of the subject is in frame also writes the size it arrives at, one step
 along the ShotSize ladder, as the end panel's `camera_override`.
 
@@ -86,7 +86,7 @@ _TIGHTENS = {"push_in", "push_in_slow", "dolly_in", "zoom_in"}
 _LOOSENS  = {"pull_out", "dolly_out", "zoom_out"}
 
 # Widest to tightest, taken from the schema rather than restated. It is the
-# order the Literal declares and the order the greybox's own framing bands use,
+# order the Literal declares and the order the 3D model's own framing bands use,
 # so a step here is a step there.
 _SIZE_LADDER: tuple[str, ...] = typing.get_args(ShotSize)
 
@@ -209,7 +209,7 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
         # …and say it in a field, not only in prose. A clone states the START
         # framing twice, so the end framing stayed unstated — which is the gap
         # this module exists to close. The pair rendered as one image: same
-        # prompt, same greybox, nothing to tell them apart.
+        # prompt, same 3D model, nothing to tell them apart.
         #
         # This states a composition target, not a camera transform. The
         # transform between the two remains plan_camera_track's job.

@@ -21,9 +21,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node.panel_greybox import _ANCHOR_FIELDS, anchor_version  # noqa: E402
+from pace_core.node.panel_modeling import _ANCHOR_FIELDS, anchor_version  # noqa: E402
 
-SRC = (Path(__file__).resolve().parents[1] / "src/pace_core/node/panel_greybox.py").read_text()
+SRC = (Path(__file__).resolve().parents[1] / "src/pace_core/node/panel_modeling.py").read_text()
 
 
 def test_the_conflict_reaches_the_spec():

@@ -26,7 +26,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from pace_core.node.panel_greybox import (  # noqa: E402
+from pace_core.node.panel_modeling import (  # noqa: E402
     _POSE_FALLBACK, _mesh_for, pose_key_for,
 )
 
@@ -108,7 +108,7 @@ def test_motionless_is_stillness_not_posture():
     motionless, watching building" staged a body on the floor. It only ever
     looked right because the breakdown that taught the table wrote "lying
     motionless", where "lying" already matches."""
-    from pace_core.node.panel_greybox import pose_key_for
+    from pace_core.node.panel_modeling import pose_key_for
     assert pose_key_for("standing tall, motionless, watching building") == "standing"
     assert pose_key_for("seated motionless at the desk") == "sitting"
     # The phrase that taught the table still resolves, on its real word.

@@ -3,9 +3,9 @@
 The design's image verifier compares a generated frame against the 3D anchor
 that produced it. The full form needs a detector to find the subject in the
 delivered pixels. This is the part that needs no detector at all, and it works
-because the greybox and the panel share a camera AND an init latent: the panel
-is denoised from the greybox at 0.55, so wherever the geometry put a body,
-structure in the delivered frame should agree with the greybox's structure.
+because the 3D model and the panel share a camera AND an init latent: the panel
+is denoised from the 3D model at 0.55, so wherever the geometry put a body,
+structure in the delivered frame should agree with the 3D model's structure.
 
 Every measurement here carries its own control. `anchor_margin` compares
 alignment inside the staged silhouette against alignment when the same mask is
@@ -33,31 +33,31 @@ def _iou(x, y) -> float:
     return float((x & y).sum() / u) if u else 0.0
 
 
-def anchor_alignment(greybox: np.ndarray, delivered: np.ndarray,
+def anchor_alignment(modeling: np.ndarray, delivered: np.ndarray,
                      mask: np.ndarray) -> float:
     """Edge agreement between the two frames, restricted to a region."""
-    eg, ed = _edges(greybox), _edges(delivered)
+    eg, ed = _edges(modeling), _edges(delivered)
     m = mask[:-1, :-1] if mask.shape != eg.shape else mask
     if m.sum() < 16:
         return 0.0
     return _iou(eg & m, ed & m)
 
 
-def anchor_margin(greybox: np.ndarray, delivered: np.ndarray,
+def anchor_margin(modeling: np.ndarray, delivered: np.ndarray,
                   mask: np.ndarray, shifts=(-64, -32, 32, 64)) -> dict:
     """Alignment where the body was staged, against the same mask elsewhere.
 
     A positive margin says the delivered structure follows the staged
     silhouette specifically, rather than the panel simply being busy.
     """
-    at = anchor_alignment(greybox, delivered, mask)
+    at = anchor_alignment(modeling, delivered, mask)
     ctrl = []
     for s in shifts:
         shifted = np.roll(mask, s, axis=1)
         # A shift that wraps the body onto itself is not a control.
         if (shifted & mask).sum() > 0.35 * mask.sum():
             continue
-        ctrl.append(anchor_alignment(greybox, delivered, shifted))
+        ctrl.append(anchor_alignment(modeling, delivered, shifted))
     if not ctrl:
         return {"aligned": round(at, 4), "control": None, "margin": None,
                 "note": "no disjoint shift available; subject too wide to control"}
@@ -76,7 +76,7 @@ def anchor_margin(greybox: np.ndarray, delivered: np.ndarray,
 # spread.
 #
 # Binding by overlap with the staged silhouette fixes that AND is what makes a
-# per-subject identity check possible at all: the greybox knows which body is
+# per-subject identity check possible at all: the 3D model knows which body is
 # which subject, so a box bound to that subject's matte is the region an identity check should
 # run on. Presence, position and identity stay three separate claims.
 

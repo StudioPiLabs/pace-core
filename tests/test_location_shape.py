@@ -151,7 +151,7 @@ def test_one_list_of_shapes_not_four():
     import typing
 
     from pace_core.setup.location_shape import SHAPES, LocationShape
-    from pace_core.node.panel_greybox import BUILDABLE_SHAPES
+    from pace_core.node.panel_modeling import BUILDABLE_SHAPES
 
     assert set(typing.get_args(LocationShape)) == set(SHAPES)
     assert BUILDABLE_SHAPES <= set(SHAPES)
