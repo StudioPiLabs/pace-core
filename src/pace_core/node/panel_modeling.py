@@ -2845,7 +2845,14 @@ def _kernel_modeling(spec: dict) -> dict:
             cy = (min(w.y for w in ws) + max(w.y for w in ws)) / 2
             body.location = (sx - cx, sy - cy, -min(w.z for w in ws))
         else:
-            body.location = (sx, sy, seat_top - subj["seat_contact"])
+            contact = subj.get("seat_contact")
+            if contact is None:
+                # Only an .obj proxy has a measured contact; a generated GLB/FBX
+                # body rests its lowest point on the seat plane.
+                body.location = (0.0, 0.0, 0.0)
+                bpy.context.view_layer.update()
+                contact = min((body.matrix_world @ v.co).z for v in body.data.vertices)
+            body.location = (sx, sy, seat_top - contact)
         head_copy = heads.get(subj["character_id"])
         if head_copy is not None:
             # The copy was taken pre-transform, in the same coordinate frame
