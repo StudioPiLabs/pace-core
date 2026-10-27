@@ -2818,6 +2818,10 @@ def _kernel_modeling(spec: dict) -> dict:
             # describes and an extent the solve can frame.
             xform_rot = (math.radians(-90.0), 0.0,
                          math.radians(90.0 + subj.get("facing_deg", 0.0)))
+        # A glTF/FBX import is in QUATERNION mode, where rotation_euler is
+        # ignored (the fixture path above hit the same thing): a generated
+        # body stayed unturned and showed the camera its back.
+        body.rotation_mode = "XYZ"
         body.rotation_euler = xform_rot
         sx, sy = seats[i][0], seats[i][1]
         # Sit the mesh ON the seat by the point that actually rests on one. Its
@@ -2845,12 +2849,20 @@ def _kernel_modeling(spec: dict) -> dict:
             cy = (min(w.y for w in ws) + max(w.y for w in ws)) / 2
             body.location = (sx - cx, sy - cy, -min(w.z for w in ws))
         else:
-            body.location = (sx, sy, seat_top - subj["seat_contact"])
+            contact = subj.get("seat_contact")
+            if contact is None:
+                # Only an .obj proxy has a measured contact; a generated GLB/FBX
+                # body rests its lowest point on the seat plane.
+                body.location = (0.0, 0.0, 0.0)
+                bpy.context.view_layer.update()
+                contact = min((body.matrix_world @ v.co).z for v in body.data.vertices)
+            body.location = (sx, sy, seat_top - contact)
         head_copy = heads.get(subj["character_id"])
         if head_copy is not None:
             # The copy was taken pre-transform, in the same coordinate frame
             # as the body it was split from, so the identical rotation +
             # location keeps it seated on the same head it came off of.
+            head_copy.rotation_mode = "XYZ"
             head_copy.rotation_euler = xform_rot
             head_copy.location = body.location
         bpy.context.view_layer.update()
@@ -3503,7 +3515,9 @@ def _kernel_modeling(spec: dict) -> dict:
         # horizon in the same place relative to the frame rather than in metres
         # someone picked.
         reach = max(dist * 3.0, 12.0)
-        box("ground", (focus.x, focus.y, -0.02), (reach * 2, reach * 2, 0.04))
+        # Top face 5 mm under z=0: a location .blend's own floor is coplanar with
+        # z=0, and two coplanar floors z-fight into banding in every render.
+        box("ground", (focus.x, focus.y, -0.025), (reach * 2, reach * 2, 0.04))
 
         # The set dressing an exterior declares, staged like any other fixture.
         # place_fixtures used to be called only from the cabin branch, so a

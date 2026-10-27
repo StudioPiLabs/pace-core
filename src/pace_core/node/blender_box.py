@@ -211,6 +211,7 @@ class DepthSeqSpec:
     emit_normal:      bool = False        # also render normal_NNNN.png
     emit_seg:         bool = False        # also render seg_NNNN.png (random colours)
     emit_matte:       bool = False        # also render matte_NNNN.png (white subj/black bg)
+    emit_beauty:      bool = False        # also render beauty_NNNN.png (flat colour, every frame)
     # Animation directives — the single motion source. List of {target, kind, …}:
     #   kind="clip" retimes the imported asset's EMBEDDED glTF animation onto the
     #               shot's frames (retime: fit|loop).
@@ -461,6 +462,7 @@ class BlenderBox:
         normal_flag  = ["--emit-normal"] if spec.emit_normal else []
         seg_flag     = ["--emit-seg"] if spec.emit_seg else []
         matte_flag   = ["--emit-matte"] if spec.emit_matte else []
+        beauty_flag  = ["--emit-beauty"] if spec.emit_beauty else []
         obj_args: list[str] = []
         if object_tracks:
             obj_json = out_dir / "object_tracks.json"
@@ -474,7 +476,7 @@ class BlenderBox:
         yaw_args: list[str] = (["--subject-yaw-deg", str(spec.subject_yaw_deg)]
                                if spec.subject_yaw_deg else [])
         aids = [*obj_args, *anim_args, *yaw_args, *ground_flag, *markers_flag, *contour_flag,
-                *normal_flag, *seg_flag, *matte_flag, *kf_flag, *kf_tex_flag]
+                *normal_flag, *seg_flag, *matte_flag, *beauty_flag, *kf_flag, *kf_tex_flag]
         if spec.glb_file:
             # GLB path: no positional .blend — kernel imports the mesh itself.
             cmd = [self.bin, "--background",
