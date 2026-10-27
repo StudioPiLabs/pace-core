@@ -1,7 +1,7 @@
 \section{The full field specification}
 \label{app:spec}
 
-The table below is generated from the schema source: 44 sub-schemas, 276 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
+The table below is generated from the schema source: 44 sub-schemas, 278 fields. It is emitted from the source rather than transcribed, so it cannot drift from the specification it documents. Each field's explanation is the comment written beside its declaration, and fields appear in declaration order, which is the order the schema reads in.
 
 \subsection*{\texttt{CameraIntrinsics}}
 \noindent Optical /\allowbreak{} exposure parameters. SCINE encodes them as 3-bucket categoricals (wide/\allowbreak{}medium/\allowbreak{}narrow for aperture, etc.); the exact-value fields below let real-capture metadata travel alongside without conflict, but compilers should read the categorical fields.
@@ -359,6 +359,7 @@ The table below is generated from the schema source: 44 sub-schemas, 276 fields.
 \begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
 \toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
 \endhead
+\texttt{character\_\allowbreak id} & text, optional & PACE extension ---\allowbreak{} who performs the beat, like Dialogue.speaker: without it a multi-character shot cannot say whose action this is. character\_\allowbreak id of the performer; None for no listed character \\
 \texttt{standalone} & text, optional & solo physical action (open set): "lips quivering", "raising a cup" \\
 \texttt{interactive} & text, optional & action ON another entity (open set): "handing scroll to disciple" \\
 \texttt{temporal} & ActionTemporal, optional & atomic /\allowbreak{} sequential /\allowbreak{} causal /\allowbreak{} cyclic /\allowbreak{} \ldots{} \\
@@ -379,6 +380,7 @@ The table below is generated from the schema source: 44 sub-schemas, 276 fields.
 \begin{longtable}{@{}R{0.24\textwidth}R{0.21\textwidth}R{0.49\textwidth}@{}}
 \toprule \textbf{field} & \textbf{type} & \textbf{meaning} \\ \midrule
 \endhead
+\texttt{character\_\allowbreak id} & text, optional & PACE extension: character\_\allowbreak id of who shows it, as Action.character\_\allowbreak id \\
 \texttt{implicit} & text, optional & body language cue (open set): "clenched jaw", "downcast eyes" ---\allowbreak{} preferred \\
 \texttt{explicit} & text, optional & direct emotion name (open set): "grief", "joy" ---\allowbreak{} rare; most cinema is implicit \\
 \texttt{temporal} & EmotionTemporal, optional & atomic /\allowbreak{} sequential /\allowbreak{} overlapping /\allowbreak{} \ldots{} \\

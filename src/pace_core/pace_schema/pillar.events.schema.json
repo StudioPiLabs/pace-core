@@ -36,6 +36,10 @@
           "descriptionZh"
         ],
         "properties": {
+          "characterId": {
+            "type": "string",
+            "description": "执行该动作的角色 character_id;无对应角色时省略。"
+          },
           "descriptionZh": {
             "type": "string",
             "minLength": 1,
@@ -104,6 +108,10 @@
         "type": "object",
         "additionalProperties": true,
         "properties": {
+          "characterId": {
+            "type": "string",
+            "description": "表现该情绪的角色 character_id;无对应角色时省略。"
+          },
           "implicit": {
             "type": "string",
             "description": "隐含情绪。"

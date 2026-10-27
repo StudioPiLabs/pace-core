@@ -786,6 +786,9 @@ class Action:
     """One action beat. SCINE Table 6 splits actions into Standalone vs
     Interactive (orthogonal open sets); typical usage is to fill one or
     the other for any given Action instance."""
+    # PACE extension — who performs the beat, like Dialogue.speaker: without it a
+    # multi-character shot cannot say whose action this is.
+    character_id: Optional[str]                  = None    # character_id of the performer; None for no listed character
     standalone:   Optional[str]                  = None    # solo physical action (open set): "lips quivering", "raising a cup"
     interactive:  Optional[str]                  = None    # action ON another entity (open set): "handing scroll to disciple"
     temporal:     Optional[ActionTemporal]       = None    # atomic / sequential / causal / cyclic / …
@@ -805,6 +808,7 @@ class Action:
 class Emotion:
     """One emotion beat. Implicit/Explicit are orthogonal — implicit
     captures body-language cues, explicit names the emotion directly."""
+    character_id: Optional[str]              = None    # PACE extension: character_id of who shows it, as Action.character_id
     implicit:    Optional[str]               = None    # body language cue (open set): "clenched jaw", "downcast eyes" — preferred
     explicit:    Optional[str]               = None    # direct emotion name (open set): "grief", "joy" — rare; most cinema is implicit
     temporal:    Optional[EmotionTemporal]   = None    # atomic / sequential / overlapping / …
@@ -1264,12 +1268,14 @@ FIELD_TIER: dict[str, Literal["required", "recommended", "advanced", "requiredIf
     "lighting.condition":                    "recommended",
     "lighting.position":                     "recommended",
     "lighting.colorTemperature":            "recommended",
+    "events.actions[].characterId":          "recommended",   # who performs the beat
     "events.actions[].standalone":           "recommended",   # pace-0.2 §events-align
     "events.actions[].interactive":          "recommended",   # pace-0.2 §events-align
     "events.actions[].temporal":             "recommended",
     "events.actions[].foreground":           "recommended",
     "events.actions[].intensity":            "recommended",
     "events.changeInEnvironment":          "recommended",   # pace-0.2 §coverage
+    "events.emotions[].characterId":         "recommended",
     "events.emotions[].implicit":            "recommended",
     "events.emotions[].foreground":          "recommended",
     "camera.intrinsics.focalLengthMm":     "recommended",   # pace-0.2 §full-align
