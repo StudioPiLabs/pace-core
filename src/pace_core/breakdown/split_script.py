@@ -6,10 +6,11 @@ time-of-day. Output is one PACE scene document per scene at
 `kb/on_scene/projects/<project>/scene_NN.json`, with narrative_meta,
 shot_defaults, initial shots, and one starter panel per shot filled in.
 
-Splitting is LLM-driven: a single LLM call returns structured JSON (scene
-boundaries + per-scene era/region/culture), so it works on any prose or
-screenplay and infers period from the script's own content — no per-film
-heuristics. Uses the assets/models.json registry ($MODELS_FILE); default model =
+Explicit screenplay headings fix scene boundaries; the LLM extracts each
+scene's content and proposes boundaries for unheaded prose. Long scenes are
+processed as fragments of the same source scene. Action quotes and production
+notes are checked against source spans and saved separately from PACE fields.
+Uses the assets/models.json registry ($MODELS_FILE); default model =
 claude-sonnet-5.
 
 Usage:
@@ -19,6 +20,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -649,6 +651,55 @@ def _chunk_script(text: str, target: int = CHUNK_CHARS) -> list[str]:
     return out
 
 
+def _script_parts(text: str, target: int = CHUNK_CHARS) -> list[dict]:
+    """Keep explicit headings separate; split long scenes only into labelled fragments."""
+    from pace_core.breakdown.screenplay_parser import parse
+
+    headings = [e for e in parse(text) if e.kind == "scene_heading"]
+    spans = [(i, h.start, headings[i + 1].start if i + 1 < len(headings) else len(text), h.text)
+             for i, h in enumerate(headings)] if headings else [(None, 0, len(text), None)]
+    parts = []
+    for index, start, end, heading in spans:
+        cursor = start
+        for chunk in _chunk_script(text[start:end], target):
+            at = text.find(chunk, cursor, end)
+            if at < 0:
+                raise ValueError("Script chunk no longer matches its source")
+            parts.append({"text": chunk, "start": at, "end": at + len(chunk),
+                          "scene_index": index, "heading": heading})
+            cursor = at + len(chunk)
+    return parts
+
+
+def _ground_fragment(scene: dict, text: str, part: dict) -> None:
+    """Use the shared quote checker; keep ungrounded proposals visible as such."""
+    from pace_core.breakdown.extract_script_ir import ground
+
+    actions = scene.get("key_actions") or []
+    if not isinstance(actions, list) or any(not isinstance(a, str) for a in actions):
+        raise ValueError("Scene key_actions must be a list of strings")
+    evidence = scene.pop("action_evidence", []) or []
+    notes = scene.pop("source_notes", []) or []
+    if (not isinstance(evidence, list) or any(not isinstance(n, dict) for n in evidence)
+            or not isinstance(notes, list) or any(not isinstance(n, dict) for n in notes)):
+        raise ValueError("Action evidence and source notes must be lists of objects")
+    nodes = [{"local_id": f"action_{i + 1}", "action": a,
+              "quote": (evidence[i] if i < len(evidence) else {}).get("quote")}
+             for i, a in enumerate(actions)]
+    ir = ground({"events": nodes, "states": notes}, text, part)
+    for note in ir["states"]:
+        quote = (note.get("evidence") or {}).get("source_text", "")
+        note["usable_as_context"] = note["grounded"] and not re.fullmatch(r"\s*\d+[.]?\s*", quote)
+        if note["grounded"] and not note["usable_as_context"]:
+            note["issue"] = "page_number_or_note_marker_without_content"
+    scene["source_evidence"] = {"start": part["start"], "end": part["end"],
+                                "actions": ir["events"], "notes": ir["states"],
+                                "human_verified": False}
+    if part["heading"] is not None:
+        scene["heading"] = part["heading"]
+        scene["story_text"] = text[part["start"]:part["end"]]
+
+
 _UNKNOWN = {"", "unknown", "unknown location", "n/a", "none", "unspecified", "-"}
 
 
@@ -691,12 +742,19 @@ def _join_scenes(a: dict, b: dict) -> dict:
     out = dict(a)
     out["story_text"] = ((a.get("story_text") or "").rstrip() + "\n\n"
                          + (b.get("story_text") or "").lstrip()).strip()
-    for f in ("characters_present", "key_actions"):
-        seen, merged = set(), []
-        for v in (a.get(f) or []) + (b.get(f) or []):
-            if v not in seen:
-                seen.add(v); merged.append(v)
-        out[f] = merged
+    out["characters_present"] = list(dict.fromkeys(
+        (a.get("characters_present") or []) + (b.get("characters_present") or [])))
+    # Separate fragments do not overlap: a repeated action can happen twice.
+    out["key_actions"] = (a.get("key_actions") or []) + (b.get("key_actions") or [])
+    for field in ("vo_lines", "on_screen_dialogue", "titles", "sfx_notes"):
+        out[field] = (a.get(field) or []) + (b.get(field) or [])
+    if a.get("source_evidence") and b.get("source_evidence"):
+        left, right = a["source_evidence"], b["source_evidence"]
+        actions = left["actions"] + right["actions"]
+        out["source_evidence"] = {"start": left["start"], "end": right["end"],
+                                  "actions": [{**n, "local_id": f"action_{i + 1}"}
+                                              for i, n in enumerate(actions)],
+                                  "notes": left["notes"] + right["notes"], "human_verified": False}
     out["implied_shot_count"] = ((a.get("implied_shot_count") or 0)
                                  + (b.get("implied_shot_count") or 0)) or None
     if not (out.get("summary") or "").strip():
@@ -751,17 +809,23 @@ def split_llm(text: str, model_key: str = GENERATOR_DEFAULT,
         raise ValueError(f"unknown model '{model_key}'. options: {list(models.keys())}")
     cfg = models[model_key]
 
-    chunks = _chunk_script(text)
+    chunks = _script_parts(text)
     print(f"[split_llm] calling model: {model_key} over {len(chunks)} chunk(s) "
           f"of {len(text)} chars", file=sys.stderr)
 
     scenes_acc: list[dict] = []
     cost = 0.0
-    for i, chunk in enumerate(chunks):
+    previous_scene = None
+    for i, fragment in enumerate(chunks):
+        chunk = fragment["text"]
         head = ("This is part {} of {} of a longer script. It may begin or end "
                 "part-way through a scene; describe what is here and do not "
                 "invent a boundary at the edges.\n\n").format(i + 1, len(chunks)) \
                if len(chunks) > 1 else ""
+        if fragment["heading"] is not None:
+            head += (f"Explicit source scene: {fragment['heading']}\n"
+                     "Return exactly ONE scene fragment for this source scene. "
+                     "Keep its heading even if this fragment begins mid-scene.\n\n")
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user",   "content": head + _build_user_prompt(chunk)},
@@ -775,15 +839,28 @@ def split_llm(text: str, model_key: str = GENERATOR_DEFAULT,
                 f"chunk {i + 1}/{len(chunks)} ({len(chunk)} chars): {e}") from e
         cost += c
         try:
-            part = json.loads(strip_fences(raw)).get("scenes") or []
+            decoded = json.loads(strip_fences(raw))
+            part = decoded.get("scenes") if isinstance(decoded, dict) else None
         except json.JSONDecodeError as e:
             raise ValueError(
                 f"chunk {i + 1}/{len(chunks)} returned unparseable JSON: {e}") from e
-        # A scene split across the cut is one scene, not two.
-        if scenes_acc and part and _same_scene(scenes_acc[-1], part[0]):
+        if not isinstance(part, list) or not part or any(not isinstance(sc, dict) for sc in part):
+            raise ValueError(f"chunk {i + 1}/{len(chunks)} must return a nonempty scene list")
+        if fragment["heading"] is not None and len(part) != 1:
+            raise ValueError(f"Explicit source scene {fragment['heading']!r} was split into {len(part)} scenes")
+        for sc in part:
+            _ground_fragment(sc, text, fragment)
+        # Headed scenes join only within that exact source heading, never by similar labels.
+        continuation = (previous_scene == fragment["scene_index"] if fragment["heading"] is not None
+                        else bool(scenes_acc and _same_scene(scenes_acc[-1], part[0])))
+        if scenes_acc and continuation:
             scenes_acc[-1] = _join_scenes(scenes_acc[-1], part[0])
+            if fragment["heading"] is not None:
+                evidence = scenes_acc[-1]["source_evidence"]
+                scenes_acc[-1]["story_text"] = text[evidence["start"]:evidence["end"]]
             part = part[1:]
         scenes_acc.extend(part)
+        previous_scene = fragment["scene_index"]
         print(f"  [llm] chunk {i + 1}/{len(chunks)}: {len(part)} scene(s) "
               f"(running total {len(scenes_acc)})  ${c:.4f}", file=sys.stderr)
 
@@ -888,8 +965,17 @@ def split_text_to_pai(text: str, *, source_label: str = "<memory>",
         "scenes": unified_docs,
     }
 
+    evidence = {"schema": "pace-breakdown-evidence-1", "source_script": source_label,
+                "source_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
+                "skill_sha256": hashlib.sha256(SYSTEM_PROMPT.encode("utf-8")).hexdigest(),
+                "human_verified": False, "training_eligible": False, "film_alignment_verified": False,
+                "scenes": [{"scene_id": sc["scene_id"], "heading": sc.get("heading"),
+                            **sc.get("source_evidence", {})} for sc in scenes]}
+    out["source_evidence"] = evidence
+
     if not dry_run:
         out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "breakdown_evidence.json").write_text(json.dumps(evidence, indent=2, ensure_ascii=False))
         for unified in unified_docs:
             sid = unified.get("scene_id") or f"scene_{unified.get('scene_number', '?')}"
             path = out_dir / f"{sid}.json"
@@ -932,33 +1018,15 @@ def main():
         text = Path(args.script_path).read_text()
         src_label = str(Path(args.script_path).resolve())
 
-    scenes = split_llm(text, model_key=args.model,
-                       locations_dir=locations_dir,
-                       legacy_scenes_file=legacy_scenes,
-                       models_file=models_file)
-
-    unified_docs = [_to_pai_1_1(sc, source_script=src_label) for sc in scenes]
-
-    out = {
-        "_meta": {
-            "source_script":   src_label,
-            "schema_version":  SCHEMA_VERSION,
-            "generated_at":    datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            "model_used":      args.model,
-            "scene_count":     len(scenes),
-        },
-        "scenes": unified_docs,
-    }
+    out = split_text_to_pai(text, source_label=src_label, model=args.model, output_dir=out_dir,
+                            locations_dir=locations_dir, legacy_scenes_file=legacy_scenes,
+                            models_file=models_file, dry_run=args.dry_run)
+    unified_docs = out["scenes"]
 
     if args.dry_run:
         print(f"[dry-run] would write {len(unified_docs)} scene file(s) → {out_dir}/",
               file=sys.stderr)
     else:
-        out_dir.mkdir(parents=True, exist_ok=True)
-        for unified in unified_docs:
-            sid  = unified.get("scene_id") or f"scene_{unified.get('scene_number', '?')}"
-            path = out_dir / f"{sid}.json"
-            path.write_text(json.dumps(unified, indent=2, ensure_ascii=False))
         print(f"wrote {len(unified_docs)} PACE scene file(s) → {out_dir}/",
               file=sys.stderr)
 

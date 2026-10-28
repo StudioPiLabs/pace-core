@@ -1,5 +1,5 @@
 [tool.hatch.metadata]
-# `pace-scene-skills` is pinned to a git tag, the same way this package's own
+# `pace-scene-skills` is pinned to a git revision, the same way this package's own
 # consumers pin it. Hatch refuses a direct reference unless told.
 allow-direct-references = true
 
@@ -27,7 +27,7 @@ dependencies = [
     # a criterion cannot be changed in one place and stay put in the other.
     # A git direct reference: this package cannot be published to PyPI until
     # pace-scene-skills is, and consumers must allow direct references too.
-    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@0.2.2",
+    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@fa3fbdc21aa3c9d397729ce3d5bc1b33f27ccd5a",
 ]
 
 [project.optional-dependencies]

@@ -24,6 +24,7 @@ from pace_core.llm_client import default_model
 import argparse
 import json
 import pathlib
+import re
 import sys
 
 from pace_core.breakdown.screenplay_parser import parse, scenes
@@ -108,7 +109,10 @@ def ground(ir: dict, source: str, sc: dict) -> dict:
     ungrounded: list[dict] = []
 
     def locate(node: dict, kind: str) -> None:
-        q = (node.get("quote") or "").strip()
+        q = node.get("quote") or ""
+        if not isinstance(q, str):
+            raise ValueError("An evidence quote must be text")
+        q = q.strip()
         node.pop("quote", None)
         if not q:
             node["grounded"] = False
@@ -118,16 +122,15 @@ def ground(ir: dict, source: str, sc: dict) -> dict:
         if at < 0:
             # A quote the model rewrote: try once with whitespace collapsed,
             # since the PDF's line breaks fall inside sentences.
-            flat_w = " ".join(window.split())
-            flat_q = " ".join(q.split())
-            at2 = flat_w.find(flat_q)
-            if at2 < 0:
+            match = re.search(r"\s+".join(re.escape(word) for word in q.split()), window)
+            if match is None:
                 node["grounded"] = False
                 node["claimed_quote"] = q
                 ungrounded.append({"kind": kind, "claim": node.get("local_id"), "quote": q})
                 return
             node["grounded"] = True
-            node["evidence"] = {"approx": True, "source_text": flat_q}
+            node["evidence"] = {"start": lo + match.start(), "end": lo + match.end(),
+                                "source_text": match.group(), "whitespace_normalized": True}
             return
         node["grounded"] = True
         node["evidence"] = {"start": lo + at, "end": lo + at + len(q), "source_text": q}
