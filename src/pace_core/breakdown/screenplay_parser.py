@@ -31,7 +31,7 @@ import re
 from dataclasses import dataclass, asdict
 from typing import Iterator
 
-SCENE_RE = re.compile(r"^(INT\.?/EXT\.?|EXT\.?/INT\.?|INT\.?|EXT\.?|EST\.?)[\s.]", re.I)
+SCENE_RE = re.compile(r"^(?:\d+[.)]?\s+)?(INT\.?/EXT\.?|EXT\.?/INT\.?|INT\.?|EXT\.?|EST\.?)[\s.]", re.I)
 TRANSITION_RE = re.compile(r"^(FADE (IN|OUT)|CUT TO|DISSOLVE TO|SMASH CUT|MATCH CUT|BACK TO)\b.*[:.]?$", re.I)
 SUPER_RE = re.compile(r"^(SUPER|TITLE|CAPTION)\s*:", re.I)
 PAREN_RE = re.compile(r"^\(.*\)?$")
