@@ -134,21 +134,25 @@ def _responses_input(messages: list) -> tuple[str, list]:
     return "\n\n".join(instructions), items
 
 
-def _call_codex(model: str, messages: list, options: dict, timeout) -> tuple[str, dict]:
-    """One Responses call on the subscription backend; returns (text, OpenAI-style usage).
+class _CodexStreamCut(RuntimeError):
+    """The stream closed before a terminal event; the partial text is not an answer."""
 
-    The backend only streams (store=false, stream=true are required), so the
-    SSE is read to `response.completed` here and handed back whole.
-    """
+
+_CODEX_ATTEMPTS = 3
+
+
+def _completed_text(response: dict) -> str:
+    """Text of a completed Responses object; deltas can miss parts the final object holds."""
+    return "".join(part.get("text", "") for item in response.get("output") or []
+                   if item.get("type") == "message"
+                   for part in item.get("content") or [] if part.get("type") == "output_text")
+
+
+def _codex_stream(payload: dict, timeout) -> tuple[str, dict]:
     from pace_core import codex_auth
-    instructions, items = _responses_input(messages)
-    payload = {"model": model, "instructions": instructions or "Follow the user's request exactly.",
-               "input": items, "store": False, "stream": True}
-    if options.get("reasoning_effort"):
-        payload["reasoning"] = {"effort": options["reasoning_effort"]}
     request = urllib.request.Request(f"{codex_auth.API_BASE}/responses", data=json.dumps(payload).encode(),
                                      headers=codex_auth.headers(stream=True))
-    parts, usage = [], {}
+    parts = []
     try:
         with urllib.request.urlopen(request, timeout=timeout) as response:
             for raw in response:
@@ -163,15 +167,41 @@ def _call_codex(model: str, messages: list, options: dict, timeout) -> tuple[str
                 if kind == "response.output_text.delta":
                     parts.append(event.get("delta", ""))
                 elif kind == "response.completed":
-                    usage = event["response"].get("usage") or {}
-                    break
+                    final = event.get("response") or {}
+                    usage = final.get("usage") or {}
+                    return _completed_text(final) or "".join(parts), {
+                        "prompt_tokens": usage.get("input_tokens", 0),
+                        "completion_tokens": usage.get("output_tokens", 0)}
+                elif kind == "response.incomplete":
+                    reason = ((event.get("response") or {}).get("incomplete_details") or {}).get("reason")
+                    raise RuntimeError(f"Codex response incomplete ({reason or 'no reason given'}) "
+                                       f"after {len(''.join(parts))} characters")
                 elif kind in ("response.failed", "error"):
                     error = event.get("error") or (event.get("response") or {}).get("error") or event
                     raise RuntimeError(f"Codex backend error: {error}")
     except urllib.error.HTTPError as e:
         raise RuntimeError(f"Codex backend HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:400]}") from None
-    return "".join(parts), {"prompt_tokens": usage.get("input_tokens", 0),
-                            "completion_tokens": usage.get("output_tokens", 0)}
+    raise _CodexStreamCut(f"Codex stream ended before the response completed "
+                          f"({len(''.join(parts))} characters received)")
+
+
+def _call_codex(model: str, messages: list, options: dict, timeout) -> tuple[str, dict]:
+    """One Responses call on the subscription backend; returns (text, OpenAI-style usage).
+
+    The backend only streams (store=false, stream=true are required), so the
+    SSE is read to `response.completed`. A stream that closes earlier is retried.
+    """
+    instructions, items = _responses_input(messages)
+    payload = {"model": model, "instructions": instructions or "Follow the user's request exactly.",
+               "input": items, "store": False, "stream": True}
+    if options.get("reasoning_effort"):
+        payload["reasoning"] = {"effort": options["reasoning_effort"]}
+    for attempt in range(_CODEX_ATTEMPTS):
+        try:
+            return _codex_stream(payload, timeout)
+        except _CodexStreamCut:
+            if attempt == _CODEX_ATTEMPTS - 1:
+                raise
 
 
 _litellm_module = None

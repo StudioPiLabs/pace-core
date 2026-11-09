@@ -92,3 +92,30 @@ def test_first_use_from_many_threads_imports_litellm_once():
             "assert len(out) == 8 and len({id(m) for m in out}) == 1, out")
     run = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=120)
     assert run.returncode == 0, run.stderr[-800:]
+
+
+def test_codex_never_returns_a_cut_stream_as_an_answer(monkeypatch):
+    def sse(*events):
+        return [f"data: {json.dumps(e)}\n".encode() for e in events]
+    delta = {"type": "response.output_text.delta", "delta": '{"id": "sce'}
+    done = {"type": "response.completed", "response": {"usage": {"input_tokens": 3, "output_tokens": 5}, "output": [
+        {"type": "message", "content": [{"type": "output_text", "text": '{"id": "scene_08"}'}]}]}}
+    streams = [sse(delta), sse(delta, done)]
+
+    class Stream(list):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+    monkeypatch.setattr(codex_auth, "headers", lambda stream: {})
+    monkeypatch.setattr(llm_client.urllib.request, "urlopen", lambda request, timeout: Stream(streams.pop(0)))
+    assert llm_client._call_codex("m", [{"role": "user", "content": "hi"}], {}, None) == (
+        '{"id": "scene_08"}', {"prompt_tokens": 3, "completion_tokens": 5})
+    streams[:] = [sse(delta)] * 3
+    with pytest.raises(RuntimeError, match="ended before the response completed"):
+        llm_client._call_codex("m", [{"role": "user", "content": "hi"}], {}, None)
+    streams[:] = [sse(delta, {"type": "response.incomplete",
+                              "response": {"incomplete_details": {"reason": "max_output_tokens"}}})]
+    with pytest.raises(RuntimeError, match="incomplete \\(max_output_tokens\\)"):
+        llm_client._call_codex("m", [{"role": "user", "content": "hi"}], {}, None)
