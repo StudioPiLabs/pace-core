@@ -1417,7 +1417,7 @@ wheels = [
 
 [[package]]
 name = "pace-core"
-version = "0.10.0"
+version = "0.10.2"
 source = { editable = "." }
 dependencies = [
     { name = "litellm" },
@@ -1442,7 +1442,7 @@ usd = [
 requires-dist = [
     { name = "litellm", specifier = ">=1.103.1,<2" },
     { name = "numpy", specifier = ">=1.26" },
-    { name = "pace-scene-skills", git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=0.2.2" },
+    { name = "pace-scene-skills", git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=fa3fbdc21aa3c9d397729ce3d5bc1b33f27ccd5a" },
     { name = "pillow", specifier = ">=10.0" },
     { name = "pypdf", marker = "extra == 'pdf'", specifier = ">=4.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
@@ -1453,7 +1453,7 @@ provides-extras = ["usd", "pdf", "dev"]
 [[package]]
 name = "pace-scene-skills"
 version = "0.2.2"
-source = { git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=0.2.2#456b30b1498ebc962caa3aba6f42626934ef9ed3" }
+source = { git = "https://github.com/StudioPiLabs/pace-scene-skills?rev=fa3fbdc21aa3c9d397729ce3d5bc1b33f27ccd5a#fa3fbdc21aa3c9d397729ce3d5bc1b33f27ccd5a" }
 dependencies = [
     { name = "pyyaml" },
 ]
