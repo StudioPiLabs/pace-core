@@ -99,3 +99,31 @@ def test_wrong_action_shape_is_rejected_before_any_scene_is_published(tmp_path, 
         run_split(tmp_path, monkeypatch, 'INT. HUT - DAY\n\nMira kneels.', [[{
             'key_actions': [{'action': 'Mira kneels', 'quote': 'Mira kneels.'}]}]])
     assert not (tmp_path / 'scenes').exists()
+
+
+def test_every_line_lands_on_its_shot_and_undesigned_camera_stays_unknown(tmp_path, monkeypatch):
+    text = '1 INT. SHOP - DAY\n\nada opens the door.\n\nADA: Morning.\n\nben wipes the counter.\n\nBEN (O.S.): Shut it.\n'
+    scene = {'heading': '1 INT. SHOP - DAY', 'location_raw': 'shop', 'time_of_day': 'day',
+             'characters_present': ['ada', 'ben'],
+             'key_actions': ['ada opens the door', 'ben wipes the counter'],
+             'action_evidence': [{'quote': 'ada opens the door.'}, {'quote': 'ben wipes the counter.'}],
+             'dialogue': [{'speaker': 'ada', 'text': 'Morning.', 'on_screen': True, 'after_action': 0},
+                          {'speaker': 'ben', 'text': 'Shut it.', 'on_screen': False, 'after_action': 1}]}
+    run_split(tmp_path, monkeypatch, text, [[scene]])
+    doc = json.loads(next((tmp_path / 'scenes').glob('*.json')).read_text())
+    first, second = doc['shots']
+    assert [d['text'] for d in first['events']['dialogues']] == ['Morning.']
+    assert (second['events']['dialogues'][0]['speaker'], second['events']['dialogues'][0]['on_screen']) == ('ben', False)
+    assert [line['kind'] for line in doc['narrative_meta']['vo_lines']] == ['vo']
+    assert first['camera']['creative_intent']['shot_size'] is None
+    assert first['setup']['primary_focus']['ref'] == 'ada'
+    assert doc['shot_defaults']['setup']['environment']['style'] is None
+
+
+def test_a_camera_frame_range_sets_the_shot_length_and_playback_frames():
+    from pace_core.events.shot_duration import playback_frames, shot_duration_s
+
+    shot = {'camera': {'fps': {'num': 24, 'denom': 1}, 'frame_range': [0, 71]},
+            'events': {'actions': [{'duration_hint_s': 5}]}}
+    assert shot_duration_s(shot) == (3.0, 'camera')
+    assert playback_frames(shot) == (72, 24.0)

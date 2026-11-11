@@ -57,7 +57,7 @@ _SHOT_SIZE_PATTERNS = [
     ("establishing", "establishing"),
     ("long shot", "wide"),
     ("wide shot", "wide"),
-    ("full shot", "wide"),
+    ("full shot", "full"),
     ("two shot", "medium"),
     ("two-shot", "medium"),
     ("medium close", "medium_close_up"),
@@ -76,7 +76,7 @@ _SHOT_SIZE_PATTERNS = [
     ("中近景", "medium_close_up"),
     ("中景", "medium"),
     ("近景", "close_up"),
-    ("全景", "wide"),
+    ("全景", "full"),
     ("远景", "wide"),
     ("主观镜头", "medium"),
     ("主观视角", "medium"),
@@ -132,19 +132,6 @@ _GEAR_PATTERNS = [
 _BLACK_MARKERS = ["黑屏", "纯黑", "5 秒纯黑", "切黑屏", "BLACK"]
 _TITLE_MARKERS = ["TITLE", "出片名", "落版字幕", "字幕", "片名"]
 _TIME_RE = re.compile(r"[（(]\s*(\d+(?:\.\d+)?)\s*(?:秒|sec|s)\s*[)）]")
-
-# culture → Stage B style family. Best-effort: the LLM returns a free-form
-# `culture` per scene; known values map here, everything else falls back to
-# the scene's stage_b_style or the inkwash default in _build_shot_defaults.
-_CULTURE_TO_STYLE = {
-    "kuchean_buddhist": "inkwash_bw",
-    "later_qin_chang_an_buddhist": "inkwash_bw",
-    "former_qin_frontier": "sketch_bw",
-    "later_liang_frontier": "sketch_bw",
-    "modern_urban_chinese": "photoreal",
-    "time_bridge_modern_historical": "chiaroscuro",
-    "time_bridge_dream": "chiaroscuro",
-}
 
 
 def _first_match(text: str | None, patterns: list[tuple[str, str]]) -> str | None:
@@ -245,15 +232,14 @@ def _classify_kind(text: str | None, explicit_nonvisual: bool = False) -> str:
     return "black" if explicit_nonvisual else "visual"
 
 
-def _shot_size_for(action: str | None, declared: str | None, kind: str) -> str:
+def _shot_size_for(action: str | None, declared: str | None, kind: str) -> str | None:
     if kind != "visual":
         return "wide"
     if declared:
         mapped = _first_match(declared, _SHOT_SIZE_PATTERNS)
         if mapped:
             return mapped
-    parsed = _first_match(action, _SHOT_SIZE_PATTERNS)
-    return parsed or "medium"
+    return _first_match(action, _SHOT_SIZE_PATTERNS)   # None: a shot size is designed, not assumed
 
 
 def _framing_for(action: str | None, kind: str, subject_count: int) -> str:
@@ -293,14 +279,13 @@ def _subjects_for(scene: dict, kind: str) -> list[dict]:
     return subjects
 
 
-def _primary_focus_for(subjects: list[dict], kind: str, scene: dict) -> dict:
+def _primary_focus_for(subjects: list[dict], kind: str, scene: dict, action: str | None = None) -> dict:
+    named = [s["character_id"] for s in subjects if s.get("character_id") and s["character_id"] in (action or "")]
+    if len(named) == 1:
+        return {"type": "character", "ref": named[0], "of_character": None, "coverage_pct": None}
     if subjects:
-        return {
-            "type": "character",
-            "ref": subjects[0].get("character_id") or "",
-            "of_character": None,
-            "coverage_pct": 55,
-        }
+        # The reading focus of this moment is a design decision, not the first cast member.
+        return {"type": None, "ref": None, "of_character": None, "coverage_pct": None}
     return {
         "type": "environment",
         "ref": scene.get("location_ref") or scene.get("location_raw") or "scene",
@@ -341,22 +326,27 @@ def _action_for(beat: str, action_text: str | None) -> dict:
     }
 
 
+def _dialogue_lines(scene: dict) -> list[dict]:
+    """The scene's spoken lines in source order, each with a stable utterance id."""
+    lines = []
+    for n, line in enumerate(scene.get("dialogue") or [], start=1):
+        if isinstance(line, dict) and (line.get("text") or "").strip():
+            after = line.get("after_action")
+            lines.append({"utterance_id": f"{scene['scene_id']}_u{n:02d}", "speaker": line.get("speaker"),
+                          "text": line["text"], "on_screen": line.get("on_screen", True) is not False,
+                          "after_action": after if isinstance(after, int) and after >= 0 else None})
+    return lines
+
+
 def _dialogues_for(scene: dict, shot_index: int, total_shots: int) -> list[dict]:
-    lines = scene.get("on_screen_dialogue") or []
-    if not lines:
-        return []
-    picked = lines if total_shots <= 1 else ([lines[shot_index]] if shot_index < len(lines) else [])
+    """Lines that start after this shot's action (and before the next one); lines before any action open the scene."""
     out = []
-    for line in picked:
-        if isinstance(line, str):
-            out.append({"type_of_delivery": None, "foreground": "focal", "speaker": None, "text": line})
-        elif isinstance(line, dict):
-            out.append({
-                "type_of_delivery": None,
-                "foreground": "focal",
-                "speaker": line.get("speaker") or line.get("character"),
-                "text": line.get("text") or line.get("line") or "",
-            })
+    for line in _dialogue_lines(scene):
+        at = min(line["after_action"] or 0, total_shots - 1)
+        if at == shot_index:
+            out.append({"utterance_id": line["utterance_id"], "speaker": line["speaker"], "text": line["text"],
+                        "on_screen": line["on_screen"], "type_of_delivery": None,
+                        "foreground": "focal" if line["on_screen"] else "global"})
     return out
 
 
@@ -370,10 +360,10 @@ def _build_shot_defaults(scene: dict) -> dict:
     culture = scene.get("culture") or None
     natural = _natural_light_for(setting, tod, culture)
     condition = _lighting_condition(setting, tod, natural)
-    style = _CULTURE_TO_STYLE.get(culture, scene.get("stage_b_style") or "inkwash_bw")
+    style = scene.get("stage_b_style")   # the project chooses a look; the script does not imply one
     color_temperature = "warm" if condition in ("candlelight", "golden_hour") else None
     return {
-        "camera": {"creative_intent": {"aspect_ratio": "2.35:1"}},
+        "camera": {"creative_intent": {}},
         "setup": {
             "backdrop": {
                 "setting": setting,
@@ -420,20 +410,20 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
         static = not movements_2d and not movements_3d
         shot_size = _shot_size_for(action_text, declared[i - 1], kind)
         framing = _framing_for(action_text, kind, len(subjects))
-        primary_focus = _primary_focus_for(subjects, kind, scene)
+        primary_focus = _primary_focus_for(subjects, kind, scene, action_text)
         scale = "intimate" if shot_size in ("extreme_close_up", "close_up", "medium_close_up", "medium") else "expansive"
 
         shot = {
             "shot_id": shot_id,
             "camera": {
                 "intrinsics": {},
-                "extrinsics": {"angle": _first_match(action_text, _ANGLE_PATTERNS) or "eye_level", "position": "front"},
+                "extrinsics": {"angle": _first_match(action_text, _ANGLE_PATTERNS), "position": None},
                 "trajectory": {
-                    "static": static,
+                    "static": False if not static else None,   # unstated: undesigned, not locked off
                     "movement_2d": movements_2d,
                     "movement_3d": movements_3d,
-                    "gear": gear or ("tripod" if static else None),
-                    "easing": "ease_out" if movements_2d or movements_3d else "linear",
+                    "gear": gear,
+                    "easing": "ease_out" if movements_2d or movements_3d else None,
                 },
                 "creative_intent": {"shot_size": shot_size, "framing": framing},
             },
@@ -476,22 +466,9 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
     return shots, hints
 
 
-def _lift_dialogue(items, kind: str) -> list[dict]:
-    """Normalize bare-string dialogue (legacy) or dict (already DialogueLine) → DialogueLine dict.
-    Mirrors migrate_kb_to_scine.py to keep the two writers in sync.
-    """
-    out = []
-    for it in items or []:
-        if isinstance(it, str):
-            out.append({"character": None, "text": it, "start_s": None, "kind": kind})
-        elif isinstance(it, dict):
-            out.append({
-                "character": it.get("character"),
-                "text":      it.get("text", ""),
-                "start_s":   it.get("start_s"),
-                "kind":      it.get("kind", kind),
-            })
-    return out
+def _spoken(line: dict, kind: str) -> dict:
+    return {"utterance_id": line["utterance_id"], "character": line["speaker"], "text": line["text"],
+            "start_s": None, "kind": kind}
 
 
 def _to_pai_1_1(sc: dict, source_script: str) -> dict:
@@ -510,8 +487,8 @@ def _to_pai_1_1(sc: dict, source_script: str) -> dict:
         "summary":              sc.get("summary"),
         "story_beat":           sc.get("story_beat"),
         "key_actions":          sc.get("key_actions", []),
-        "vo_lines":             _lift_dialogue(sc.get("vo_lines"), "vo"),
-        "on_screen_dialogue":   _lift_dialogue(sc.get("on_screen_dialogue"), "on_screen_text"),
+        "vo_lines":             [_spoken(line, "vo") for line in _dialogue_lines(sc) if not line["on_screen"]],
+        "on_screen_dialogue":   [_spoken(line, "dialogue") for line in _dialogue_lines(sc) if line["on_screen"]],
         "titles":               sc.get("titles", []),
         "sfx_notes":            sc.get("sfx_notes", []),
         "characters_present":   sc.get("characters_present", []),
@@ -746,8 +723,13 @@ def _join_scenes(a: dict, b: dict) -> dict:
         (a.get("characters_present") or []) + (b.get("characters_present") or [])))
     # Separate fragments do not overlap: a repeated action can happen twice.
     out["key_actions"] = (a.get("key_actions") or []) + (b.get("key_actions") or [])
-    for field in ("vo_lines", "on_screen_dialogue", "titles", "sfx_notes"):
+    for field in ("titles", "sfx_notes"):
         out[field] = (a.get(field) or []) + (b.get(field) or [])
+    offset = len(a.get("key_actions") or [])
+    out["dialogue"] = (a.get("dialogue") or []) + [
+        {**line, "after_action": (line["after_action"] + offset if isinstance(line.get("after_action"), int)
+                                  else offset - 1 if offset else None)}
+        for line in b.get("dialogue") or [] if isinstance(line, dict)]
     if a.get("source_evidence") and b.get("source_evidence"):
         left, right = a["source_evidence"], b["source_evidence"]
         actions = left["actions"] + right["actions"]
