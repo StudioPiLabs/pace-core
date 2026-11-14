@@ -127,3 +127,38 @@ def test_a_camera_frame_range_sets_the_shot_length_and_playback_frames():
             'events': {'actions': [{'duration_hint_s': 5}]}}
     assert shot_duration_s(shot) == (3.0, 'camera')
     assert playback_frames(shot) == (72, 24.0)
+
+
+def test_an_exchange_is_covered_shot_reverse_shot_and_bad_coverage_falls_back(tmp_path, monkeypatch):
+    text = ('1 INT. SHOP - DAY\n\nada leans on the counter.\n\nADA: Pay up.\n\nBEN: Tomorrow.\n\nADA: Today.\n')
+    exchange = [{'speaker': 'ada', 'text': 'Pay up.', 'after_action': 0},
+                {'speaker': 'ben', 'text': 'Tomorrow.', 'after_action': 0},
+                {'speaker': 'ada', 'text': 'Today.', 'after_action': 0}]
+
+    def shot(lines, who, to, side, actions=()):
+        return {'actions': list(actions), 'lines': lines, 'shot_size': 'medium_close_up', 'angle': 'eye_level',
+                'position': 'ots', 'camera_side': side, 'focus': who, 'speaker': who, 'eyeline_to': to,
+                'basis': 'Pay up.'}
+    scene = {'heading': '1 INT. SHOP - DAY', 'location_raw': 'shop', 'time_of_day': 'day',
+             'characters_present': ['ada', 'ben'], 'key_actions': ['ada leans on the counter'],
+             'action_evidence': [{'quote': 'ada leans on the counter.'}], 'dialogue': exchange,
+             'axis': {'between': ['ada', 'ben']},
+             'coverage': [shot([0], 'ada', 'ben', 'A', actions=[0]), shot([1], 'ben', 'ada', 'A'), shot([2], 'ada', 'ben', 'A')]}
+    run_split(tmp_path, monkeypatch, text, [[scene]])
+    doc = json.loads(next((tmp_path / 'scenes').glob('*.json')).read_text())
+    assert [[d['speaker'] for d in s['events']['dialogues']] for s in doc['shots']] == [['ada'], ['ben'], ['ada']]
+    reverse = doc['shots'][1]
+    assert reverse['camera']['creative_intent']['shot_size'] == 'medium_close_up'
+    assert reverse['camera']['extrinsics']['axis_side'] == 'A'
+    assert reverse['setup']['subjects'][0]['gaze']['target_ref'] == 'ada'
+    assert reverse['camera']['provenance']['shot_size'] == 'estimated'
+    assert doc['narrative_meta']['coverage'] == {'source': 'skill', 'warnings': []}
+
+    scene['coverage'] = [shot([0, 2], 'ada', 'ben', 'A', actions=[0]), shot([1], 'ben', 'ada', 'A')]
+    for old in (tmp_path / 'scenes').glob('*.json'):
+        old.unlink()
+    run_split(tmp_path, monkeypatch, text, [[scene]])
+    doc = json.loads(next((tmp_path / 'scenes').glob('*.json')).read_text())
+    assert len(doc['shots']) == 1 and doc['shots'][0]['camera']['creative_intent']['shot_size'] is None
+    assert doc['narrative_meta']['coverage']['source'] == 'one_per_action'
+    assert doc['narrative_meta']['coverage']['warnings']

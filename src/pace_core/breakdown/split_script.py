@@ -332,22 +332,78 @@ def _dialogue_lines(scene: dict) -> list[dict]:
     for n, line in enumerate(scene.get("dialogue") or [], start=1):
         if isinstance(line, dict) and (line.get("text") or "").strip():
             after = line.get("after_action")
-            lines.append({"utterance_id": f"{scene['scene_id']}_u{n:02d}", "speaker": line.get("speaker"),
+            lines.append({"index": n - 1, "utterance_id": f"{scene['scene_id']}_u{n:02d}", "speaker": line.get("speaker"),
                           "text": line["text"], "on_screen": line.get("on_screen", True) is not False,
                           "after_action": after if isinstance(after, int) and after >= 0 else None})
     return lines
 
 
-def _dialogues_for(scene: dict, shot_index: int, total_shots: int) -> list[dict]:
-    """Lines that start after this shot's action (and before the next one); lines before any action open the scene."""
-    out = []
-    for line in _dialogue_lines(scene):
-        at = min(line["after_action"] or 0, total_shots - 1)
-        if at == shot_index:
-            out.append({"utterance_id": line["utterance_id"], "speaker": line["speaker"], "text": line["text"],
-                        "on_screen": line["on_screen"], "type_of_delivery": None,
-                        "foreground": "focal" if line["on_screen"] else "global"})
-    return out
+def _dialogue(line: dict) -> dict:
+    return {"utterance_id": line["utterance_id"], "speaker": line["speaker"], "text": line["text"],
+            "on_screen": line["on_screen"], "type_of_delivery": None,
+            "foreground": "focal" if line["on_screen"] else "global"}
+
+
+_SIZES = {"establishing", "wide", "full", "medium", "medium_close_up", "close_up", "extreme_close_up"}
+_ANGLES = {"eye_level", "high", "low", "overhead"}
+_POSITIONS = {"front", "three_quarter", "profile", "ots", "behind"}
+
+
+def _squash(text: str | None) -> str:
+    return re.sub(r"\s+", "", text or "")
+
+
+def _per_action(lines: list[dict], count: int) -> list[dict]:
+    """One shot per action with the lines that start after it; lines before any action open the scene."""
+    return [{"actions": [i], "lines": [line for line in lines if min(line["after_action"] or 0, count - 1) == i]}
+            for i in range(count)]
+
+
+def _coverage(scene: dict, count: int, lines: list[dict], warnings: list[str]) -> list[dict] | None:
+    """The skill's proposed shots with each framing value it can ground, or None (one shot per action) when the
+    proposal loses, repeats or reorders a line or leaves an action unshown. A value that names someone absent, a
+    speaker who says none of the shot's lines or an unmotivated jump across the axis is dropped, never defaulted."""
+    entries = [e for e in scene.get("coverage") or [] if isinstance(e, dict)]
+    if not entries:
+        return None
+    by_index = {line["index"]: line for line in lines}
+
+    def picked(values, valid):
+        return [v for v in values if isinstance(v, int) and not isinstance(v, bool) and v in valid] \
+            if isinstance(values, list) else []
+    plan = [{"entry": e, "actions": picked(e.get("actions"), range(count)),
+             "lines": [by_index[i] for i in picked(e.get("lines"), by_index)]} for e in entries]
+    said = [line["index"] for shot in plan for line in shot["lines"]]
+    if said != sorted(by_index) or {i for shot in plan for i in shot["actions"]} != set(range(count)) \
+            or any(not shot["actions"] and not shot["lines"] for shot in plan):
+        warnings.append("coverage dropped: it must speak every line once in order and show every action")
+        return None
+    present = set(scene.get("characters_present") or [])
+    axis = scene.get("axis") if isinstance(scene.get("axis"), dict) else None
+    story, side = _squash(scene.get("story_text")), None
+    for n, shot in enumerate(plan, start=1):
+        e, design = shot.pop("entry"), {}
+        for key, valid in (("shot_size", _SIZES), ("angle", _ANGLES), ("position", _POSITIONS)):
+            design[key] = e.get(key) if e.get(key) in valid else None
+        focus = e.get("focus")
+        design["focus"] = (("character", focus) if focus in present else
+                           ("object", focus) if isinstance(focus, str) and focus and _squash(focus) in story else None)
+        speakers = {line["speaker"] for line in shot["lines"]}
+        design["speaker"] = e.get("speaker") if e.get("speaker") in speakers else None
+        design["eyeline_to"] = e.get("eyeline_to") if e.get("eyeline_to") in present else None
+        for key, value in (("focus", focus), ("speaker", e.get("speaker")), ("eyeline_to", e.get("eyeline_to"))):
+            if value and not (design[key] and (design[key][1] if key == "focus" else design[key]) == value):
+                warnings.append(f"coverage shot {n}: {key} {value!r} is not grounded in the scene")
+        camera_side = e.get("camera_side") if axis and e.get("camera_side") in ("A", "B") else None
+        if camera_side and side and camera_side != side and e.get("crosses_axis") is not True:
+            warnings.append(f"coverage shot {n}: crosses the axis without a reason")
+            camera_side = None
+        side = camera_side or side
+        design["camera_side"] = camera_side
+        basis = e.get("basis") if isinstance(e.get("basis"), str) else None
+        design["basis"] = {"quote": basis, "grounded": bool(basis) and _squash(basis) in story}
+        shot["design"] = design
+    return plan
 
 
 def _build_shot_defaults(scene: dict) -> dict:
@@ -384,7 +440,9 @@ def _build_shot_defaults(scene: dict) -> dict:
     }
 
 
-def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
+def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict], dict]:
+    """The scene's shots from the skill's coverage when it holds, else one shot per action; with the coverage receipt
+    {source, warnings}. A size the action text states is `stated`; a coverage value is `estimated`, with its quote."""
     actions = list(scene.get("key_actions") or [])
     if not actions and scene.get("titles"):
         actions = ["TITLE: " + " / ".join(scene.get("titles") or [])]
@@ -395,29 +453,56 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
     declared = list(scene.get("panel_shot_sizes") or [])
     if len(declared) < len(actions):
         declared.extend([None] * (len(actions) - len(declared)))
+    lines, warnings = _dialogue_lines(scene), []
+    plan = (None if has_declared else _coverage(scene, len(actions), lines, warnings)) or _per_action(lines, len(actions))
+    present = set(scene.get("characters_present") or [])
 
     shots = []
     hints = []
-    for i, action_text in enumerate(actions, start=1):
-        kind = _classify_kind(action_text, explicit_nonvisual=has_declared and declared[i - 1] is None)
+    for i, entry in enumerate(plan, start=1):
+        first = entry["actions"][0] if entry["actions"] else max(0, min(entry["lines"][0]["after_action"] or 0,
+                                                                         len(actions) - 1))
+        action_text = " / ".join(actions[a] for a in entry["actions"]) or actions[first]
+        kind = _classify_kind(action_text, explicit_nonvisual=has_declared and declared[first] is None)
         beat = _clean_beat(action_text)
         shot_id = f"shot_{i:02d}"
         panel_id = f"{scene['scene_id']}_{shot_id}_panel_{i:04d}"
-        subjects = _subjects_for(scene, kind)
+        design = entry.get("design") or {}
+        cast = [c for c in dict.fromkeys([(design.get("focus") or (None, None))[1], design.get("speaker"),
+                                          design.get("eyeline_to")]) if c in present]
+        subjects = _subjects_for({**scene, "characters_present": cast} if cast else scene, kind)
+        for subject in subjects:
+            looks = design.get("eyeline_to") if subject["character_id"] in (design.get("speaker"),
+                                                                             (design.get("focus") or (None, None))[1]) else None
+            if looks and looks != subject["character_id"]:
+                subject["gaze"] = {"target_type": "character", "target_ref": looks, "direction": None, "note": None}
         movements_2d = _all_matches(action_text, _MOVEMENT_2D_PATTERNS)
         movements_3d = _all_matches(action_text, _MOVEMENT_3D_PATTERNS)
         gear = _first_match(action_text, _GEAR_PATTERNS)
         static = not movements_2d and not movements_3d
-        shot_size = _shot_size_for(action_text, declared[i - 1], kind)
-        framing = _framing_for(action_text, kind, len(subjects))
-        primary_focus = _primary_focus_for(subjects, kind, scene, action_text)
+        stated = _shot_size_for(action_text, declared[first], kind)
+        shot_size = stated or design.get("shot_size")
+        angle = _first_match(action_text, _ANGLE_PATTERNS) or design.get("angle")
+        framing = "ots" if design.get("position") == "ots" else _framing_for(action_text, kind, len(subjects))
+        if design.get("focus"):
+            kind_of, ref = design["focus"]
+            primary_focus = {"type": kind_of, "ref": ref, "of_character": None, "coverage_pct": None}
+        else:
+            primary_focus = _primary_focus_for(subjects, kind, scene, action_text)
         scale = "intimate" if shot_size in ("extreme_close_up", "close_up", "medium_close_up", "medium") else "expansive"
+        provenance = {key: ("stated" if source_stated else "estimated" if value else None)
+                      for key, value, source_stated in (
+                          ("shot_size", shot_size, bool(stated)),
+                          ("angle", angle, bool(_first_match(action_text, _ANGLE_PATTERNS))),
+                          ("position", design.get("position"), False), ("focus", design.get("focus"), False),
+                          ("axis_side", design.get("camera_side"), False))}
 
         shot = {
             "shot_id": shot_id,
             "camera": {
                 "intrinsics": {},
-                "extrinsics": {"angle": _first_match(action_text, _ANGLE_PATTERNS), "position": None},
+                "extrinsics": {"angle": angle, "position": design.get("position"),
+                               "axis_side": design.get("camera_side")},
                 "trajectory": {
                     "static": False if not static else None,   # unstated: undesigned, not locked off
                     "movement_2d": movements_2d,
@@ -426,6 +511,8 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
                     "easing": "ease_out" if movements_2d or movements_3d else None,
                 },
                 "creative_intent": {"shot_size": shot_size, "framing": framing},
+                # Where each framing value came from; an estimate is a proposal to review, not a designed shot.
+                "provenance": {**provenance, "basis": design.get("basis"), "human_verified": False},
             },
             "setup": {
                 "texture": {},
@@ -442,9 +529,10 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
             },
             "lighting": {},
             "events": {
-                "actions": [_action_for(beat, action_text)],
+                "actions": [_action_for(_clean_beat(actions[a]), actions[a]) for a in entry["actions"]]
+                           or [_action_for(beat, action_text)],
                 "emotions": [],
-                "dialogues": _dialogues_for(scene, i - 1, len(actions)),
+                "dialogues": [_dialogue(line) for line in entry["lines"]],
                 "change_in_environment": None,
                 "advanced": {"story_structure": None, "pace": "slow", "regularity": "regular"},
             },
@@ -463,7 +551,8 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict]]:
         }
         shots.append(shot)
         hints.append({"panel_id": panel_id, "flux": {}, "gpt_image_2": {}, "wan_i2v": {}})
-    return shots, hints
+    receipt = {"source": "skill" if plan and "design" in plan[0] else "one_per_action", "warnings": warnings}
+    return shots, hints, receipt
 
 
 def _spoken(line: dict, kind: str) -> dict:
@@ -496,7 +585,9 @@ def _to_pai_1_1(sc: dict, source_script: str) -> dict:
         "implied_shot_count":   sc.get("implied_shot_count"),
         "stage_b_style":        sc.get("stage_b_style"),
     }
-    shots, compile_hints = _build_initial_shots(sc)
+    shots, compile_hints, coverage = _build_initial_shots(sc)
+    narrative_meta["axis"] = sc.get("axis") if isinstance(sc.get("axis"), dict) else None
+    narrative_meta["coverage"] = coverage
     return {
         "_schema_version": SCHEMA_VERSION,
         "scene_id":        sc.get("scene_id"),
@@ -730,6 +821,16 @@ def _join_scenes(a: dict, b: dict) -> dict:
         {**line, "after_action": (line["after_action"] + offset if isinstance(line.get("after_action"), int)
                                   else offset - 1 if offset else None)}
         for line in b.get("dialogue") or [] if isinstance(line, dict)]
+    # Coverage indexes actions and lines; both halves need it, else the joined scene falls back to one shot per action.
+    if a.get("coverage") and b.get("coverage"):
+        kept = [i for i, line in enumerate(b.get("dialogue") or []) if isinstance(line, dict)]
+        lines = {old: len(a.get("dialogue") or []) + new for new, old in enumerate(kept)}
+        out["coverage"] = list(a["coverage"]) + [
+            {**e, "actions": [i + offset for i in e.get("actions") or [] if isinstance(i, int)],
+             "lines": [lines[i] for i in e.get("lines") or [] if i in lines]}
+            for e in b["coverage"] if isinstance(e, dict)]
+    else:
+        out.pop("coverage", None)
     if a.get("source_evidence") and b.get("source_evidence"):
         left, right = a["source_evidence"], b["source_evidence"]
         actions = left["actions"] + right["actions"]
