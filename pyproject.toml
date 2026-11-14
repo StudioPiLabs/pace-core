@@ -9,7 +9,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "pace-core"
-version = "0.12.0"
+version = "0.12.1"
 description = "PACE: typed storyboard specification, script breakdown, solved camera geometry and self-auditing checks."
 readme = "README.md"
 # The Blender kernels run in Blender 4.2's bundled Python 3.11.
@@ -27,7 +27,7 @@ dependencies = [
     # a criterion cannot be changed in one place and stay put in the other.
     # A git direct reference: this package cannot be published to PyPI until
     # pace-scene-skills is, and consumers must allow direct references too.
-    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@751bcdc83cd1c72ee2ad3e1285a25b2daa8cda6d",
+    "pace-scene-skills @ git+https://github.com/StudioPiLabs/pace-scene-skills@7658e69434e5feb7b0940f192d8b9a14550a80d1",
 ]
 
 [project.optional-dependencies]
