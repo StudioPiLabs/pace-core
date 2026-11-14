@@ -949,7 +949,7 @@ def wardrobe_of(props_kb: dict | None, subject: dict | None) -> dict | None:
         props = {p.get("id") or p.get("prop_id"): p
                  for p in props if isinstance(p, dict)}
     e = props.get(cid.strip())
-    return e if isinstance(e, dict) else None
+    return e if isinstance(e, dict) else resolve_prop(cid, props) or None  # an alias names it too
 
 
 def costume_text(entry: dict | None, age_state: str | None = None,

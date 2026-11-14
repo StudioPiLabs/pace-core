@@ -27,13 +27,25 @@ DEFAULT_FPS = 16
 VACE_FPS = DEFAULT_FPS
 
 
+def shot_fps(shot: dict) -> float | None:
+    """Playback frame rate the shot's camera declares ({num, denom} or a number), else None."""
+    fps = ((shot or {}).get("camera") or {}).get("fps")
+    if isinstance(fps, dict):
+        fps = fps.get("num", 0) / (fps.get("denom") or 1)
+    return float(fps) if isinstance(fps, (int, float)) and fps > 0 else None
+
+
 def shot_duration_s(shot: dict) -> tuple[float, str]:
     """(seconds, source) for one shot dict.
 
-    source is "actions" when the number came from the shot's own beats and
-    "default" when nothing in the shot had a hint -- the caller can then say
-    "5s because nobody said" rather than presenting a guess as a fact.
+    source is "camera" when the camera declares a frame_range at its own fps,
+    "actions" when the number came from the shot's own beats and "default"
+    when nothing in the shot had a hint -- the caller can then say "5s
+    because nobody said" rather than presenting a guess as a fact.
     """
+    span, fps = ((shot or {}).get("camera") or {}).get("frame_range"), shot_fps(shot)
+    if fps and isinstance(span, (list, tuple)) and len(span) == 2 and span[1] >= span[0]:
+        return round((span[1] - span[0] + 1) / fps, 3), "camera"
     actions = ((shot or {}).get("events") or {}).get("actions") or []
     seq, concurrent = 0.0, 0.0
     for a in actions:
@@ -56,12 +68,19 @@ def shot_duration_s(shot: dict) -> tuple[float, str]:
     return round(min(max(total, MIN_SECONDS), MAX_SECONDS), 2), "actions"
 
 
+def playback_frames(shot: dict) -> tuple[int, float] | None:
+    """(frames, fps) the edit plays at, when the shot's camera declares its fps (3 s at 24 fps → 72)."""
+    fps = shot_fps(shot)
+    return (round(shot_duration_s(shot)[0] * fps), fps) if fps else None
+
+
 def frame_count(seconds: float, fps: int = DEFAULT_FPS, quantum: int = 4,
                 offset: int = 1) -> int:
-    """Seconds → a frame count of the form quantum*n + offset, rounded up.
+    """Seconds → a video model's sampling grid of quantum*n + offset frames, rounded up.
 
     Many video models' temporal latent grids want 4n+1 frames (the default).
-    The floor is one quantum plus the offset.
+    The floor is one quantum plus the offset. This is the model's grid, not
+    the edit's playback frame count (see playback_frames).
     """
     if quantum < 1:
         raise ValueError("quantum must be >= 1")

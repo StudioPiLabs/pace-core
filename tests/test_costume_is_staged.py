@@ -134,3 +134,10 @@ def test_a_garment_named_by_hue_gets_a_tone():
                             "collar over a white tee, and dark tapered trousers")
     assert alice["top"] == {"tone": 0.38, "sleeve": "long"}
     assert garment_tones("a faded graphic t-shirt and dark jeans")["top"]["sleeve"] == "short"
+
+
+def test_a_wardrobe_alias_names_its_garment():
+    from pace_core.pai_compat import wardrobe_of
+    props = {"coat_b": {"name": "Silver coat", "aliases": ["coat-v2"]}}
+    assert wardrobe_of(props, {"costume_id": "coat-v2"})["name"] == "Silver coat"
+    assert wardrobe_of(props, {"costume_id": "unknown"}) is None
