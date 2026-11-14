@@ -359,6 +359,37 @@ def _per_action(lines: list[dict], count: int) -> list[dict]:
             for i in range(count)]
 
 
+def _repaired(plan: list[dict], lines: list[dict], count: int, warnings: list[str]) -> list[dict]:
+    """Mend a proposal's small slips, each with a warning: a repeated line stays in its first shot, a missing line
+    joins the shot of the line before (or after) it, an unshown action the shot of its neighbour; empty shots go."""
+    seen = set()
+    for n, shot in enumerate(plan, start=1):
+        kept = [line for line in shot["lines"] if line["index"] not in seen]
+        if len(kept) < len(shot["lines"]):
+            warnings.append(f"coverage shot {n}: a repeated line stays in its first shot")
+        seen |= {line["index"] for line in kept}
+        shot["lines"] = kept
+    plan = [shot for shot in plan if shot["actions"] or shot["lines"]] or [{"entry": {}, "actions": [], "lines": []}]
+
+    def holding(key, value):
+        return next((shot for shot in plan if value in [x["index"] if key == "lines" else x for x in shot[key]]), None)
+    for line in lines:
+        if line["index"] not in seen:
+            i = line["index"]
+            home = (holding("lines", max((j for j in seen if j < i), default=-1))
+                    or holding("lines", min((j for j in seen if j > i), default=-1))
+                    or holding("actions", min(line["after_action"] or 0, count - 1)) or plan[0])
+            home["lines"] = sorted([*home["lines"], line], key=lambda x: x["index"])
+            seen.add(i)
+            warnings.append(f"coverage: line {i} was in no shot; it joins its neighbour's")
+    for a in range(count):
+        if not holding("actions", a):
+            home = holding("actions", a - 1) or holding("actions", a + 1) or plan[0]
+            home["actions"] = sorted({*home["actions"], a})
+            warnings.append(f"coverage: action {a} was in no shot; it joins its neighbour's")
+    return plan
+
+
 def _coverage(scene: dict, count: int, lines: list[dict], warnings: list[str]) -> list[dict] | None:
     """The skill's proposed shots with each framing value it can ground, or None (one shot per action) when the
     proposal loses, repeats or reorders a line or leaves an action unshown. A value that names someone absent, a
@@ -373,10 +404,10 @@ def _coverage(scene: dict, count: int, lines: list[dict], warnings: list[str]) -
             if isinstance(values, list) else []
     plan = [{"entry": e, "actions": picked(e.get("actions"), range(count)),
              "lines": [by_index[i] for i in picked(e.get("lines"), by_index)]} for e in entries]
+    plan = _repaired(plan, lines, count, warnings)
     said = [line["index"] for shot in plan for line in shot["lines"]]
-    if said != sorted(by_index) or {i for shot in plan for i in shot["actions"]} != set(range(count)) \
-            or any(not shot["actions"] and not shot["lines"] for shot in plan):
-        warnings.append("coverage dropped: it must speak every line once in order and show every action")
+    if said != sorted(by_index):
+        warnings.append("coverage dropped: its lines are out of source order")
         return None
     present = set(scene.get("characters_present") or [])
     axis = scene.get("axis") if isinstance(scene.get("axis"), dict) else None
@@ -385,14 +416,15 @@ def _coverage(scene: dict, count: int, lines: list[dict], warnings: list[str]) -
         e, design = shot.pop("entry"), {}
         for key, valid in (("shot_size", _SIZES), ("angle", _ANGLES), ("position", _POSITIONS)):
             design[key] = e.get(key) if e.get(key) in valid else None
-        focus = e.get("focus")
-        design["focus"] = (("character", focus) if focus in present else
-                           ("object", focus) if isinstance(focus, str) and focus and _squash(focus) in story else None)
+        def target(value):   # a present character or a prop the scene names
+            return (("character", value) if value in present else
+                    ("object", value) if isinstance(value, str) and value and _squash(value) in story else None)
+        focus, looks = e.get("focus"), e.get("eyeline_to")
+        design["focus"], design["eyeline_to"] = target(focus), target(looks)
         speakers = {line["speaker"] for line in shot["lines"]}
         design["speaker"] = e.get("speaker") if e.get("speaker") in speakers else None
-        design["eyeline_to"] = e.get("eyeline_to") if e.get("eyeline_to") in present else None
-        for key, value in (("focus", focus), ("speaker", e.get("speaker")), ("eyeline_to", e.get("eyeline_to"))):
-            if value and not (design[key] and (design[key][1] if key == "focus" else design[key]) == value):
+        for key, value in (("focus", focus), ("speaker", e.get("speaker")), ("eyeline_to", looks)):
+            if value and not (design[key] and (design[key][1] if key != "speaker" else design[key]) == value):
                 warnings.append(f"coverage shot {n}: {key} {value!r} is not grounded in the scene")
         camera_side = e.get("camera_side") if axis and e.get("camera_side") in ("A", "B") else None
         if camera_side and side and camera_side != side and e.get("crosses_axis") is not True:
@@ -468,14 +500,18 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict], dict]:
         shot_id = f"shot_{i:02d}"
         panel_id = f"{scene['scene_id']}_{shot_id}_panel_{i:04d}"
         design = entry.get("design") or {}
-        cast = [c for c in dict.fromkeys([(design.get("focus") or (None, None))[1], design.get("speaker"),
-                                          design.get("eyeline_to")]) if c in present]
+        focus_ref = (design.get("focus") or (None, None))[1]
+        looks_type, looks = design.get("eyeline_to") or (None, None)
+        cast = [c for c in dict.fromkeys([focus_ref, design.get("speaker"), looks]) if c in present]
         subjects = _subjects_for({**scene, "characters_present": cast} if cast else scene, kind)
+        looker = design.get("speaker") or focus_ref
         for subject in subjects:
-            looks = design.get("eyeline_to") if subject["character_id"] in (design.get("speaker"),
-                                                                             (design.get("focus") or (None, None))[1]) else None
-            if looks and looks != subject["character_id"]:
-                subject["gaze"] = {"target_type": "character", "target_ref": looks, "direction": None, "note": None}
+            who = subject["character_id"]
+            # The one who speaks (or holds focus) looks where coverage says; a character they look at looks back.
+            gaze = ((looks_type, looks) if who == looker and looks != who else
+                    ("character", looker) if looks_type == "character" and who == looks and looker else None)
+            if gaze:
+                subject["gaze"] = {"target_type": gaze[0], "target_ref": gaze[1], "direction": None, "note": None}
         movements_2d = _all_matches(action_text, _MOVEMENT_2D_PATTERNS)
         movements_3d = _all_matches(action_text, _MOVEMENT_3D_PATTERNS)
         gear = _first_match(action_text, _GEAR_PATTERNS)

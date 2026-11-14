@@ -162,3 +162,23 @@ def test_an_exchange_is_covered_shot_reverse_shot_and_bad_coverage_falls_back(tm
     assert len(doc['shots']) == 1 and doc['shots'][0]['camera']['creative_intent']['shot_size'] is None
     assert doc['narrative_meta']['coverage']['source'] == 'one_per_action'
     assert doc['narrative_meta']['coverage']['warnings']
+
+
+def test_coverage_slips_are_mended_and_the_listener_looks_back(tmp_path, monkeypatch):
+    text = '1 INT. SHOP - DAY\n\nada leans on the counter.\n\nben checks the clock.\n\nADA: Pay up.\n\nBEN: Tomorrow.\n\nADA: Today.\n'
+    scene = {'heading': '1 INT. SHOP - DAY', 'location_raw': 'shop', 'time_of_day': 'day',
+             'characters_present': ['ada', 'ben'], 'key_actions': ['ada leans on the counter', 'ben checks the clock'],
+             'action_evidence': [{'quote': 'ada leans on the counter.'}, {'quote': 'ben checks the clock.'}],
+             'dialogue': [{'speaker': 'ada', 'text': 'Pay up.', 'after_action': 1},
+                          {'speaker': 'ben', 'text': 'Tomorrow.', 'after_action': 1},
+                          {'speaker': 'ada', 'text': 'Today.', 'after_action': 1}],
+             # line 1 repeated, line 2 missing, action 1 unshown
+             'coverage': [{'actions': [0], 'lines': [0, 1], 'speaker': 'ada', 'eyeline_to': 'ben'},
+                          {'actions': [], 'lines': [1], 'speaker': 'ben', 'eyeline_to': 'clock'}]}
+    run_split(tmp_path, monkeypatch, text, [[scene]])
+    doc = json.loads(next((tmp_path / 'scenes').glob('*.json')).read_text())
+    assert doc['narrative_meta']['coverage']['source'] == 'skill'
+    assert [[d['text'] for d in s['events']['dialogues']] for s in doc['shots']] == [['Pay up.', 'Tomorrow.', 'Today.']]
+    assert len(doc['narrative_meta']['coverage']['warnings']) == 3
+    gaze = {s['character_id']: s['gaze']['target_ref'] for s in doc['shots'][0]['setup']['subjects']}
+    assert gaze == {'ada': 'ben', 'ben': 'ada'}
