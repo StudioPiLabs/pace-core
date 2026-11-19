@@ -83,7 +83,10 @@ else:
     sys.path.insert(0, os.environ.get("PACE_CORE_PATH") or str(Path(__file__).resolve().parents[2]))
 
 from pace_core.breakdown.world_state import states_for_prop
-from pace_core.pai_compat import FIXTURE_ANCHORS, resolve_prop, resolve_prop_key
+from pace_core.pai_compat import (
+    FIXTURE_ANCHORS, load_registry, location_name, ref_name, resolve_location_key, resolve_prop,
+    resolve_prop_key,
+)
 from pace_core.setup.location_shape import SHAPES, shape_from_stub, shape_maps_from_doc
 from pace_core.paths import paths_for
 
@@ -1069,12 +1072,14 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # Left to right on screen decides who sits where, so the geometry agrees
     # with the panel's own declared staging instead of an arbitrary order.
     subs.sort(key=_declared_x)
+    chars, props_kb = load_registry(p.chars_file), load_registry(p.props_file)
+    chars = chars.get("characters", chars)
 
     fixtures = _panel_fixtures(p, setup)
 
     _stub_doc = json.loads(Path(p.loc_stubs_file).read_text()) or {}
     stubs = _stub_doc.get("stubs") or {}
-    stub = stubs.get((setup.get("backdrop") or {}).get("location") or "") or {}
+    stub = stubs.get(resolve_location_key((setup.get("backdrop") or {}).get("location") or "", stubs)) or {}
     sm = stub.get("scale_meters") or [2.0, 3.2, 1.5]
     cabin = [float(sm[0]), float(sm[1]), float(sm[2])]
 
@@ -1339,7 +1344,8 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         if len(ids) < 2:
             raise ValueError(
                 "camera position 'ots' needs two declared subjects, one to "
-                f"shoot past and one to look at; this panel declares {ids}")
+                f"shoot past and one to look at; this panel declares "
+                f"{[ref_name(c, chars) for c in ids]}")
         # Which shoulder is decided by the seats, not by the panel's focus.
         # These cabins seat everyone facing the same way, so a lens behind the
         # rear passenger sees the back of the front one's head -- the only
@@ -1378,8 +1384,9 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         # same treatment coverage and an unstated position already get.
         if focus.get("ref") and focus.get("ref") != far:
             ots_focus_conflict = (
-                f"primary_focus={focus.get('ref')!r} but position='ots' can only "
-                f"frame {far!r}, who sits behind {near!r}; the seat order decides")
+                f"primary_focus={ref_name(focus['ref'], chars)!r} but position='ots' can only "
+                f"frame {ref_name(far, chars)!r}, who sits behind {ref_name(near, chars)!r}; "
+                f"the seat order decides")
     # A coverage target is honoured where it can be met without contradicting
     # who else the panel says is in frame; where it cannot, it is dropped WITH
     # the reason on the spec rather than silently, so a frame that ignored a
@@ -1419,20 +1426,16 @@ def build_spec(project: str, scene_id: str, panel_id: str,
             sj["seat_contact"] = _seat_contact_z(sj["mesh"])
     if dress:
         from pace_core.pai_compat import costume_text, wardrobe_of
-        _kb = json.loads(Path(p.chars_file).read_text()) if Path(p.chars_file).is_file() else {}
-        _kb = _kb.get("characters", _kb) if isinstance(_kb, dict) else {}
-        _wd = (json.loads(Path(p.props_file).read_text())
-               if Path(p.props_file).is_file() else {})
         for sj, s in zip(subjects, subs):
             tones = garment_tones(costume_text(
-                _kb.get(sj["character_id"]), s.get("age_state"),
-                wardrobe=wardrobe_of(_wd, s)))
+                chars.get(sj["character_id"]), s.get("age_state"),
+                wardrobe=wardrobe_of(props_kb, s)))
             if tones:
                 sj["costume"] = tones
             # The proxy's scalp is a smooth dome, and a lens behind a head
             # delivers that dome: a bald back of the head under a description
             # that names short hair.
-            entry = _kb.get(sj["character_id"]) or {}
+            entry = chars.get(sj["character_id"]) or {}
             descriptor = ((entry.get("age_states") or {}).get(s.get("age_state"))
                           or entry.get("anchor"))
             style = hair_style(descriptor)
@@ -1460,6 +1463,11 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         "fixtures": fixtures,
         "seats": [list(s) for s in places],
         "subjects": subjects,
+        # How the gate's findings name each cast member and prop; not geometry.
+        "names": {k: ref_name(k, chars, props_kb) for k in
+                  [s.get("character_id") for s in subs]
+                  + [pr.get("prop_id") for pr in setup.get("props") or [] if isinstance(pr, dict)]
+                  if k},
         # The seats nobody in this shot is in. Staged as set dressing so the
         # cabin's own capacity is in the control image rather than left as
         # bare floor for the sampler to furnish.
@@ -1654,7 +1662,7 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
             setup = (_resolve(doc, sh) or {}).get("setup") or {}
             subs = setup.get("subjects") or []
             loc = (setup.get("backdrop") or {}).get("location") or ""
-            stub = stubs.get(loc) or {}
+            stub = stubs.get(resolve_location_key(loc, stubs)) or {}
             env = stub.get("environment_type")
             shape = shape_from_stub(stub, env_shape=_env_shape,
                                     prefix_shape=_prefix_shape)
@@ -1667,12 +1675,12 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
             # the location's own declared extent rather than to a cast. It
             # still needs a buildable location, so the checks below apply.
             if shape is None:
-                reason = (f"location {loc!r} declares neither `shape` nor "
+                reason = (f"location {location_name(loc, stubs)!r} declares neither `shape` nor "
                           f"`environment_type`, so there is nothing to build from — "
                           f"set one on its stub")
             elif shape not in BUILDABLE_SHAPES:
-                reason = (f"location {loc!r} is {env or 'unclassified'} ({shape}); "
-                          f"this builds a cabin and no other shell yet")
+                reason = (f"location {location_name(loc, stubs)!r} is {env or 'unclassified'} "
+                          f"({shape}); this builds a cabin and no other shell yet")
             elif pos not in BUILDABLE_POSITIONS:
                 reason = (f"camera position {pos!r} needs the shell to open on the "
                           f"side the lens is on")

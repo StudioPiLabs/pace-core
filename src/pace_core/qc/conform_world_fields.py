@@ -34,7 +34,7 @@ import shutil
 import sys
 from pathlib import Path
 
-from pace_core.pai_compat import resolve_shot
+from pace_core.pai_compat import location_name, resolve_location_key, resolve_shot
 from pace_core import paths
 
 WORLD_FIELDS = ("era", "region", "culture")
@@ -77,7 +77,7 @@ def survey(scenes: list[dict], stubs: dict) -> dict:
                     seen[loc][f].append(b[f])
     plan: dict = {}
     for loc, fields in seen.items():
-        stub = stubs.get(loc) or {}
+        stub = stubs.get(resolve_location_key(loc, stubs)) or {}
         for f in WORLD_FIELDS:
             vals = list(fields.get(f) or [])
             if stub.get(f):
@@ -127,7 +127,7 @@ def apply(scenes_dir: Path, stubs_file: Path, plan: dict) -> tuple[int, int]:
     stubs = doc.get("stubs", doc)
     stubs_changed = 0
     for loc, fields in plan.items():
-        st = stubs.get(loc)
+        st = stubs.get(resolve_location_key(loc, stubs))
         if not isinstance(st, dict):
             continue
         for f, ch in fields.items():
@@ -162,7 +162,7 @@ def main() -> int:
         print("every location already carries one value per field")
         return 0
     for loc, fields in sorted(plan.items()):
-        print(loc)
+        print(location_name(loc, stubs))
         for f, ch in sorted(fields.items()):
             print(f"    {f:8} -> {ch['pick']!r}")
             for w in ch["was"]:

@@ -29,13 +29,21 @@ from dataclasses import dataclass, field
 
 
 def normalise_entity(name: str) -> str:
-    """`all_panels`, `the_panels`, `panels` are one entity; `main_console` is
+    """`all_panels`, `the panels`, `panels` are one entity; `main_console` is
     not. Only leading articles and quantifiers are stripped -- anything
     cleverer starts merging things the screenplay keeps apart."""
-    s = (name or "").strip().lower().replace("-", "_")
+    s = re.sub(r"[\s-]+", "_", (name or "").strip().lower())
     s = re.sub(r"^(the|a|an|all|both|some)_", "", s)
     s = re.sub(r"_+", "_", s).strip("_")
     return s
+
+
+def prop_entities(prop_id: str, props_kb: dict | None) -> set[str]:
+    """The entities a `state_change` can name this prop by: its names, normalised.
+    A ref that denotes no prop is a label and names itself."""
+    from pace_core.pai_compat import entity_names, ref_name, resolve_prop
+    names = entity_names(resolve_prop(prop_id, props_kb or {})) or [ref_name(prop_id, props_kb=props_kb)]
+    return {normalise_entity(n) for n in names} - {""}
 
 
 @dataclass
@@ -87,7 +95,7 @@ def build(script_ir: list[dict], scope_of=None) -> Timeline:
 
     `scope_of(scene) -> str` groups scenes that share a physical space; the
     default keys on the scene heading with its time qualifier removed, so
-    `INT. ANOTHER CAR - MOMENTS LATER` and `INT. ANOTHER CAR - CONTINUOUS`
+    `INT. SECOND CAR - MOMENTS LATER` and `INT. SECOND CAR - CONTINUOUS`
     are one car and `INT. CAR` is a different one.
     """
     if scope_of is None:

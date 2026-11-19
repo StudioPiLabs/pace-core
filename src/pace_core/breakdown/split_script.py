@@ -32,6 +32,7 @@ import logging
 from pace_scene_skills import load as _skill
 
 from pace_core.llm_client import default_model
+from pace_core.pai_compat import entity_names
 from pace_core.types_v1 import SCHEMA_VERSION
 
 logging.basicConfig(
@@ -678,22 +679,34 @@ def _load_locations(locations_dir: Path | None, legacy_scenes_file: Path | None 
     return locs
 
 
+# Names are prose; their function words name no place.
+_FUNCTION_WORDS = frozenset("a an and at by for from in of on the to with".split())
+
+
+def _location_words(text: str) -> tuple[str, set[str]]:
+    """(normalised text, content words) for comparing a script location with a name."""
+    low = text.lower()
+    return (re.sub(r"[\W_]+", "_", low).strip("_"),
+            set(re.findall(r"[^\W\d_]+", low)) - _FUNCTION_WORDS)
+
+
 def _match_location(raw: str, locations: dict) -> str | None:
-    """Best-effort match raw location string to a kb/on_scene/locations key."""
-    raw_low = raw.lower()
-    raw_norm = re.sub(r"[^a-z0-9]+", "_", raw_low).strip("_")
-    if raw_norm in locations:
-        return raw_norm
-    # Substring match against kb keys
-    for key in locations:
-        if key in raw_norm or raw_norm in key:
-            return key
-    # Token overlap fallback (e.g. "RAINY STREET" -> "street")
-    raw_tokens = set(re.findall(r"[a-z]+", raw_low))
-    for key in locations:
-        key_tokens = set(re.findall(r"[a-z]+", key))
-        if raw_tokens & key_tokens:
-            return key
+    """Best-effort match a raw script location to the key of the location it names.
+
+    Compared with each location's names, never its key: a key is opaque, and the
+    hex runs in a uuid ("cafe", "bed") would read as words.
+    """
+    raw_norm, raw_tokens = _location_words(raw or "")
+    if not raw_norm:
+        return None
+    named = [(key, *_location_words(n)) for key, loc in locations.items()
+             if isinstance(loc, dict) for n in entity_names(loc)]
+    for hit in (lambda n, t: n == raw_norm,
+                lambda n, t: n in raw_norm or raw_norm in n,
+                lambda n, t: t & raw_tokens):          # e.g. "RAINY STREET" -> "Street"
+        for key, n, t in named:
+            if n and hit(n, t):
+                return key
     return None
 
 

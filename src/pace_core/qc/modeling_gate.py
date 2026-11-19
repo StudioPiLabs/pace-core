@@ -69,6 +69,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -283,7 +284,8 @@ def _mask_l(path):
 
 
 def screen_order_agreement(declared: list[tuple[str, float]],
-                           measured: dict[str, float]) -> tuple[float, list[str]]:
+                           measured: dict[str, float],
+                           named: Callable[[str], str] = str) -> tuple[float, list[str]]:
     """Fraction of declared left-to-right pairs the render actually delivered.
 
     Pairwise rather than a rank correlation so the failures name themselves:
@@ -307,7 +309,7 @@ def screen_order_agreement(declared: list[tuple[str, float]],
                 ok += 1
             else:
                 left, right = (a, b) if want_a_left else (b, a)
-                bad.append(f"{left} declared left of {right}, renders right of it")
+                bad.append(f"{named(left)} declared left of {named(right)}, renders right of it")
     return (ok / tot if tot else 1.0), bad
 
 
@@ -372,7 +374,7 @@ def eye_line(out: str | Path, cid: str) -> float | None:
     return (top + EYE_FROM_TOP * (bottom - top + 1)) / m.shape[0]
 
 
-def background_line_clause(out: Path, need: set[str]) -> Clause:
+def background_line_clause(out: Path, need: set[str], named: Callable[[str], str] = str) -> Clause:
     """Does a vertical edge of the set run into a head from above?"""
     from PIL import Image
     import numpy as np
@@ -407,7 +409,7 @@ def background_line_clause(out: Path, need: set[str]) -> Clause:
         cover = max((float(band[:, max(0, x - 1):x + 2].any(axis=1).mean())
                      for x in range(x0 + inset, x1 - inset + 1)), default=0.0)
         if cover >= LINE_MIN_COVER:
-            hits.append(f"{cid} ({cover:.0%})")
+            hits.append(f"{named(cid)} ({cover:.0%})")
     if not measured:
         return Clause(name, None, detail="no visible head to measure against the set")
     return Clause(name, not hits, value=round(1 - len(hits) / measured, 4),
@@ -416,7 +418,7 @@ def background_line_clause(out: Path, need: set[str]) -> Clause:
                           + ", ".join(hits)) if hits else "")
 
 
-def joint_cut_clause(out: Path, need: set[str]) -> Clause:
+def joint_cut_clause(out: Path, need: set[str], named: Callable[[str], str] = str) -> Clause:
     """Does a frame edge a body runs off cross it at a joint?"""
     name = "frame_not_cut_at_joint"
     jf = out.parent / (out.name + ".joints.json")
@@ -445,7 +447,7 @@ def joint_cut_clause(out: Path, need: set[str]) -> Clause:
                 else:
                     dist, along = (abs(x) if edge == "left" else abs(x - 1.0)), y
                 if dist <= JOINT_CUT_TOL and 0.0 <= along <= 1.0:
-                    cut = f"the {edge} edge cuts {cid} at the {kind}"
+                    cut = f"the {edge} edge cuts {named(cid)} at the {kind}"
                     if cut not in cuts:
                         cuts.append(cut)
     if not measured:
@@ -454,7 +456,7 @@ def joint_cut_clause(out: Path, need: set[str]) -> Clause:
                   detail="; ".join(cuts))
 
 
-def tangency_clause(out: Path, need: set[str]) -> Clause:
+def tangency_clause(out: Path, need: set[str], named: Callable[[str], str] = str) -> Clause:
     """Do two outlines, or an outline and the frame, just touch?"""
     import numpy as np
 
@@ -477,7 +479,7 @@ def tangency_clause(out: Path, need: set[str]) -> Clause:
             inter = int((a & b).sum())
             if (grown[ids[i]] & b).any() and \
                     inter <= TANGENT_MAX_OVERLAP * min(int(a.sum()), int(b.sum())):
-                found.append(f"{ids[i]} and {ids[j]} meet at their outlines")
+                found.append(f"{named(ids[i])} and {named(ids[j])} meet at their outlines")
     # The bottom edge is left out: a body running off the bottom is the shot
     # size working, and Section 6.4.3's containment measure counts it so.
     for cid, m in masks.items():
@@ -487,7 +489,7 @@ def tangency_clause(out: Path, need: set[str]) -> Clause:
                                    ("left", int(cols[0]), int(m[:, 0].sum())),
                                    ("right", W - 1 - int(cols[-1]), int(m[:, -1].sum()))):
             if 0 < gap <= r or (gap == 0 and 0 < contact < 2 * r):
-                found.append(f"{cid} grazes the {edge} edge")
+                found.append(f"{named(cid)} grazes the {edge} edge")
     return Clause(name, not found, value=float(len(found)), threshold=0.0,
                   detail="; ".join(found))
 
@@ -533,7 +535,8 @@ def eye_line_clause(out: Path, need: set[str],
                                         f"away from {pid}")
 
 
-def cut_continuity_clause(declared: dict | None, previous: dict | None) -> Clause:
+def cut_continuity_clause(declared: dict | None, previous: dict | None,
+                          named: Callable[[str], str] = str) -> Clause:
     """Does what this panel declares still agree with the panel before it?
 
     A cut inside one scene is continuous time: the same garment, and a prop in
@@ -563,13 +566,14 @@ def cut_continuity_clause(declared: dict | None, previous: dict | None) -> Claus
             if now is None or was is None:
                 unsaid += 1
             elif now != was:
-                bad.append(f"{k} {verb} {now} where the previous panel {was_verb} {was}")
+                bad.append(f"{named(k)} {verb} {now} where the previous panel {was_verb} {was}")
     tail = f"; {unsaid} undeclared on at least one side" if unsaid else ""
     return Clause(name, not bad, value=float(len(bad)), threshold=0.0,
                   detail=("; ".join(bad) + tail) if bad else tail.lstrip("; "))
 
 
-def declared_in_frame_clause(out: Path, declared: dict | None) -> Clause:
+def declared_in_frame_clause(out: Path, declared: dict | None,
+                             named: Callable[[str], str] = str) -> Clause:
     """Does what the panel declares in frame (入画) match what was staged?
 
     `declared` maps ("prop" | "subject", id) to yes / partial / no / tbd. A
@@ -588,7 +592,7 @@ def declared_in_frame_clause(out: Path, declared: dict | None) -> Clause:
     bad, tbd, measured = [], [], 0
     for (kind, ident), want in sorted(declared.items()):
         if want == "tbd":
-            tbd.append(ident)
+            tbd.append(named(ident))
             continue
         if kind == "prop":
             r = rec.get(ident)
@@ -605,7 +609,7 @@ def declared_in_frame_clause(out: Path, declared: dict | None) -> Clause:
             match = (staged == "no") == (want == "no")
         measured += 1
         if not match:
-            bad.append(f"{ident} declared {want}, staged {staged}")
+            bad.append(f"{named(ident)} declared {want}, staged {staged}")
     note = [f"to be confirmed: {', '.join(tbd)}"] if tbd else []
     if not measured:
         return Clause(name, None, detail="; ".join(note) or
@@ -635,9 +639,15 @@ def evaluate(spec: dict, out: str | Path, *,
     frame it was rendered to. `required` names the entities that must be
     visible -- from a Beat Visual IR's required facts when there is one.
     Defaults to every subject the spec declares, which is the honest default:
-    the geometry staged them, so it is asserting they are there.
+    the geometry staged them, so it is asserting they are there. Findings name
+    an entity through the spec's `names`, falling back to its key.
     """
     from pace_core.node.panel_modeling import anchor_version
+
+    names = spec.get("names") or {}
+
+    def named(key: str) -> str:
+        return names.get(key, key)
 
     out = Path(out)
     subs = spec.get("subjects") or []
@@ -660,11 +670,11 @@ def evaluate(spec: dict, out: str | Path, *,
     vis = seen / len(need) if need else 1.0
     why = []
     if absent:
-        why.append(f"no matte: {', '.join(absent)}")
+        why.append(f"no matte: {', '.join(map(named, absent))}")
     if broken:
-        why.append(f"matte has no alpha (film_transparent lost): {', '.join(broken)}")
+        why.append(f"matte has no alpha (film_transparent lost): {', '.join(map(named, broken))}")
     if empty:
-        why.append(f"matte empty, body not in frame: {', '.join(empty)}")
+        why.append(f"matte empty, body not in frame: {', '.join(map(named, empty))}")
     clauses.append(Clause("required_entity_visibility", vis == 1.0,
                           value=round(vis, 4), threshold=1.0,
                           detail="; ".join(why)))
@@ -679,13 +689,13 @@ def evaluate(spec: dict, out: str | Path, *,
     if marked:
         errs = {cid: mark_error_m(st, dec) for cid, st, dec in marked}
         worst = max(errs, key=lambda c: errs[c])
-        off = [f"{c} {errs[c]:.2f} m" for c in sorted(errs)
+        off = [f"{named(c)} {errs[c]:.2f} m" for c in sorted(errs)
                if errs[c] > MARK_TOLERANCE_M]
         clauses.append(Clause(
             "subject_on_declared_mark", not off,
             value=round(errs[worst], 4), threshold=MARK_TOLERANCE_M,
             detail=(f"off the mark: {', '.join(off)}" if off
-                    else f"worst is {worst} at {errs[worst]:.2f} m")))
+                    else f"worst is {named(worst)} at {errs[worst]:.2f} m")))
     else:
         clauses.append(Clause(
             "subject_on_declared_mark", None,
@@ -696,13 +706,13 @@ def evaluate(spec: dict, out: str | Path, *,
     measured = {c: a for c, a in areas.items() if a is not None}
     if measured:
         worst_id = min(measured, key=lambda c: measured[c])
-        small = [f"{c} {measured[c]:.4f}" for c in sorted(measured)
+        small = [f"{named(c)} {measured[c]:.4f}" for c in sorted(measured)
                  if measured[c] < min_area]
         clauses.append(Clause(
             "projected_subject_area", not small,
             value=round(measured[worst_id], 5), threshold=min_area,
             detail=(f"below floor: {', '.join(small)}" if small
-                    else f"smallest is {worst_id}")))
+                    else f"smallest is {named(worst_id)}")))
     else:
         clauses.append(Clause("projected_subject_area", None,
                               detail="no readable matte to measure"))
@@ -712,7 +722,7 @@ def evaluate(spec: dict, out: str | Path, *,
                  for c in stats if stats.get(c)}
     centroids = {c: v for c, v in centroids.items() if v is not None}
     if len(centroids) >= 2:
-        frac, bad = screen_order_agreement(declared, centroids)
+        frac, bad = screen_order_agreement(declared, centroids, named)
         clauses.append(Clause("screen_order", frac == 1.0,
                               value=round(frac, 4), threshold=1.0,
                               detail="; ".join(bad)))
@@ -743,7 +753,7 @@ def evaluate(spec: dict, out: str | Path, *,
                 if frac > worst:
                     worst = frac
                 if frac > MAX_SUBJECT_OVERLAP:
-                    pairs.append(f"{frac:.0%} of {who} is under {other}")
+                    pairs.append(f"{frac:.0%} of {named(who)} is under {named(other)}")
     if len(masks) >= 2:
         clauses.append(Clause("subject_occlusion", not pairs,
                               value=round(worst, 4), threshold=MAX_SUBJECT_OVERLAP,
@@ -765,7 +775,7 @@ def evaluate(spec: dict, out: str | Path, *,
         measured += 1
         frac = float((vis & head).sum()) / float(head.sum())
         if frac < MIN_READ_POINT_VISIBLE:
-            hidden.append(f"{cid} {frac:.0%}")
+            hidden.append(f"{named(cid)} {frac:.0%}")
     if measured:
         clauses.append(Clause("read_point_visible", not hidden,
                               value=round(1 - len(hidden) / measured, 4),
@@ -790,17 +800,17 @@ def evaluate(spec: dict, out: str | Path, *,
                "read_point_visible"))
 
     # 8-12. composition -- see the constants above.
-    clauses.append(background_line_clause(out, need))
-    clauses.append(joint_cut_clause(out, need))
-    clauses.append(tangency_clause(out, need))
+    clauses.append(background_line_clause(out, need, named))
+    clauses.append(joint_cut_clause(out, need, named))
+    clauses.append(tangency_clause(out, need, named))
     clauses.append(lineup_clause(out, need))
     clauses.append(eye_line_clause(out, need, reverse_shots))
 
     # 13. what the panel declares in frame, against what was staged
-    clauses.append(declared_in_frame_clause(out, declared_in_frame))
+    clauses.append(declared_in_frame_clause(out, declared_in_frame, named))
 
     # 14. what it declares against what the panel before it declared
-    clauses.append(cut_continuity_clause(declared_continuity, previous_continuity))
+    clauses.append(cut_continuity_clause(declared_continuity, previous_continuity, named))
 
     return GateReport(panel_id=spec.get("panel_id") or out.stem,
                       anchor_version=anchor_version(spec), clauses=clauses)

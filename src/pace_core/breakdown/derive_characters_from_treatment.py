@@ -41,7 +41,7 @@ import sys
 from pathlib import Path
 
 
-from pace_core.pai_compat import resolve_character                # noqa: E402
+from pace_core.pai_compat import entry_name, resolve_character    # noqa: E402
 from pace_core.paths import paths_for                                  # noqa: E402
 
 #: `名字：描述` — a name, optionally with a parenthetical role, then a
@@ -200,7 +200,8 @@ def run(*, project: str, write: bool = False) -> dict:
         attached.append({"sheet_name": name, "key": key})
         clash = hair_conflict(body, rec.get("anchor") or rec.get("generic_anchor") or "")
         if clash:
-            conflicts.append({"key": key, "treatment": clash[0], "anchor": clash[1]})
+            conflicts.append({"key": key, "name": entry_name(rec, key),
+                              "treatment": clash[0], "anchor": clash[1]})
         if write:
             rec["treatment_note"] = body
             rec.setdefault("_provenance", {})["treatment_note"] = "authored"
@@ -236,7 +237,7 @@ def main() -> int:
     for x in out["attached"]:
         print(f"  {x['sheet_name']:10} -> {x['key']}")
     for c in out["hair_conflicts"]:
-        print(f"  [CONFLICT] {c['key']}: the treatment says {c['treatment']} hair, "
+        print(f"  [CONFLICT] {c['name']}: the treatment says {c['treatment']} hair, "
               f"the anchor says {c['anchor']}", file=sys.stderr)
     for u in out["unmatched"]:
         print(f"  [unmatched] {u}", file=sys.stderr)

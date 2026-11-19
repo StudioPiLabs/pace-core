@@ -24,7 +24,7 @@ import re as _re_age
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from pace_core.pai_compat import costume_text, dig, resolve_character
+from pace_core.pai_compat import costume_text, dig, ref_name, resolve_character
 
 
 @dataclass
@@ -191,7 +191,7 @@ def _character_hint(ref: str, characters_kb: dict) -> str:
     'char@age_state'), read from the project's characters KB — NOT hardcoded.
 
     Prefers the per-age-state `generic_anchors[age]`, then the single
-    `generic_anchor`, then the raw ref when the KB has no description. These
+    `generic_anchor`, then the character's name when the KB has no description. These
     KB fields are the trigger-free descriptors used for storyboard renders;
     the LoRA trigger (when present) is prepended separately by the caller, so
     we deliberately never fall back to `anchor` (which embeds the trigger)."""
@@ -210,7 +210,7 @@ def _character_hint(ref: str, characters_kb: dict) -> str:
         proxy does not settle it either: every subject is staged from the same
         gender="neutral" SMPL-X body, whose chest measures 1.03x its waist. So
         with a LoRA trained for none of this cast, the only sex-bearing token
-        in the whole prompt was one inert trigger word, `nina_female`, emitted
+        in the whole prompt was one inert trigger word, `alice_female`, emitted
         for the first-listed character and attached to no position. A male
         character on the left rendered as a woman, which is the sampler
         resolving a question nothing had answered.
@@ -260,10 +260,8 @@ def _character_hint(ref: str, characters_kb: dict) -> str:
     if generic:
         return _with_costume(_with_age(_with_sex(generic)))
     # Last resort before giving up: the trigger-bearing `anchor`, with the
-    # trigger removed. Returning the raw ref instead sends an internal
-    # identifier ("alice@adult_30") to a text encoder, which describes
-    # nobody — a descriptor that merely needs cleaning is strictly better
-    # than no description of the character at all.
+    # trigger removed. The name alone describes nobody — a descriptor that
+    # merely needs cleaning is strictly better than no description at all.
     anchor = kb.get("anchor")
     if isinstance(anchor, str) and anchor.strip():
         trigger = kb.get("trigger")
@@ -272,7 +270,7 @@ def _character_hint(ref: str, characters_kb: dict) -> str:
         anchor = anchor.strip(" ,.")
         if anchor:
             return _with_costume(_with_age(_with_sex(anchor)))
-    return ref
+    return ref_name(ref, characters_kb)
 
 
 def _hair_phrase(descriptor: str) -> str | None:

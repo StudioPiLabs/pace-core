@@ -48,8 +48,8 @@ from pace_core.pai_compat import (
     shot_size_of, angle_of, primary_focus_of, excluded_of,
     style_family_of, is_monochrome_style, action0_of,
     time_of_day_of, location_of, subjects_of,
-    gaze_clauses_of, is_empty_framing,
-    resolve_shot,
+    gaze_clauses_of, is_empty_framing, location_name, ref_name,
+    resolve_location_key, resolve_shot,
     lens_str, aperture_str, iso_str, shutter_str, color_temp_str,
     compile_hints_for_panel, lora_trigger_for,
     emotion_clauses_of, props_of, prop_phrase, prop_placement,
@@ -307,7 +307,7 @@ def _dedup_emotion_against_gaze(emos: list[str], gaze_bits: list[str]) -> list[s
 
 
 def _strip_trigger_from_gaze(gaze_bits: list[str], trigger: str) -> list[str]:
-    """Mistral reads `modern_subway_girl` as a malformed identifier.
+    """Mistral reads a trigger such as `alice_v2` as a malformed identifier.
     When the LoRA trigger is already in identity_bits, the gaze clause
     shouldn't repeat it — swap for `the subject` so the prose flows."""
     if not trigger or not gaze_bits:
@@ -430,7 +430,8 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
             identity_bits += cast_bits
         if identity_bits:
             opening = ". ".join(identity_bits)
-            gaze_bits = _strip_trigger_from_gaze(gaze_clauses_of(shot, offscreen), trigger)
+            gaze_bits = _strip_trigger_from_gaze(
+                gaze_clauses_of(shot, offscreen, ctx.characters_kb, ctx.props_kb), trigger)
             if gaze_bits:
                 opening = f"{opening}, with {'; '.join(gaze_bits)}"
             parts.append(opening)
@@ -501,7 +502,7 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     # because Flux 2 also needs the explicit framing here).
     if is_feature_extreme_closeup:
         feat = (pf.get("ref") or "").replace("_", " ")
-        feat_owner = pf.get("of_character") or ""
+        feat_owner = ref_name(pf.get("of_character") or "", ctx.characters_kb)
         owner_clause = f" of {feat_owner}" if feat_owner else ""
         lockdown = (
             f"a cinematic extreme close-up of the {feat}{owner_clause} at 20x macro "
@@ -530,7 +531,9 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     # 3a. Emotional cues — but skip the ones that are just re-stating
     # gaze ("looking off-frame right" / "gaze out the window").
     if not empty_shot:
-        emos = _dedup_emotion_against_gaze(emotion_clauses_of(shot, panel), gaze_clauses_of(shot, offscreen))
+        emos = _dedup_emotion_against_gaze(
+            emotion_clauses_of(shot, panel),
+            gaze_clauses_of(shot, offscreen, ctx.characters_kb, ctx.props_kb))
         if emos:
             parts.append("with " + ", ".join(emos))
 
@@ -591,9 +594,9 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     # 4. Setting / time / period / atmosphere — one sentence.
     if not is_feature_extreme_closeup:
         setting_bits: list[str] = []
-        loc = _location_text(
-            ctx.location_stubs.get(loc_ref) if loc_ref and loc_ref in ctx.location_stubs
-            else loc_raw)
+        stub_key = resolve_location_key(loc_ref or "", ctx.location_stubs)
+        loc = (_location_text(ctx.location_stubs[stub_key]) if stub_key
+               else location_name(loc_raw or "", ctx.location_stubs, ctx.locations_kb))
         bg_preview = ((shot.get("setup") or {}).get("environment") or {}).get("background")
         # A shot-specific background naming the SAME INT/EXT scope as the
         # location anchor is a refinement or correction of that setting (a
@@ -732,7 +735,8 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     if is_feature_extreme_closeup:
         neg_parts.append(_FEATURE_CLOSEUP_NEGATIVE)
     if excluded:
-        neg_parts.append(", ".join(e.replace("_", " ") for e in excluded))
+        neg_parts.append(", ".join(ref_name(e, ctx.characters_kb, ctx.props_kb).replace("_", " ")
+                                   for e in excluded))
 
     return prompt, ", ".join(neg_parts)
 

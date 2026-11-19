@@ -29,7 +29,9 @@ from pace_core.compilers.compile_common import (  # noqa: E402
 from pace_core.compilers.compile_flux2 import compile_flux_for_base  # noqa: E402
 from pace_core.setup.composition_solver import target_xy  # noqa: E402
 from pace_core.camera.camera_planner import plan_camera_track  # noqa: E402
-from pace_core.pai_compat import angle_of, movement_of, primary_focus_of, shot_size_of, dig  # noqa: E402
+from pace_core.pai_compat import (  # noqa: E402
+    angle_of, dig, entity_names, location_name, movement_of, primary_focus_of, shot_size_of,
+)
 from pace_core.paths import iter_canonical_scene_files, paths_for  # noqa: E402
 
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
@@ -285,7 +287,7 @@ def build_prop_anchors(project_root: Path, props: dict[str, Any], images: list[P
         tokens = tokenize(" ".join([pid, entry.get("name") or "", entry.get("anchor") or ""]))
         # As with characters, token overlap is not identity: the anchor prose
         # for a handheld device shares words with the car it is used in, so
-        # "game_device" collected the location plates of two different cars.
+        # "handheld_device" collected the location plates of two different cars.
         # A prop's reference must name the prop.
         own = {str(pid).lower()}
         nm = entry.get("name")
@@ -505,10 +507,11 @@ _LOCATION_POSTURE = (
 )
 
 
-def posture_from_location(location_ref: str | None) -> str | None:
-    if not location_ref:
+def posture_from_location(location: str | None) -> str | None:
+    """The posture the location's name implies, or None."""
+    if not location:
         return None
-    lo = str(location_ref).lower()
+    lo = str(location).lower()
     for cues, posture in _LOCATION_POSTURE:
         if any(c in lo for c in cues):
             return posture
@@ -650,14 +653,9 @@ def action_text_for_subject(subject: dict, shot: dict, panel: dict,
     if not cid:
         return action_text(shot, panel)
     entry = resolve_character(cid, characters_kb or {}) or {}
-    aliases = {cid}
-    for key in ("name", "name_en", "name_zh", "trigger"):
-        v = entry.get(key)
-        if isinstance(v, str) and v.strip():
-            aliases.add(v.strip().lower())
-    for a in (entry.get("aliases") or []):
-        if isinstance(a, str) and a.strip():
-            aliases.add(a.strip().lower())
+    # Prose names a person, never their key; an entry without names is named by its ref.
+    aliases = {v.strip().lower() for v in [*entity_names(entry), entry.get("name_en"), entry.get("trigger")]
+               if isinstance(v, str) and v.strip()} or {cid}
 
     entries, mine = [], []
     for obj in (shot.get("events") or {}, panel.get("events") or {}):
@@ -678,7 +676,7 @@ def action_text_for_subject(subject: dict, shot: dict, panel: dict,
     return "" if attributed else action_text(shot, panel)
 
 
-def smplx_motionx_vector(subject: dict[str, Any], shot: dict[str, Any], panel: dict[str, Any], *, frames: int = 30, location_ref: str | None = None, characters_kb: dict | None = None) -> dict[str, Any]:
+def smplx_motionx_vector(subject: dict[str, Any], shot: dict[str, Any], panel: dict[str, Any], *, frames: int = 30, location: str | None = None, characters_kb: dict | None = None) -> dict[str, Any]:
     # Posture and gesture are orthogonal and must compose. A single label
     # makes them exclusive, so "parents activate devices" replaced "seated"
     # and stood everyone up inside a moving car: the reaching was recorded
@@ -687,7 +685,7 @@ def smplx_motionx_vector(subject: dict[str, Any], shot: dict[str, Any], panel: d
     # posture's where they overlap.
     action_hint = pose_label_from_action(
         action_text_for_subject(subject, shot, panel, characters_kb))
-    posture = posture_from_location(location_ref)
+    posture = posture_from_location(location)
     pose_hint = action_hint
     if posture and action_hint in ("standing_or_still", "upper_body_hand_action"):
         merged = dict(SMPLX_PRESETS.get(posture) or {})
@@ -851,6 +849,7 @@ def build_packets(project: str, base_model: str | None) -> dict[str, Any]:
     for scene in scenes:
         scene_id = str(scene.get("scene_id"))
         loc_ref = scene_location_ref(scene)
+        loc_name = location_name(loc_ref or "", loc_stubs) or None
         for shot in shots_of(scene):
             shot_id = str(shot.get("shot_id") or "shot")
             for ordinal, panel in enumerate(panels_of(shot), 1):
@@ -870,7 +869,7 @@ def build_packets(project: str, base_model: str | None) -> dict[str, Any]:
                     # rendered the family standing inside a moving car. The
                     # renderer cannot read the vector, so a posture it is never
                     # told is a posture it is free to invent.
-                    posture = posture_from_location(loc_ref)
+                    posture = posture_from_location(loc_name)
                     if posture and posture not in (positive or "").lower():
                         positive = f"{positive.rstrip('. ')}. All subjects are {posture}."
                         counts["posture_injected"] += 1
@@ -934,7 +933,7 @@ def build_packets(project: str, base_model: str | None) -> dict[str, Any]:
                         "scene_id": scene_id,
                         "shot_id": shot_id,
                         **smplx_motionx_vector(subject, shot, panel,
-                                               location_ref=loc_ref,
+                                               location=loc_name,
                                                characters_kb=chars),
                     })
 

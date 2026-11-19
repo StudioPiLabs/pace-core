@@ -41,13 +41,13 @@ writes what things look like. The 3D model decides where they are.
 from __future__ import annotations
 
 import enum
-import json
 from dataclasses import dataclass
 
 from pace_core.compilers.compile_common import _character_hint
 from pace_core.pai_compat import (
-    action0_of, angle_of, excluded_of, location_of, primary_focus_of,
-    resolve_character, resolve_shot, shot_size_of, subjects_of, time_of_day_of,
+    action0_of, angle_of, excluded_of, load_registry, location_name, location_of,
+    primary_focus_of, ref_name, resolve_character, resolve_shot, shot_size_of, subjects_of,
+    time_of_day_of,
 )
 from pace_core.paths import paths_for
 
@@ -435,13 +435,13 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
     # characters.json is a SEPARATE file from the scene, keyed by character
     # id, holding the canonical anchor/costume every render is meant to hold
     # to — as opposed to setup.subjects[], which re-types a description per
-    # shot and can (and did) drift from it.
-    characters_kb = {}
+    # shot and can (and did) drift from it. The registries also name every
+    # ref the model is shown.
+    characters_kb, props_kb, stubs = {}, {}, {}
     if project:
-        try:
-            characters_kb = json.loads(paths_for(project).chars_file.read_text())
-        except (FileNotFoundError, json.JSONDecodeError):
-            pass
+        paths = paths_for(project)
+        characters_kb, props_kb = load_registry(paths.chars_file), load_registry(paths.props_file)
+        stubs = load_registry(paths.loc_stubs_file).get("stubs") or {}
 
     shots_out = []
     for shot in scene.get("shots") or []:
@@ -458,9 +458,11 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
             pan_w, pan_i = _gate([
                 ("action", "events.actions[].description_en", act.get("description_en")),
                 ("intensity", "events.actions[].intensity", act.get("intensity")),
-                ("read_point_ref", "setup.primary_focus.ref", pf.get("ref")),
+                ("read_point_ref", "setup.primary_focus.ref",
+                 ref_name(pf.get("ref") or "", characters_kb, props_kb)),
                 ("read_point_type", "setup.primary_focus.type", pf.get("type")),
-                ("excluded", "setup.excluded", excluded_of(panel, sh)),
+                ("excluded", "setup.excluded",
+                 [ref_name(e, characters_kb, props_kb) for e in excluded_of(panel, sh)]),
                 ("action_zh", "events.actions[].description_zh", act.get("description_zh")),
                 ("read_point_coverage_pct", "setup.primary_focus.coverage_pct",
                  pf.get("coverage_pct")),
@@ -491,9 +493,9 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
             # eye_level is dropped rather than withheld: the model's default
             # eye already sits there, so a clause spent on it buys nothing.
             ("camera_angle", "camera.extrinsics.angle", ang if ang != "eye_level" else ""),
-            # location_of()'s second value is backdrop.location — an id
-            # ("sedan_interior"), not a description. The prose is backdrop.setting.
-            ("location_anchor", "setup.backdrop.location", loc_ref or loc_setting),
+            # location_of() returns refs, not descriptions; the prose is backdrop.setting.
+            ("location_anchor", "setup.backdrop.location",
+             location_name(loc_ref or loc_setting or "", stubs)),
             ("setting", "setup.backdrop.setting", backdrop.get("setting")),
             ("era", "setup.backdrop.era", backdrop.get("era")),
             ("culture", "setup.backdrop.culture", backdrop.get("culture")),
@@ -512,13 +514,15 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
         # single field, so it rides on the backdrop's admission.
         if visible("setup.backdrop.setting"):
             shot_w["time_of_day"] = time_of_day_of(sh, scene)
-        shot_i["character_ids"], shot_i["age_states"] = chars, ages
+        shot_i["characters"] = [ref_name(c, characters_kb) for c in chars]
+        shot_i["age_states"] = {ref_name(c, characters_kb): a for c, a in ages.items()}
 
         subs_out, triggers = [], []
         for s in setup.get("subjects") or []:
             cid, age = s.get("character_id"), s.get("age_state")
             ref = f"{cid}@{age}" if cid and age else (cid or "")
             descriptor = _character_hint(ref, characters_kb) if ref else ""
+            name = ref_name(ref, characters_kb) if ref else ""
             char_kb = resolve_character(cid, characters_kb) if cid else {}
             if visible("character.trigger") and char_kb.get("trigger"):
                 triggers.append(char_kb["trigger"])
@@ -528,7 +532,7 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
                 ("hair", "setup.subjects[].hair", s.get("hair")),
                 ("pose", "setup.subjects[].pose", s.get("pose")),
                 ("descriptor", "character.descriptor",
-                 descriptor if descriptor != ref else ""),  # unchanged = no KB entry
+                 descriptor if descriptor != name else ""),  # the name alone = no description
             ])
             if sw:
                 subs_out.append(sw)
@@ -569,7 +573,7 @@ def project_scene(scene: dict, *, project: str = "") -> dict:
 # Bumped whenever the table changes what reaches the model. Stored beside a
 # written prompt, so a prompt can be traced to the gate that produced it —
 # otherwise "the prompts got worse in September" has no way back to a cause.
-PROJECTION_VERSION = 1
+PROJECTION_VERSION = 2
 
 
 def audit() -> str:

@@ -56,7 +56,9 @@ import sys
 from pathlib import Path
 
 
-from pace_core.pai_compat import resolve_prop_key, resolve_shot   # noqa: E402
+from pace_core.pai_compat import (  # noqa: E402
+    entry_name, location_name, resolve_location_key, resolve_prop_key, resolve_shot,
+)
 from pace_core import paths               # noqa: E402
 
 #: Rig behaviour. Describes how the camera is held, not where the frame goes,
@@ -173,7 +175,7 @@ def check_props(props: dict, scene: dict) -> list[tuple[str, str, str]]:
             continue
         if sid in (rec.get("linked_scenes") or []) and pid not in declared:
             out.append(("-", "prop_link_unhonoured",
-                        f"{pid} names this scene; no shot declares it"))
+                        f"{entry_name(rec, pid)} names this scene; no shot declares it"))
     return out
 
 
@@ -184,16 +186,20 @@ def check_world(stubs: dict, scene: dict) -> list[tuple[str, str, str]]:
     dflt_loc = (((scene.get("shot_defaults") or {}).get("setup") or {})
                 .get("backdrop") or {}).get("location")
     ref = nm.get("location_ref")
-    if ref and dflt_loc and ref != dflt_loc:
+    # Drift is two refs denoting different places, not one place given by key and by text.
+    if ref and dflt_loc and ((resolve_location_key(ref, stubs) or ref)
+                             != (resolve_location_key(dflt_loc, stubs) or dflt_loc)):
         out.append(("-", "location_ref_drift",
-                    f"narrative_meta says {ref!r}, backdrop says {dflt_loc!r}"))
+                    f"narrative_meta says {location_name(ref, stubs)!r}, "
+                    f"backdrop says {location_name(dflt_loc, stubs)!r}"))
 
     for shot in scene.get("shots") or []:
         sid = str(shot.get("shot_id"))
         b = ((resolve_shot(scene, shot).get("setup") or {}).get("backdrop")) or {}
-        stub = stubs.get(b.get("location")) or {}
+        stub = stubs.get(resolve_location_key(b.get("location") or "", stubs)) or {}
         if not stub:
             continue
+        where = location_name(b["location"], stubs)
         # A shot that CONTRADICTS its stub and one that never states the
         # field at all are different faults. The first is a wrong answer; the
         # second is a prompt that will carry no era at all, because a
@@ -204,11 +210,9 @@ def check_world(stubs: dict, scene: dict) -> list[tuple[str, str, str]]:
         differs = [k for k in _WORLD_FIELDS
                    if stub.get(k) is not None and b.get(k) and b.get(k) != stub.get(k)]
         if differs:
-            out.append((sid, "world_drift",
-                        f"{b.get('location')}: {', '.join(differs)}"))
+            out.append((sid, "world_drift", f"{where}: {', '.join(differs)}"))
         if absent:
-            out.append((sid, "world_unresolved",
-                        f"{b.get('location')}: {', '.join(absent)} not on the shot"))
+            out.append((sid, "world_unresolved", f"{where}: {', '.join(absent)} not on the shot"))
     return out
 
 

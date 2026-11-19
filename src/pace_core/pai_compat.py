@@ -62,6 +62,11 @@ def load_scene(path: str | Path) -> dict:
     return json.loads(Path(path).read_text())
 
 
+def load_registry(path: str | Path) -> dict:
+    """A KB registry file -- characters, props, location stubs; {} when absent."""
+    return json.loads(Path(path).read_text()) if Path(path).is_file() else {}
+
+
 def iter_panels(scene: dict) -> Iterator[tuple[dict, dict, dict]]:
     """Yield (scene, shot, panel) triples for every panel in the scene."""
     for shot in scene.get("shots") or []:
@@ -196,8 +201,8 @@ def ref_to_id_age(ref: str | None) -> tuple[str, str | None]:
 
     >>> ref_to_id_age("alice@adult_50")
     ('alice', 'adult_50')
-    >>> ref_to_id_age("modern_office_man")
-    ('modern_office_man', None)
+    >>> ref_to_id_age("bob")
+    ('bob', None)
     >>> ref_to_id_age("") == ref_to_id_age(None) == ("", None)
     True
     """
@@ -214,8 +219,8 @@ def id_age_to_ref(character_id: str, age_state: str | None) -> str:
 
     >>> id_age_to_ref("alice", "adult_50")
     'alice@adult_50'
-    >>> id_age_to_ref("modern_office_man", None)
-    'modern_office_man'
+    >>> id_age_to_ref("bob", None)
+    'bob'
     """
     return f"{character_id}@{age_state}" if age_state else character_id
 
@@ -384,13 +389,15 @@ def resolve_shot(scene: dict, shot: dict, panel: dict | None = None) -> dict:
     return out
 
 
-def gaze_clauses_of(shot: dict, offscreen: frozenset[str] | set[str] = frozenset()) -> list[str]:
+def gaze_clauses_of(shot: dict, offscreen: frozenset[str] | set[str] = frozenset(),
+                    characters_kb: dict | None = None, props_kb: dict | None = None) -> list[str]:
     """English clauses describing each subject's eyeline. Empty list when
     no subject has a `gaze` field filled in. Compilers append these to
     the prompt so the storyboard's eyeline gets faithfully rendered.
 
     An object in `offscreen` (see props_out_of_frame) is not named: "gazing
     at the car console" asks for a console the frame does not hold.
+    Cast and props are named through the registries (see ref_name).
 
     Examples produced:
       "alice looking at bob"
@@ -403,21 +410,22 @@ def gaze_clauses_of(shot: dict, offscreen: frozenset[str] | set[str] = frozenset
         gaze = (sub or {}).get("gaze")
         if not gaze:
             continue
-        who = sub.get("character_id") or sub.get("cls") or "subject"
+        cid = sub.get("character_id")
+        who = ref_name(cid, characters_kb) if cid else (sub.get("cls") or "subject")
         target_type = gaze.get("target_type")
         target_ref  = gaze.get("target_ref")
         direction   = gaze.get("direction")
         if target_type == "character" and target_ref:
-            out.append(f"{who} looking at {target_ref}")
+            out.append(f"{who} looking at {ref_name(target_ref, characters_kb)}")
         elif target_type == "object" and target_ref in offscreen:
             out.append(f"{who} gazing at something out of frame")
         elif target_type == "object" and target_ref:
-            out.append(f"{who} gazing at the {target_ref.replace('_', ' ')}")
+            out.append(f"{who} gazing at the {ref_name(target_ref, props_kb=props_kb).replace('_', ' ')}")
         elif target_type == "feature" and target_ref:
             owner_clause = ""
             of_char = gaze.get("of_character")
             if of_char:
-                owner_clause = f"{of_char}'s "
+                owner_clause = f"{ref_name(of_char, characters_kb)}'s "
             out.append(f"{who} focused on {owner_clause}{target_ref.replace('_', ' ')}")
         elif target_type == "camera" or direction == "into_camera":
             out.append(f"{who} looking directly into camera")
@@ -540,24 +548,25 @@ def _character_entries(kb: dict):
             yield key, entry
 
 
-def resolve_character(name: str, characters_kb: dict) -> dict:
-    """The registry entry a character reference denotes, or {} if none."""
+def resolve_character_key(name: str, characters_kb: dict) -> str:
+    """The registry KEY a character reference denotes, or "" if none."""
     if not name or not characters_kb:
-        return {}
+        return ""
     ref = name.partition("@")[0].strip()
     if not ref:
-        return {}
-    entry = characters_kb.get(ref)
-    if isinstance(entry, dict):
-        return entry
-    for _key, ent in _character_entries(characters_kb):
-        if ref in (ent.get("aliases") or []):
-            return ent
-        if ent.get("name_zh") == ref or ent.get("name") == ref:
-            return ent
-        if ent.get("trigger") == ref:
-            return ent
-    return {}
+        return ""
+    if isinstance(characters_kb.get(ref), dict):
+        return ref
+    for key, ent in _character_entries(characters_kb):
+        if ref in entity_names(ent) or ent.get("trigger") == ref:
+            return key
+    return ""
+
+
+def resolve_character(name: str, characters_kb: dict) -> dict:
+    """The registry entry a character reference denotes, or {} if none."""
+    key = resolve_character_key(name, characters_kb)
+    return characters_kb[key] if key else {}
 
 
 def resolve_prop_key(prop_id: str, props_kb: dict) -> str:
@@ -579,38 +588,81 @@ def resolve_prop_key(prop_id: str, props_kb: dict) -> str:
     for key, ent in reg.items():
         if key.startswith("_") or not isinstance(ent, dict):
             continue
-        if ref in (ent.get("aliases") or []) or ref in (ent.get("name"),
-                                                        ent.get("name_zh"),
-                                                        ent.get("id")):
+        if ref in entity_names(ent) or ent.get("id") == ref:
             return key
     return ""
 
 
 def resolve_prop(prop_id: str, props_kb: dict) -> dict:
-    """The registry entry a prop reference denotes, or {}.
+    """The registry entry a prop reference denotes, or {}."""
+    key = resolve_prop_key(prop_id, props_kb)
+    return (props_kb.get("props", props_kb) or {})[key] if key else {}
 
-    The character lookup has read aliases since it was written; this one was
-    a bare `dict.get`, so a reference the enrichment spelled differently from
-    the registry resolved to nothing and the prop's agreed appearance was
-    replaced by a noun phrase built from the identifier. On another production that is 14
-    of 21 references: `u_pan` for the USB drive at the turning point of the
-    film, which compiled as "a u pan in frame".
+
+def resolve_location_key(ref: str, registry: dict | None) -> str:
+    """The key a location ref denotes in a stub or bible registry -- the key itself, else
+    the entry it names -- or ""."""
+    if not ref or not registry:
+        return ""
+    if ref in registry:
+        return ref
+    return next((k for k, v in registry.items() if isinstance(v, dict) and ref in entity_names(v)), "")
+
+
+# ── how text names and matches an entity ─────────────────────────────
+# A registry key is opaque: text names an entry by its `name` and matches it
+# by its names, so a key never reaches a prompt and is never searched for in prose.
+
+def entry_name(entry, key: str) -> str:
+    """How text names a registry entry: its `name`, or its key when it has none."""
+    name = entry.get("name") if isinstance(entry, dict) else None
+    return name if isinstance(name, str) and name.strip() else key
+
+
+def ref_name(ref: str, characters_kb: dict | None = None, props_kb: dict | None = None) -> str:
+    """How text names a cast or prop ref; a ref that denotes no entry is a label and prints as itself.
+
+    A character ref keeps its `@age_state`, so a registry whose names equal its keys prints every ref unchanged.
     """
-    if not prop_id or not props_kb:
-        return {}
-    reg = props_kb.get("props", props_kb) or {}
-    ref = str(prop_id).strip()
-    entry = reg.get(ref)
-    if isinstance(entry, dict):
-        return entry
-    for key, ent in reg.items():
-        if key.startswith("_") or not isinstance(ent, dict):
-            continue
-        if ref in (ent.get("aliases") or []):
-            return ent
-        if ref in (ent.get("name"), ent.get("name_zh"), ent.get("id")):
-            return ent
-    return {}
+    if key := resolve_character_key(ref, characters_kb or {}):
+        _, at, age = ref.partition("@")
+        return entry_name(characters_kb[key], key) + at + age
+    if key := resolve_prop_key(ref, props_kb or {}):
+        return entry_name((props_kb.get("props", props_kb) or {})[key], key)
+    return ref
+
+
+def location_name(ref: str, *registries: dict | None) -> str:
+    """How text names a location ref: the first stub or bible it denotes, by name; else the ref itself."""
+    for reg in registries:
+        if key := resolve_location_key(ref, reg):
+            return entry_name(reg[key], key)
+    return ref
+
+
+def entity_names(entry: dict) -> list[str]:
+    """The strings text can name an entry by -- name, name_zh, aliases -- never its key."""
+    aliases = entry.get("aliases")
+    names = [entry.get("name"), entry.get("name_zh"), *(aliases if isinstance(aliases, list) else [])]
+    return [n for n in names if isinstance(n, str) and n.strip()]
+
+
+def named_refs(doc, *registries: dict | None):
+    """`doc` for a model to read: every string that is a registry key -- a character's with
+    its `@age_state` -- is replaced by the name text uses for that entry."""
+    names = {k: entry_name(v, k) for reg in reversed(registries) for k, v in (reg or {}).items()
+             if isinstance(v, dict) and not str(k).startswith("_")}
+
+    def walk(x):
+        if isinstance(x, str):
+            key, at, age = x.partition("@")
+            return names[key] + at + age if key in names else x
+        if isinstance(x, list):
+            return [walk(v) for v in x]
+        if isinstance(x, dict):
+            return {walk(k): walk(v) for k, v in x.items()}
+        return x
+    return walk(doc)
 
 
 def unresolved_characters(names, characters_kb: dict) -> list[str]:
@@ -752,13 +804,13 @@ def _with_count(text: str, n) -> str:
 def prop_phrase(p: dict, props_kb: dict | None = None) -> str:
     """Render one Prop as a noun phrase: "a cracked handheld tablet",
     "a stack of polished wooden tablets". Order: count → state → color
-    → material → prop_id-stem.
+    → material → the prop's name.
 
     When the project's prop registry is supplied and the entry carries a
     written description, that description is used instead of a phrase
     assembled from the identifier. The registry holds the appearance a
-    production has agreed on ("a futuristic handheld gaming device with a
-    sleek design"); building "a game device" from the id discards it and
+    production has agreed on ("a brass desk lamp with a green glass
+    shade"); building "a desk lamp" from the id discards it and
     leaves the look of the object to the generator, which is the same
     failure as naming a character by reference instead of describing them.
     """
@@ -803,7 +855,7 @@ def prop_phrase(p: dict, props_kb: dict | None = None) -> str:
     material = p.get("material")
     if material:
         bits.append(material.replace("_", " "))
-    pid = (p.get("prop_id") or "").replace("_", " ").strip()
+    pid = ref_name(p.get("prop_id") or "", props_kb=props_kb).replace("_", " ").strip()
     if pid:
         bits.append(pid)
     return " ".join(bits) if bits else "a prop"

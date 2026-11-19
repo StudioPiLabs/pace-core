@@ -23,7 +23,7 @@ from __future__ import annotations
 from typing import Optional
 
 from pace_core.pai_compat import (
-    movement_of, easing_of, shot_size_of, angle_of, dig,
+    movement_of, easing_of, shot_size_of, angle_of, dig, location_name,
 )
 
 
@@ -151,15 +151,17 @@ def _shot_size_of_raw(shot: dict):
 
 
 def shot_to_narrative(shot: dict, scene: Optional[dict] = None,
-                      prev_shot: Optional[dict] = None) -> str:
+                      prev_shot: Optional[dict] = None,
+                      location_stubs: Optional[dict] = None) -> str:
     """Compose a natural-language camera-intent description for a pai-1.0 shot —
     the prompt the LAMP language→DSL planner consumes when planning **from the
     scene directly** (no hand-typed text).
 
     Assembles, in one string:
       - the human-authored action beat  (events.actions[0].description_en|zh)
-      - scene setting (when `scene` given): narrative_meta location_ref /
-        interior_exterior / time_of_day
+      - scene setting (when `scene` given): the location's name (with
+        `location_stubs`, else narrative_meta location_raw) / interior_exterior /
+        time_of_day
       - framing: shot_size / angle / framing / intensity
       - continuity (when `prev_shot` given): the previous shot's size, so the
         LLM can vary or match the cut.
@@ -178,9 +180,13 @@ def shot_to_narrative(shot: dict, scene: Optional[dict] = None,
         beat = (a.get("description_en") or a.get("description_zh") or "").strip()
         intensity = (a.get("intensity") or "").strip()
 
-    # Scene setting from narrative_meta (location / INT-EXT / time-of-day).
+    # Scene setting from narrative_meta (location / INT-EXT / time-of-day). `location_ref`
+    # is a registry key, so it is named through the stubs; without them the scene's text says it.
     nm = (scene or {}).get("narrative_meta") or {}
-    setting = [str(v) for v in (nm.get("location_ref") or nm.get("location_raw"),
+    ref = nm.get("location_ref")
+    place = (location_name(ref, location_stubs) if ref and location_stubs is not None
+             else nm.get("location_raw"))
+    setting = [str(v) for v in (place,
                                 nm.get("interior_exterior"),
                                 nm.get("time_of_day")) if v]
     setting_str = ", ".join(setting)
@@ -263,7 +269,8 @@ def _words(v) -> str:
 
 
 def camera_brief(shot: dict, scene: Optional[dict] = None,
-                 prev_shot: Optional[dict] = None) -> str:
+                 prev_shot: Optional[dict] = None,
+                 location_stubs: Optional[dict] = None) -> str:
     """The camera in words: how it moves, on top of what the shot is about.
 
     ``shot_to_narrative`` already composes the canonical intent text — action
@@ -300,7 +307,8 @@ def camera_brief(shot: dict, scene: Optional[dict] = None,
         parts.append(_GEAR_PHRASE.get(gear, f"on a {gear}"))
 
     brief = ", ".join(parts)
-    narrative = shot_to_narrative(shot, scene=scene, prev_shot=prev_shot)
+    narrative = shot_to_narrative(shot, scene=scene, prev_shot=prev_shot,
+                                  location_stubs=location_stubs)
     if narrative:
         brief = f"{brief}. {narrative}"
     goal = _words(traj.get("camera_space_goal"))

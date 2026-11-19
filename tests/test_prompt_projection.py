@@ -89,7 +89,8 @@ def test_character_registry_supplies_the_identity_the_scene_lacks(monkeypatch, t
                   "costumes": {"default": "a plain cream cotton t-shirt"},
                   "lora": {"path": None}},
     }))
-    fake_paths = type("P", (), {"chars_file": chars_file})()
+    fake_paths = type("P", (), {"chars_file": chars_file, "props_file": tmp_path / "props.json",
+                                "loc_stubs_file": tmp_path / "location_stubs.json"})()
     monkeypatch.setattr(paths_mod, "paths_for", lambda proj: fake_paths)
     import pace_core.compilers.prompt_projection as ppmod
     monkeypatch.setattr(ppmod, "paths_for", lambda proj: fake_paths)
