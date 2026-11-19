@@ -25,6 +25,8 @@ from __future__ import annotations
 
 import re
 
+from pace_core.pai_compat import ref_name, resolve_character_key, resolve_prop_key
+
 # Types that can appear as an object in a frame. A LOCATION or ENVIRONMENT is
 # the frame's setting rather than something in it, so neither is a detection
 # target -- "is the accident scene visible" is not a question a box answers.
@@ -66,17 +68,18 @@ def detect_prompt(entity_id: str, etype: str | None,
     t = (etype or "").upper()
     if t and t not in DETECTABLE_TYPES:
         return None
-    if _DISEMBODIED.search(eid.lower().replace("_", " ")):
+    # Read as the name text uses for it: a registry key is opaque.
+    if _DISEMBODIED.search(_readable(ref_name(eid, chars, props)).lower()):
         return None
 
-    ent = (chars or {}).get(eid)
+    ent = (chars or {}).get(resolve_character_key(eid, chars or {}))
     if isinstance(ent, dict):
         x = ent.get("_extracted") or {}
         age = x.get("age_estimate")
         return _person_noun(float(age) if age is not None else None,
                             x.get("gender"))
 
-    p = (props or {}).get(eid)
+    p = (props or {}).get(resolve_prop_key(eid, props or {}))
     if isinstance(p, dict):
         # The registry's short NAME, not its anchor: the anchor is a
         # production's agreed appearance and runs to a paragraph, which makes

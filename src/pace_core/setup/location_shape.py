@@ -12,6 +12,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Literal
 
+from pace_core.pai_compat import resolve_location_key
+
 # The shape vocabulary. SHAPES is the runtime source; LocationShape is its
 # static mirror, because a Literal cannot be built from a tuple. A test asserts
 # the two agree, so a shape added to one and not the other fails loudly rather
@@ -128,7 +130,7 @@ def location_stub(location_ref: str, project: str | None = None) -> dict:
     if not location_ref:
         return {}
     stubs = stub_doc(project).get("stubs") or {}
-    stub = stubs.get(location_ref)
+    stub = stubs.get(resolve_location_key(location_ref, stubs))
     return stub if isinstance(stub, dict) else {}
 
 
@@ -137,7 +139,7 @@ def location_shape_for(location_ref: str,
     """Shape for a location, read from its own stub and the project's maps."""
     doc = stub_doc(project)
     stubs = doc.get("stubs") or {}
-    stub = stubs.get(location_ref)
+    stub = stubs.get(resolve_location_key(location_ref, stubs))
     env_shape, prefix_shape = shape_maps_from_doc(doc)
     return shape_from_stub(stub if isinstance(stub, dict) else {},
                            env_shape=env_shape, prefix_shape=prefix_shape)

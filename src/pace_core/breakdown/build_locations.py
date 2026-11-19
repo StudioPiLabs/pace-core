@@ -31,6 +31,7 @@ from pace_core.llm_client import strip_fences
 
 PIPELINE_DIR     = Path(__file__).resolve().parent
 from pace_core import paths
+from pace_core.pai_compat import load_registry, named_refs  # noqa: E402
 from pace_core.paths import paths_for  # noqa: E402
 
 # Import the schemas without loading bpy
@@ -41,7 +42,6 @@ SYSTEM_PROMPT = """You are a production designer. You will see a film scene and 
 
 Output ONE JSON object with these fields:
 
-  id                  stable lowercase identifier; matches the scene's location_ref
   name                short human label
   type                "INT" or "EXT"
   build_type          one of: fully_synthetic | photo_reference | greenscreen_plate | hybrid_real_modified
@@ -76,11 +76,9 @@ def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def _build_user_prompt(location_id: str, scenes_in_loc: list[dict]) -> str:
+def _build_user_prompt(scenes_in_loc: list[dict]) -> str:
     parts = [
-        f"## LOCATION ID: {location_id}",
-        "",
-        "## SCENES THAT TAKE PLACE HERE",
+        "## SCENES THAT TAKE PLACE AT THIS LOCATION",
         json.dumps(scenes_in_loc, ensure_ascii=False, indent=2),
         "",
         "## PRIMITIVE SCHEMAS (your only allowed `kind` values)",
@@ -115,12 +113,11 @@ class BibleParseError(ValueError):
     cost: float = 0.0
 
 
-def generate_bible(location_id: str, scenes_in_loc: list[dict],
-                   model_key: str) -> tuple[dict, float]:
-    """LLM call → (location bible dict, cost_usd)."""
+def generate_bible(scenes_in_loc: list[dict], model_key: str) -> tuple[dict, float]:
+    """LLM call → (location bible dict, cost_usd). The caller keys the bible."""
     messages = [
         {"role": "system", "content": SYSTEM_PROMPT},
-        {"role": "user",   "content": _build_user_prompt(location_id, scenes_in_loc)},
+        {"role": "user",   "content": _build_user_prompt(scenes_in_loc)},
     ]
     raw, cost = _llm_call(messages, model_key)
     raw = strip_fences(raw)
@@ -131,7 +128,8 @@ def generate_bible(location_id: str, scenes_in_loc: list[dict],
         # a location that fails to parse is still counted, not left out of a
         # reported total that claims to include it.
         err = BibleParseError(
-            f"LLM did not return valid JSON for {location_id}: {e}\n"
+            f"LLM did not return valid JSON for the location of "
+            f"{', '.join(str(sc.get('scene_id')) for sc in scenes_in_loc)}: {e}\n"
             f"first 500 chars: {raw[:500]}")
         err.cost = cost
         raise err
@@ -233,8 +231,12 @@ def run(*, project: str = "main",
     else:
         targets = by_loc
 
-    locations_dir = paths_for(project).kb_dir / "locations"
+    p = paths_for(project)
+    locations_dir = p.kb_dir / "locations"
     locations_dir.mkdir(parents=True, exist_ok=True)
+    props = load_registry(p.props_file)
+    registries = (load_registry(p.chars_file), props.get("props", props),
+                  load_registry(p.loc_stubs_file).get("stubs"))
 
     summary: list[dict] = []
     total_cost = 0.0
@@ -247,7 +249,10 @@ def run(*, project: str = "main",
 
         print(f"\n== Generating bible for '{loc_id}' ({len(loc_scenes)} scenes)")
         try:
-            bible, cost = generate_bible(loc_id, loc_scenes, model)
+            # Named for the model; the grouping key is the bible's own, so it stays out.
+            bible, cost = generate_bible(named_refs(
+                [{k: v for k, v in sc.items() if k != "location_ref"} for sc in loc_scenes],
+                *registries), model)
         except ValueError as e:
             # Print it: `generate_bible` builds a diagnostic with the first 500
             # characters of what came back, and it used to reach only the
@@ -259,7 +264,7 @@ def run(*, project: str = "main",
             continue
         total_cost += cost
 
-        bible.setdefault("id", loc_id)
+        bible["id"] = loc_id
         bible.setdefault("_meta", {})["generated_at"] = _now_iso()
         bible["_meta"]["model_used"] = model
         bible["_meta"]["scene_refs"] = [s.get("scene_id") for s in loc_scenes]

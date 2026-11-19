@@ -322,10 +322,15 @@ def test_shot_to_narrative(fails):
     # empty shot → empty string (caller decides)
     _expect(shot_to_narrative({}) == "", "empty shot should give empty narrative", fails)
     # enrichment: scene setting (location/INT-EXT/time) + prior-shot continuity
-    scene = {"narrative_meta": {"location_ref": "dying_chamber", "interior_exterior": "INT", "time_of_day": "night"}}
+    key = "0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+    scene = {"narrative_meta": {"location_ref": key, "location_raw": "a quiet ward",
+                                "interior_exterior": "INT", "time_of_day": "night"}}
     prev = {"camera": {"creative_intent": {"shot_size": "wide"}}}
     ne = shot_to_narrative(shot, scene=scene, prev_shot=prev)
-    _expect("dying_chamber" in ne and "night" in ne and "INT" in ne, f"scene setting missing: {ne}", fails)
+    _expect("a quiet ward" in ne and "night" in ne and "INT" in ne, f"scene setting missing: {ne}", fails)
+    _expect(key not in ne, f"a location key reached the narrative: {ne}", fails)
+    named = shot_to_narrative(shot, scene=scene, location_stubs={key: {"name": "the east ward"}})
+    _expect("the east ward" in named and key not in named, f"the stub should name the place: {named}", fails)
     _expect("follows a wide shot" in ne, f"prior-shot continuity missing: {ne}", fails)
     _expect("lips quivering" in ne, "beat should still lead the enriched narrative", fails)
 

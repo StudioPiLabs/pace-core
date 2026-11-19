@@ -27,6 +27,7 @@ import argparse
 import json
 import pathlib
 import sys
+from collections.abc import Collection
 
 from pace_core.types_v1 import SCHEMA_VERSION
 
@@ -90,7 +91,7 @@ RULES
 """
 
 
-def human_actors(beat: dict, cast: set[str]) -> list[str]:
+def human_actors(beat: dict, cast: Collection[str]) -> list[str]:
     """The people the beat shows: anyone in an event that is not only a sound."""
     out = []
     for t in beat.get("transition") or []:
@@ -103,14 +104,14 @@ def human_actors(beat: dict, cast: set[str]) -> list[str]:
     return out
 
 
-def heard_actors(beat: dict, cast: set[str]) -> list[str]:
+def heard_actors(beat: dict, cast: Collection[str]) -> list[str]:
     """The people the beat only hears."""
     shown = set(human_actors(beat, cast))
     return [t["actor"] for t in beat.get("transition") or []
             if heard_only(t) and t.get("actor") in cast and t["actor"] not in shown]
 
 
-def build_messages(beat: dict, cast: set[str], location: str) -> list[dict]:
+def build_messages(beat: dict, cast: Collection[str], location: str) -> list[dict]:
     return [{"role": "system", "content": SYSTEM},
             {"role": "user", "content": json.dumps({
                 "location": location,
@@ -170,10 +171,11 @@ def props_on_subjects(beat: dict, shown: set[str],
 
 
 def to_panel(beat: dict, plan: dict, template: dict, n: int,
-             scene_id: str, prop_map: dict | None = None) -> dict:
+             scene_id: str, prop_map: dict | None = None, cast: dict | None = None) -> dict:
     """A shot carrying one panel, in the shape the 3D model stage reads.
 
-    `prop_map` maps the beat's state and event names to registry prop ids.
+    `prop_map` maps the beat's state and event names to registry prop ids, and
+    `cast` each name the beat and the plan call a person by to their key.
     """
     pm = prop_map or {}
     setup = json.loads(json.dumps(template["setup"]))       # deep copy
@@ -184,19 +186,21 @@ def to_panel(beat: dict, plan: dict, template: dict, n: int,
 
     # The cast is the beat's to say, not the plan's: a subject the plan names
     # outside the people the beat shows is dropped rather than trusted.
-    shown = set(human_actors(beat, set(template["_ages"] or {})))
+    cast = cast or {k: k for k in template["_ages"] or {}}
+    shown = set(human_actors(beat, cast))
     resting = props_on_subjects(beat, shown, pm.get("event"))
     for p in setup.get("props") or []:
         if p.get("prop_id") in resting:
-            p["rests_on"] = resting[p["prop_id"]]
+            p["rests_on"] = cast[resting[p["prop_id"]]]
 
     subs = []
     for s in plan.get("subjects") or []:
         if s.get("character_id") not in shown:
             continue
+        key = cast[s["character_id"]]
         subs.append({
-            "character_id": s.get("character_id"),
-            "age_state": (template["_ages"] or {}).get(s.get("character_id")),
+            "character_id": key,
+            "age_state": (template["_ages"] or {}).get(key),
             "cls": "human_character",
             "pose": s.get("pose"),
             "screen_position": {"x": float(s.get("screen_x") or 0.5),
@@ -270,18 +274,24 @@ def main(argv=None) -> int:
 
     from pace_core.paths import paths_for
     from pace_core.breakdown.extract_script_ir import load_model, estimate_tokens
+    from pace_core.pai_compat import (
+        entity_names, load_registry, location_name, ref_name, resolve_character,
+    )
 
+    p = paths_for(a.project)
+    chars, stubs = load_registry(p.chars_file), load_registry(p.loc_stubs_file).get("stubs")
     beats = [b for b in json.loads(pathlib.Path(a.beats).read_text())["beats"]
              if b["script_scene_index"] == a.scene]
-    src = json.loads((pathlib.Path(paths_for(a.project).scenes_dir)
+    src = json.loads((pathlib.Path(p.scenes_dir)
                       / f"{a.template_scene}.json").read_text())
     t_shot = src["shots"][0]
     ages = {s.get("character_id"): s.get("age_state")
             for sh in src["shots"] for s in (sh.get("setup") or {}).get("subjects") or []}
     template = {"setup": t_shot["setup"], "camera": t_shot["camera"],
                 "lighting": t_shot.get("lighting"), "_ages": ages}
-    cast = set(ages)
-    location = (t_shot["setup"].get("backdrop") or {}).get("location") or ""
+    # Beats and the plan name people as the screenplay does: each name the cast answers to -> its key.
+    cast = {n: k for k in ages for n in entity_names(resolve_character(k, chars)) or [k]}
+    location = location_name((t_shot["setup"].get("backdrop") or {}).get("location") or "", stubs)
     cfg = load_model(a.model)
 
     todo = [b for b in beats if not a.only or b["id"] == a.only]
@@ -312,10 +322,12 @@ def main(argv=None) -> int:
             plan = json.loads(strip_fences(raw))
         except json.JSONDecodeError as e:
             print(f"  {b['id']} PLAN FAILED: {e}"); continue
-        sh = to_panel(b, plan, template, i, a.out_scene_id, pm)
+        sh = to_panel(b, plan, template, i, a.out_scene_id, pm, cast)
         # The count is geometry, so say when the plan lost an actor.
-        want, got = set(human_actors(b, cast)), {s["character_id"] for s in sh["setup"]["subjects"]}
-        note = "" if want == got else f"  CAST MISMATCH want={sorted(want)} got={sorted(got)}"
+        want = {cast[n] for n in human_actors(b, cast)}
+        got = {s["character_id"] for s in sh["setup"]["subjects"]}
+        note = "" if want == got else (f"  CAST MISMATCH want={sorted(ref_name(k, chars) for k in want)} "
+                                       f"got={sorted(ref_name(k, chars) for k in got)}")
         shots.append(sh)
         print(f"  {b['id']} -> {sh['panels'][0]['id']} {plan.get('framing'):<12}"
               f" subj={len(sh['setup']['subjects'])} "

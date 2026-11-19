@@ -24,12 +24,14 @@ imagined twice over that way, once at 24x18 m and once at 16x11 m. The
 same room in two sizes is the continuity break this pipeline exists to stop,
 and it is invisible while each scene owns its own bible.
 
-So the key here is the location as the scenes NAME it -- `location_raw`, which
-is already what `setup.backdrop.location` holds, so a compiler resolves the
-stub without anything being renamed. Bibles that describe one location are
-merged, and a disagreement about size is reported rather than averaged: the
-largest wins, because a room too small to hold its staged cast breaks the
-3D model while a room too large only wastes space.
+So scenes are grouped by the location they NAME -- their `location_ref`, else the
+stub their location text denotes (`location_raw`, which a fresh split also
+writes to `setup.backdrop.location`). Text no stub answers to gets a new uuid4
+key; the stub is named by its bibles or that text and keeps the text as an
+alias, so a scene resolves to it as written. Bibles that describe one location
+are merged, and a disagreement about size is reported rather than averaged: the
+largest wins, because a room too small to hold its staged cast breaks the 3D
+model while a room too large only wastes space.
 
     uv run python -m pace_core.breakdown.build_location_stubs --project <slug>
     uv run python -m pace_core.breakdown.build_location_stubs --project <slug> --write
@@ -39,10 +41,12 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
 
+from pace_core.pai_compat import entry_name, location_name, resolve_location_key  # noqa: E402
 from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402
 
 SCHEMA_VERSION = "0.1"
@@ -52,19 +56,13 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
 
 
-def location_key_of(scene: dict) -> str:
-    """What this scene calls its location.
-
-    `location_raw` first, because that is what `setup.backdrop.location` is
-    set to and therefore what a compiler looks up. `location_ref` is checked
-    too, but it is the field that is null in a fresh split.
-    """
+def scene_location(scene: dict, stubs: dict) -> tuple[str, str]:
+    """(key, label): the key of the location this scene names -- its `location_ref`, else
+    the stub its location text denotes -- and that text, unless it is the key itself."""
     nm = scene.get("narrative_meta") or {}
-    b = ((scene.get("shot_defaults") or {}).get("setup") or {}).get("backdrop") or {}
-    for v in (nm.get("location_ref"), nm.get("location_raw"), b.get("location")):
-        if isinstance(v, str) and v.strip():
-            return v.strip()
-    return ""
+    text = _first([nm.get("location_raw"), _backdrop_of(scene).get("location")]) or ""
+    key = _first([nm.get("location_ref")]) or resolve_location_key(text, stubs)
+    return key, "" if text == key else text
 
 
 def _scale_list(bible: dict) -> list[float] | None:
@@ -142,19 +140,34 @@ def _first(values):
     return None
 
 
-def build(scenes: list[dict], bibles: list[dict]) -> tuple[dict, list[str]]:
-    """(stubs by location key, warnings). Pure: reads nothing, writes nothing."""
+def build(scenes: list[dict], bibles: list[dict],
+          existing: dict | None = None) -> tuple[dict, list[str]]:
+    """(stubs by location key, warnings). Pure: reads nothing, writes nothing.
+
+    `existing` are the stubs on disk, which a scene's location text resolves against.
+    """
+    existing = existing or {}
     warnings: list[str] = []
 
-    # scene_id -> location key, and the reverse
-    key_of_scene = {s.get("scene_id"): location_key_of(s) for s in scenes}
+    minted: dict[str, str] = {}
+    key_of_scene: dict[str, str] = {}
+    labels_of: dict[str, list[str]] = {}
     scenes_by_key: dict[str, list[dict]] = {}
     for s in scenes:
-        k = key_of_scene.get(s.get("scene_id")) or ""
-        if not k:
+        key, label = scene_location(s, existing)
+        key = key or (minted.setdefault(label, uuid.uuid4().hex) if label else "")
+        if not key:
             warnings.append(f"{s.get('scene_id')}: no location named anywhere; skipped")
             continue
-        scenes_by_key.setdefault(k, []).append(s)
+        key_of_scene[s.get("scene_id")] = key
+        labels = labels_of.setdefault(key, [])
+        if label and label not in labels:
+            labels.append(label)
+        scenes_by_key.setdefault(key, []).append(s)
+
+    def called(key: str) -> str:
+        """How a warning names a location: what its scenes call it, else its stub's name."""
+        return _first(labels_of[key]) or location_name(key, existing)
 
     # A bible belongs to the location of the scenes it was generated for.
     bibles_by_key: dict[str, list[dict]] = {}
@@ -163,7 +176,8 @@ def build(scenes: list[dict], bibles: list[dict]) -> tuple[dict, list[str]]:
                 or ([b.get("id")] if b.get("id") else []))
         keys = {key_of_scene.get(r) for r in refs} - {None, ""}
         if len(keys) > 1:
-            warnings.append(f"bible {b.get('id')!r} spans {sorted(keys)}; using the first")
+            warnings.append(f"bible {entry_name(b, b.get('id'))!r} spans "
+                            f"{sorted(map(called, keys))}; using the first")
         for k in sorted(keys)[:1]:
             bibles_by_key.setdefault(k, []).append(b)
 
@@ -171,18 +185,20 @@ def build(scenes: list[dict], bibles: list[dict]) -> tuple[dict, list[str]]:
     for key, group in scenes_by_key.items():
         bs = bibles_by_key.get(key) or []
         if not bs:
-            warnings.append(f"{key!r}: no bible; stub carries no geometry")
+            warnings.append(f"{called(key)!r}: no bible; stub carries no geometry")
 
-        sizes = {tuple(sc): b.get("id") for b in bs if (sc := _scale_list(b))}
+        sizes = {tuple(sc): entry_name(b, b.get("id")) for b in bs if (sc := _scale_list(b))}
         if len(sizes) > 1:
-            pretty = ", ".join(f"{bid}={list(sz)}" for sz, bid in sizes.items())
+            pretty = ", ".join(f"{name}={list(sz)}" for sz, name in sizes.items())
             warnings.append(
-                f"{key!r}: bibles disagree on size ({pretty}); using the largest")
+                f"{called(key)!r}: bibles disagree on size ({pretty}); using the largest")
         scale = max(sizes, key=lambda s: s[0] * s[1] * s[2]) if sizes else None
 
         bds = [_backdrop_of(s) for s in group]
         stub = {
-            "name": _first([b.get("name") for b in bs]) or key,
+            "name": _first([b.get("name") for b in bs]) or _first(labels_of[key]),
+            # The scenes' own text, so a scene still naming the place that way finds it.
+            "aliases": labels_of[key],
             "scene_refs": [s.get("scene_id") for s in group],
             "anchor": _first([b.get("anchor") for b in bs]) or "",
             # The stub's `setting` is its prose description, which for a
@@ -225,10 +241,6 @@ def run(*, project: str, write: bool = False,
     if not scenes:
         raise ValueError(f"project {project!r} has no scenes — split first")
 
-    stubs, warnings = build(scenes, bibles)
-    doc = {"_schema_version": SCHEMA_VERSION, "project": project,
-           "updated_at": _now(), "stubs": stubs, "meshes": {}}
-
     existing = {}
     if Path(p.loc_stubs_file).exists():
         try:
@@ -236,6 +248,10 @@ def run(*, project: str, write: bool = False,
                         .get("stubs") or {})
         except (OSError, json.JSONDecodeError):
             existing = {}
+    stubs, warnings = build(scenes, bibles, existing)
+    key_of_scene = {sid: k for k, st in stubs.items() for sid in st["scene_refs"]}
+    doc = {"_schema_version": SCHEMA_VERSION, "project": project,
+           "updated_at": _now(), "stubs": stubs, "meshes": {}}
     # Hand edits win. Stubs with hand-edit backups beside them record real
     # work, and regenerating over them would discard it.
     kept = sorted(set(existing) & set(stubs))
@@ -250,10 +266,8 @@ def run(*, project: str, write: bool = False,
             for f in iter_canonical_scene_files(Path(p.scenes_dir)):
                 d = json.loads(f.read_text(encoding="utf-8"))
                 nm = d.setdefault("narrative_meta", {})
-                if nm.get("location_ref"):
-                    continue
-                key = location_key_of(d)
-                if not key:
+                key = key_of_scene.get(d.get("scene_id"))
+                if nm.get("location_ref") or not key:
                     continue
                 nm["location_ref"] = key
                 f.write_text(json.dumps(d, ensure_ascii=False, indent=2) + "\n",

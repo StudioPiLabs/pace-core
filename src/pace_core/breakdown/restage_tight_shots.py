@@ -37,7 +37,9 @@ from pathlib import Path
 from typing import Callable
 
 
-from pace_core.pai_compat import primary_focus_of, resolve_shot   # noqa: E402
+from pace_core.pai_compat import (  # noqa: E402
+    entry_name, primary_focus_of, ref_name, resolve_character_key, resolve_shot,
+)
 from pace_core.paths import paths_for                                     # noqa: E402
 
 TIGHT_SIZES = ("extreme_close_up", "close_up", "medium_close_up")
@@ -110,13 +112,11 @@ def restaged_subjects(subjects: list[dict], focus_id: str) -> list[dict]:
 
 
 def _registry_name(cid: str, characters: dict) -> str:
-    """How the prose names a character: its registered English name, else its key."""
-    for key, e in characters.items():
-        if not isinstance(e, dict):
-            continue
-        if cid == key or cid == e.get("name") or cid in (e.get("aliases") or []):
-            return e.get("name_en") or key.replace("_", " ").title()
-    return cid
+    """How the English prose names a character: its registered English name, else its name."""
+    key = resolve_character_key(cid, characters)
+    if not key:
+        return cid
+    return characters[key].get("name_en") or entry_name(characters[key], key).replace("_", " ").title()
 
 
 def reaction_action(subject: dict, characters: dict) -> dict:
@@ -132,7 +132,8 @@ def reaction_action(subject: dict, characters: dict) -> dict:
     en = f"{name} watches {_registry_name(target, characters)}" if target else f"{name} reacts"
     if subject.get("pose"):
         en += f", {subject['pose']}"
-    zh = f"{cid}注视{target}" if target else f"{cid}的反应"
+    who = ref_name(cid, characters)
+    zh = f"{who}注视{ref_name(target, characters)}" if target else f"{who}的反应"
     return {"description_en": en + ".", "description_zh": zh, "temporal": "atomic",
             "foreground": "focal", "background": False}
 

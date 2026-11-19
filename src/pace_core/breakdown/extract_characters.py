@@ -25,6 +25,7 @@ Never overwrites existing character entries; merges new fields in-place.
 
 import json
 import sys
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -34,6 +35,7 @@ from pace_core.llm_client import strip_fences
 
 PIPELINE_DIR = Path(__file__).resolve().parent
 from pace_core import paths
+from pace_core.pai_compat import load_registry, named_refs, resolve_character_key  # noqa: E402
 from pace_core.paths import paths_for  # noqa: E402
 
 CHAR_REFS    = PIPELINE_DIR / "character_refs"
@@ -43,13 +45,13 @@ LOCAL_PORT_COMFY  = 15000
 EXTRACTION_SYSTEM_PROMPT = """You are a casting director and production assistant. Read the scene breakdown and extract every CHARACTER who appears, even briefly.
 
 A character is any individually framed agent: human, animal, creature, robot,
-or animated object. Include unnamed animals and silent characters. Reuse every
-character_id already declared in setup.subjects exactly; do not rename it.
+or animated object. Include unnamed animals and silent characters. Reuse the
+name of every character already declared in setup.subjects (its character_id)
+exactly; do not rename it.
 Skip unindividuated background crowds and off-screen voices with no body.
 
 Return one JSON object: {"characters": [...]}. For each character:
-  id                stable lowercase identifier with underscores (e.g. "jia", "elder_brother")
-  name              human-readable label (e.g. "Jia", "Elder Brother")
+  name              the character's name as the scenes give it (e.g. "Jia", "Elder Brother")
   entity_type       "human" | "animal" | "creature" | "robot" | "unknown"
   species           source-supported species, or null; do not invent one
   trigger           short LoRA trigger string (e.g. "jia_woman", "wei_man") — 1-3 tokens
@@ -107,7 +109,8 @@ SCHEMA_KEYS = {"_schema_version", "_purpose", "_field_definitions", "ensemble_ru
 
 
 def declared_characters(scenes: list[dict]) -> list[dict]:
-    """Source-only entries for every typed subject, including panel overrides."""
+    """Source-only entries for every typed subject, including panel overrides,
+    each named by its ref as the scene writes it."""
     from pace_core.pai_compat import resolve_shot
 
     entries = {}
@@ -119,7 +122,7 @@ def declared_characters(scenes: list[dict]) -> list[dict]:
                     cid = subject.get("character_id")
                     if not isinstance(cid, str) or not cid or cid in SCHEMA_KEYS:
                         continue
-                    entry = entries.setdefault(cid, {"id": cid, "name": cid, "entity_type": "unknown",
+                    entry = entries.setdefault(cid, {"name": cid, "entity_type": "unknown",
                         "scenes": [], "metadata_status": "source_only"})
                     sid = scene.get("scene_id")
                     if sid and sid not in entry["scenes"]:
@@ -132,29 +135,36 @@ def seed_declared_characters(*, project: str) -> dict:
     from pace_core.breakdown.scenes_kb import load_all_scenes
 
     entries = declared_characters(load_all_scenes(project=project)["scenes"])
-    created, updated = merge_into_characters_json(entries, paths_for(project).chars_file)
-    return {"declared_ids": [c["id"] for c in entries], "registry_created": created,
+    created, updated, keys = merge_into_characters_json(entries, paths_for(project).chars_file)
+    return {"declared_ids": [k for k in keys if k], "registry_created": created,
             "registry_updated": updated}
 
 
-def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple[int, int]:
-    """Returns (created_count, updated_count). Never overwrites existing fields."""
-    if chars_file.exists():
-        registry = json.loads(chars_file.read_text())
-    else:
-        registry = {"_schema_version": "0.1"}
+def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple[int, int, list]:
+    """(created_count, updated_count, the registry key of each entry or None). Never
+    overwrites existing fields.
+
+    An entry is matched to the registry by its `name` through the resolver; a name no
+    entry answers to gets a new uuid4 hex key.
+    """
+    registry = load_registry(chars_file) or {"_schema_version": "0.1"}
 
     created = 0
     updated = 0
+    keys: list[str | None] = []
     for c in extracted:
-        cid = c["id"]
-        if cid in SCHEMA_KEYS:
+        name = c["name"].strip() if isinstance(c.get("name"), str) else ""
+        if not name or name in SCHEMA_KEYS:
+            keys.append(None)
             continue
-        existing = registry.get(cid)
+        key = resolve_character_key(name, registry) or uuid.uuid4().hex
+        keys.append(key)
+        existing = registry.get(key)
         costumes = c.get("costumes") or {"default": ""}
         if existing is None:
-            registry[cid] = {
-                "trigger":   c.get("trigger", cid),
+            registry[key] = {
+                "name":      name,
+                "trigger":   c.get("trigger") or name,
                 "anchor":    c.get("anchor", ""),
                 "costumes":  costumes,
                 "lora": {
@@ -166,7 +176,7 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
                 "animation": {"anchor": c.get("anchor", ""), "_note": "Optional animation-mode anchor"},
                 "director_notes":  c.get("director_notes", ""),
                 "_extracted": {
-                    "name":          c.get("name", cid),
+                    "name":          name,
                     "age_estimate":  c.get("age_estimate"),
                     "gender":        c.get("gender"),
                     "scenes":        c.get("scenes", []),
@@ -188,16 +198,16 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
             existing["costumes"] = existing_costumes
             if scenes_new != scenes_existing:
                 updated += 1
-        for key in ("entity_type", "species", "body_proxy_3d"):
-            if key == "entity_type" and existing is not None and c.get("metadata_status") == "source_only":
+        for field in ("entity_type", "species", "body_proxy_3d"):
+            if field == "entity_type" and existing is not None and c.get("metadata_status") == "source_only":
                 continue  # Source seeding must not reclassify an existing artist entry.
-            if c.get(key) and not registry[cid].get(key):
-                registry[cid][key] = c[key]
+            if c.get(field) and not registry[key].get(field):
+                registry[key][field] = c[field]
         if c.get("metadata_status") != "source_only":
-            registry[cid].setdefault("_extracted", {})["metadata_status"] = "extracted"
+            registry[key].setdefault("_extracted", {})["metadata_status"] = "extracted"
 
     chars_file.write_text(json.dumps(registry, indent=2, ensure_ascii=False))
-    return created, updated
+    return created, updated, keys
 
 
 # ─────────────────────────  Optional Flux reference synth  ─────────────────
@@ -241,15 +251,23 @@ def run(*, project: str = "main",
     if not scenes:
         raise ValueError(f"project {project!r} has no scenes — split_script first")
 
-    print(f"== Phase 1: extracting characters from {len(scenes)} scenes via {model}")
-    extracted, cost = extract_characters_from_scenes({"scenes": scenes}, model_key=model)
-    declared = declared_characters(scenes)
-    missing = [c for c in declared if c["id"] not in {item["id"] for item in extracted}]
-    extracted = [*extracted, *missing]
-    print(f"   -> {len(extracted)} characters identified: {[c['id'] for c in extracted]}")
+    p = paths_for(project)
+    chars_file = p.chars_file
+    registry, props = load_registry(chars_file), load_registry(p.props_file)
+    payload = named_refs({"scenes": scenes}, registry, props.get("props", props),
+                         load_registry(p.loc_stubs_file).get("stubs"))
 
-    chars_file = paths_for(project).chars_file
-    created, updated = merge_into_characters_json(extracted, chars_file)
+    print(f"== Phase 1: extracting characters from {len(scenes)} scenes via {model}")
+    answers, cost = extract_characters_from_scenes(payload, model_key=model)
+    # A declared subject the model left out, compared by the key both resolve to.
+    answered = {resolve_character_key(n, registry) or n
+                for n in (c.get("name") or "" for c in answers)}
+    missing = [c for c in declared_characters(scenes)
+               if (resolve_character_key(c["name"], registry) or c["name"]) not in answered]
+    extracted = [*answers, *missing]
+    print(f"   -> {len(extracted)} characters identified: {[c.get('name') for c in extracted]}")
+
+    created, updated, keys = merge_into_characters_json(extracted, chars_file)
     print(f"== Phase 2: registry merge → {created} new, {updated} updated, "
           f"written to {chars_file}")
 
@@ -257,8 +275,8 @@ def run(*, project: str = "main",
         "project":            project,
         "model":              model,
         "extracted_count":    len(extracted),
-        "extracted_ids":      [c.get("id") for c in extracted],
-        "source_only_ids":    [c["id"] for c in missing],
+        "extracted_ids":      [k for k in keys if k],
+        "source_only_ids":    [k for k in keys[len(answers):] if k],
         "registry_created":   created,
         "registry_updated":   updated,
         "llm_cost_usd":       round(cost, 4),
@@ -271,13 +289,11 @@ def run(*, project: str = "main",
 
     # Optional Phase 3: Flux reference synth
     registry = json.loads(chars_file.read_text())
-    for c in extracted:
-        cid = c["id"]
-        entry = registry.get(cid)
-        if not entry:
+    for key in keys:
+        if not key or not registry.get(key):
             continue
         result["flux_refs"]["fail"].append({
-            "id": cid,
+            "id": key,
             "error": "flux reference synth is retired — it drove a hand-built "
                      "Flux 1 graph. Use POST /api/images (or the Reference "
                      "Image node's Generate source) instead."})

@@ -54,10 +54,14 @@ from __future__ import annotations
 import argparse
 import collections
 import json
+import re
 import sys
 from pathlib import Path
 
 
+from pace_core.pai_compat import (  # noqa: E402
+    entity_names, entry_name, resolve_character_key, resolve_prop_key,
+)
 from pace_core.paths import iter_canonical_scene_files, paths_for      # noqa: E402
 
 #: Below this, report rather than attach. A wrong alias puts one character's
@@ -85,9 +89,9 @@ def _jaccard(a: set, b: set) -> float:
 #: records the scenes it was seen in. Props were extracted with the same
 #: shape and never joined the same way.
 KINDS = {
-    "character": {"bucket": "subjects", "ref": "character_id",
+    "character": {"bucket": "subjects", "ref": "character_id", "resolve": resolve_character_key,
                   "scenes": lambda rec: (rec.get("_extracted") or {}).get("scenes") or []},
-    "prop":      {"bucket": "props", "ref": "prop_id",
+    "prop":      {"bucket": "props", "ref": "prop_id", "resolve": resolve_prop_key,
                   "scenes": lambda rec: rec.get("linked_scenes") or []},
 }
 
@@ -103,24 +107,22 @@ def head_noun(ref: str) -> str:
     `office`, which is a category and not an identity, and score exactly what
     `potted_plant` and `desk_plant` score.
 
-    Both sides are English slugs written by the same extractor, so the head of
+    Both sides name the object in English, as a slug or a name, so the head of
     the compound is what it is actually naming. It declines far more than it
     matches -- most orphans stay orphans -- and makes no wrong match, which is
     the trade this module already takes everywhere else.
     """
-    return (ref or "").strip().lower().split("_")[-1].rstrip("s")
+    return re.split(r"[\s_]+", (ref or "").strip().lower())[-1].rstrip("s")
 
 
 def link_by_head_noun(registry: dict, refs: dict) -> tuple[dict, list[dict]]:
-    """({key: [aliases]}, unresolved) by the noun each identifier names."""
-    keys = [k for k, v in registry.items()
-            if not k.startswith("_") and isinstance(v, dict)]
+    """({key: [aliases]}, unresolved) by the noun each reference and each entry's names name."""
+    nouns = {k: {head_noun(n) for n in entity_names(v) or [k]} for k, v in registry.items()
+             if not k.startswith("_") and isinstance(v, dict)}
     linked: dict[str, list[str]] = collections.defaultdict(list)
     unresolved: list[dict] = []
     for ref in sorted(refs):
-        if ref in registry:
-            continue                      # already its own key
-        hits = [k for k in keys if head_noun(k) == head_noun(ref)]
+        hits = [k for k, ns in nouns.items() if head_noun(ref) in ns]
         if len(hits) == 1:
             linked[hits[0]].append(ref)
         else:
@@ -152,12 +154,13 @@ def link(registry: dict, scenes: list[dict],
          kind: str = "character") -> tuple[dict, list[dict]]:
     """({registry_key: [aliases]}, unresolved). Pure."""
     spec = KINDS[kind]
+    # A reference the registry already resolves -- by key or by name -- needs no alias.
+    refs = {r: s for r, s in panel_refs(scenes, kind).items() if not spec["resolve"](r, registry)}
     if kind == "prop":
-        return link_by_head_noun(registry, panel_refs(scenes, kind))
+        return link_by_head_noun(registry, refs)
     reg_scenes = {k: set(spec["scenes"](v))
                   for k, v in registry.items()
                   if not k.startswith("_") and isinstance(v, dict)}
-    refs = panel_refs(scenes, kind)
 
     linked: dict[str, list[str]] = collections.defaultdict(list)
     unresolved: list[dict] = []
@@ -182,7 +185,7 @@ def link(registry: dict, scenes: list[dict],
         if base:
             linked[base].append(ref)
             continue
-        unresolved.append({"ref": ref, "reason": f"best match {key} at {score:.2f}",
+        unresolved.append({"ref": ref, "reason": f"best match {entry_name(registry[key], key)} at {score:.2f}",
                            "scenes": sorted(rs)})
     return dict(linked), unresolved
 

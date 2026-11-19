@@ -56,6 +56,27 @@ LLM provider keys are read from the environment, for example `ANTHROPIC_API_KEY`
 
 Model calls go through [LiteLLM](https://github.com/BerriAI/litellm). A registry entry uses provider `anthropic`, `openai` (any OpenAI-compatible endpoint), `local`, or `codex`, or sets `litellm_model` to any LiteLLM model string (for example `gemini/gemini-2.5-pro`). Provider `codex` calls the ChatGPT subscription that the Codex CLI is signed in with: `pace_core.codex_auth` reads `$CODEX_HOME/auth.json` (default `~/.codex`) and refreshes the token under a file lock when it nears expiry. Run `codex login` once; no API key is needed.
 
+## Knowledge base
+
+A project's `kb/` holds `characters.json`, `props.json`, `location_stubs.json` and
+`locations/<key>.bible.json`. Each entry sits under a key, and the key is opaque:
+
+1. pace-core never prints a key into text (prompts, negatives, LLM payloads, findings,
+   warnings, reasons) and never matches one against text (screenplay, action text,
+   `location_raw`). Keys stay keys in lookups, file names (`<key>.bible.json`, mattes
+   `body_<key>`), Blender objects and the `props.json` record keys.
+2. Text names an entry by its `name` (`pai_compat.ref_name`, `location_name`). A ref
+   that resolves to no entry is a label and prints as itself; an entry without a
+   `name` prints its key.
+3. Text matches an entry through its `name`, `name_zh` and `aliases`
+   (`pai_compat.entity_names`). A ref resolves by key, then by those names
+   (`resolve_character_key`, `resolve_prop_key`, `resolve_location_key`).
+4. LLM payloads show entries by name (`pai_compat.named_refs`), and answers map back
+   to keys through the resolvers. An entry pace-core creates, for an answer naming
+   an unknown entity or for a scene's label, gets a `uuid.uuid4().hex` key and that
+   name.
+5. A new entry's trigger defaults to its name.
+
 ## Tests
 
 ```
