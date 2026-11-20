@@ -77,6 +77,11 @@ A project's `kb/` holds `characters.json`, `props.json`, `location_stubs.json` a
    name.
 5. A new entry's trigger defaults to its name.
 
+A scene's id is opaque too. A scene file is `kb/scenes/<scene_id>.json` holding that
+`scene_id`, and `paths.iter_canonical_scene_files` lists them in `scene_number`
+order, then by id. Other files beside the scenes (enrichment sidecars, evidence,
+backups) are never read as scenes, and a file's name orders nothing.
+
 ## Tests
 
 ```

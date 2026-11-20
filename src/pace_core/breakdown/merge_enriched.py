@@ -2,9 +2,10 @@
 """Fold `scene_NN_v1_enriched.json` back into `scene_NN.json`.
 
 `enrich_scenes_scine` writes its output as a SIBLING of the scene it enriched,
-and nothing reads a sibling. `paths.py` defines canonical as exactly
-`scene_<digits>.json` and 29 call sites use that filter, deliberately: an
-extra file in that directory doubles every scene in the studio sidebar. So the
+and nothing reads a sibling. `paths.py` reads a scene only from
+`<scene_id>.json` holding that id, and every call site uses that filter,
+deliberately: an extra file in that directory doubles every scene in the studio
+sidebar. So the
 enrichment pass has always produced files that no compiler, 3D model or route
 would open, and the merge was done by hand -- scenes merged that way carry
 `_enriched_at` on the canonical files and no sidecars beside them.

@@ -31,7 +31,7 @@ from typing import Any, Callable
 from pace_core.breakdown import extract_script_ir as _ir
 from pace_core.breakdown import verify_breakdown as _vb
 from pace_core.breakdown.screenplay_parser import parse, scenes as _scenes
-from pace_core.paths import paths_for
+from pace_core.paths import iter_canonical_scene_files, paths_for
 
 SCRIPT_SUFFIXES = (".pdf", ".md", ".txt")
 
@@ -64,10 +64,7 @@ def screenplay_text(project: str, script: str | Path | None = None) -> tuple[str
 
 
 def breakdown_scene_ids(project: str) -> list[str]:
-    d = Path(paths_for(project).scenes_dir)
-    if not d.is_dir():
-        return []
-    return sorted(f.stem for f in d.glob("scene_*.json") if f.name.count(".") == 1)
+    return [f.stem for f in iter_canonical_scene_files(Path(paths_for(project).scenes_dir))]
 
 
 def identity_scene_map(script_scenes: list[dict], scene_ids: list[str]) -> dict[str, list[str]]:

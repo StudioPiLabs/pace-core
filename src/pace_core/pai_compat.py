@@ -58,7 +58,7 @@ def dig(d: Any, *keys: str) -> Any:
 
 
 def load_scene(path: str | Path) -> dict:
-    """Read a scene_*.json off disk. Returns the raw pai-1.0 dict."""
+    """Read a scene file off disk. Returns the raw pai-1.0 dict."""
     return json.loads(Path(path).read_text())
 
 

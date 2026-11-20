@@ -94,7 +94,7 @@ def survey(scenes: list[dict], stubs: dict) -> dict:
 def apply(scenes_dir: Path, stubs_file: Path, plan: dict) -> tuple[int, int]:
     """Write the chosen value onto every shot and stub it applies to."""
     shots_changed = 0
-    for path in sorted(scenes_dir.glob("scene_*.json")):
+    for path in paths.iter_canonical_scene_files(scenes_dir):
         sc = json.loads(path.read_text())
         dirty = False
         # The scene's own defaults first. A field stated once there and
@@ -148,7 +148,7 @@ def main() -> int:
     a = ap.parse_args()
 
     kb = (a.projects_root or paths.PAI_PROJECTS_ROOT) / a.project / "kb"
-    scene_files = sorted((kb / "scenes").glob("scene_*.json"))
+    scene_files = paths.iter_canonical_scene_files(kb / "scenes")
     if not scene_files:
         print(f"no scenes for {a.project!r}", file=sys.stderr)
         return 1
