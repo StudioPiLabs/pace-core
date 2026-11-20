@@ -17,7 +17,7 @@ from pace_core.breakdown.densify_panels import densify_scene, framing_moves  # n
 
 def _scene(movement_3d, gear="tripod", static=False, n_panels=1):
     return {
-        "scene_id": "scene_t", "_max_panel_n": n_panels,
+        "scene_id": "scene_t",
         "shots": [{
             "shot_id": "shot_01",
             "camera": {"trajectory": {"movement_2d": [], "movement_3d": movement_3d,

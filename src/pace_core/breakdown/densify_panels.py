@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import copy
 import typing
+import uuid
 
 from pace_core.pai_compat import dig, movement_of
 from pace_core.types_v1 import Movement2D, Movement3D, ShotSize
@@ -148,25 +149,10 @@ def end_angle(start: str | None, moves: list[str]) -> str | None:
     return _ANGLE_LADDER[j] if j != i else None
 
 
-def _next_panel_n(scene_doc: dict) -> int:
-    """Panel numbering is scene-wide, not per shot -- one scene's shot_02 holds
-    panel_0002. Advance the scene counter so a new panel cannot collide with
-    one in a sibling shot."""
-    known = [int(str(p.get("id", "")).rsplit("_", 1)[-1] or 0)
-             for s in scene_doc.get("shots") or []
-             for p in s.get("panels") or []
-             if str(p.get("id", "")).rsplit("_", 1)[-1].isdigit()]
-    return max([int(scene_doc.get("_max_panel_n") or 0)] + known + [0]) + 1
-
-
 def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
     """Add the missing end panel to every moving shot in one scene."""
     scene_id = scene_doc.get("scene_id") or "scene"
     added, skipped = [], []
-    # Allocated within this run, not read back from the document: on a dry run
-    # nothing is appended, so re-deriving the counter per shot handed every
-    # shot in a scene the same panel number and reported colliding ids.
-    next_n = _next_panel_n(scene_doc)
     for shot in scene_doc.get("shots") or []:
         moves = framing_moves(shot)
         panels = shot.get("panels") or []
@@ -198,9 +184,8 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
             skipped.append({"shot": shot.get("shot_id"), "why": "no panel to clone"})
             continue
 
-        n, next_n = next_n, next_n + 1
         end = copy.deepcopy(panels[-1])
-        end["id"] = f"{scene_id}_{shot.get('shot_id')}_panel_{n:04d}"
+        end["id"] = uuid.uuid4().hex   # a keyframe id is opaque, so no counter keeps it apart from its siblings
         end["panel_number"] = len(panels) + 1
         # Reframing move: screen_position is carried over unchanged, which is
         # what the clone already does. The note is what tells a reader (and the
@@ -234,7 +219,6 @@ def densify_scene(scene_doc: dict, *, apply: bool = False) -> dict:
         if apply:
             panels.append(end)
             shot["panels"] = panels
-            scene_doc["_max_panel_n"] = n
             # Every panel owns a compile-hints slot; a panel without one is
             # invisible to the per-backend prompt overrides.
             hints = scene_doc.setdefault("compile_hints", [])

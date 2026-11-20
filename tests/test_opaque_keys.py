@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 from pace_core.breakdown.extract_characters import merge_into_characters_json
 from pace_core.breakdown.split_script import _match_location
@@ -74,3 +75,14 @@ def test_scene_files_are_found_by_the_id_they_hold_in_scene_order(tmp_path):
     (tmp_path / f"{first}_v1_enriched.json").write_text(json.dumps({"scene_id": first}))   # a sibling
     (tmp_path / "breakdown_evidence.json").write_text(json.dumps({"scenes": []}))
     assert [p.stem for p in iter_canonical_scene_files(tmp_path)] == [first, second]
+
+
+def test_a_location_finds_its_scenes_storyboards_by_their_keyframe_ids(tmp_path):
+    """A scene id is opaque, so a storyboard is matched by the keyframe id it is named by, in either id form."""
+    from pace_core.breakdown.pace_regen_packets import build_location_anchors
+    boards = tmp_path / "06_reference" / "storyboards"
+    scene, minted = "ab" * 16, "0f" * 16
+    old, new, other = (boards / f"{key}_1_.png" for key in ("scene_01_shot_01_panel_0001", minted, "scene_02_shot_01_panel_0001"))
+    anchors = build_location_anchors(tmp_path, {"kitchen": {"name": "Kitchen"}}, [old, new, other], {scene: "kitchen"},
+                                     {scene: ["scene_01_shot_01_panel_0001", minted]})
+    assert [Path(c).name for c in anchors["kitchen"]["panel_visual_candidates"]] == [new.name, old.name]

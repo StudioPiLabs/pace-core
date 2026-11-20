@@ -27,6 +27,7 @@ import argparse
 import json
 import pathlib
 import sys
+import uuid
 from collections.abc import Collection
 
 from pace_core.types_v1 import SCHEMA_VERSION
@@ -227,11 +228,8 @@ def to_panel(beat: dict, plan: dict, template: dict, n: int,
     pos = plan.get("camera_position")
     cam["extrinsics"]["position"] = pos if pos in BUILDABLE_POSITIONS else "three_quarter"
 
-    # Ids follow the SCENE THIS DOC IS, not the beat's own scene label. A
-    # panel whose id names a different scene than the file it lives in cannot
-    # be looked up by id, which is how every downstream stage finds it.
     sid = f"shot_{n:02d}"
-    pid = f"{scene_id}_{sid}_panel_{n:04d}"
+    pid = uuid.uuid4().hex   # a keyframe id is opaque: its scene and shot are where it is listed
     return {
         "shot_id": sid, "camera": cam, "setup": setup,
         "lighting": json.loads(json.dumps(template.get("lighting") or {})),

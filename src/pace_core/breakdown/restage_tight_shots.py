@@ -31,8 +31,8 @@ from __future__ import annotations
 import argparse
 import copy
 import json
-import re
 import tempfile
+import uuid
 from pathlib import Path
 from typing import Callable
 
@@ -138,13 +138,6 @@ def reaction_action(subject: dict, characters: dict) -> dict:
             "foreground": "focal", "background": False}
 
 
-def _max_panel_n(scene: dict) -> int:
-    vals = [int(m.group(1)) for sh in scene.get("shots") or []
-            for p in sh.get("panels") or []
-            if (m := re.search(r"_panel_(\d+)$", str(p.get("id") or "")))]
-    return max(vals or [0])
-
-
 def _single(panel: dict) -> None:
     ov = panel.get("camera_override") or {}
     ci = dict(ov.get("creative_intent") or {}, framing="single")
@@ -162,8 +155,7 @@ def split_panel(scene: dict, scene_id: str, shot: dict, panel: dict,
     at = shot["panels"].index(panel) + 1
     new_ids = []
     for s in sorted((s for s in subjects if s.get("character_id") != focus_id), key=_x):
-        n = max(int(scene.get("_max_panel_n") or 0), _max_panel_n(scene)) + 1
-        pid = f"{scene_id}_{shot['shot_id']}_panel_{n:04d}"
+        pid = uuid.uuid4().hex   # a keyframe id is opaque: its scene and shot are where it is listed
         p = copy.deepcopy(seed)
         p.update(id=pid, scene_id=scene_id, shot_id=shot["shot_id"])
         p.pop("render", None)
@@ -174,7 +166,6 @@ def split_panel(scene: dict, scene_id: str, shot: dict, panel: dict,
         p["events_override"] = {"actions": [reaction_action(s, characters)], "emotions": []}
         shot["panels"].insert(at, p)
         at += 1
-        scene["_max_panel_n"] = n
         scene.setdefault("compile_hints", []).append(
             {"panel_id": pid, "flux": {}, "gpt_image_2": {}, "wan_i2v": {}})
         new_ids.append(pid)
