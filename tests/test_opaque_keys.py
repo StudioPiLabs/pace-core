@@ -1,4 +1,5 @@
-"""KB keys are opaque: text names an entry by its name and matches it by its names."""
+"""KB keys and scene ids are opaque: text names an entry by its name and matches it by its names, and a scene file
+is found by the id it holds."""
 from __future__ import annotations
 
 import json
@@ -8,6 +9,7 @@ from pace_core.breakdown.extract_characters import merge_into_characters_json
 from pace_core.breakdown.split_script import _match_location
 from pace_core.compilers.compile_common import CompileContext
 from pace_core.compilers.compile_flux2 import compile_flux_for_base
+from pace_core.paths import iter_canonical_scene_files
 
 ALICE, BOB = "3f1c0a7e9b2d4c6e8a0b1c2d3e4f5a6b", "7d2e4f6a8b0c4d1e9f3a5b7c9d1e3f5a"
 CONSOLE, LAMP = "a4b6c8d0e2f44a6b8c0d2e4f6a8b0c2d", "c1d3e5f7a9b14c3d9e7f9a1b3c5d7e9f"
@@ -63,3 +65,12 @@ def test_a_script_location_matches_a_bible_by_name_never_by_its_key():
     assert _match_location("INT. LIGHTHOUSE ATTIC - NIGHT", bibles) == ATTIC
     assert _match_location("cafe", bibles) is None
     assert _match_location("bed", bibles) is None
+
+
+def test_scene_files_are_found_by_the_id_they_hold_in_scene_order(tmp_path):
+    first, second = "e5f7a9b1c3d54e6f8a0b2c4d6e8f0a1b", "1b3d5f7a9c0e4b2d8f6a4c2e0b9d7f5a"   # text order is reversed
+    for scene_id, number in ((first, 1), (second, 2)):
+        (tmp_path / f"{scene_id}.json").write_text(json.dumps({"scene_id": scene_id, "scene_number": number}))
+    (tmp_path / f"{first}_v1_enriched.json").write_text(json.dumps({"scene_id": first}))   # a sibling
+    (tmp_path / "breakdown_evidence.json").write_text(json.dumps({"scenes": []}))
+    assert [p.stem for p in iter_canonical_scene_files(tmp_path)] == [first, second]

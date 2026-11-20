@@ -7,15 +7,15 @@ the layout.
 Layout inside one project (PAI_PROJECTS_ROOT/<slug>/), limited to what this
 package reads or writes:
 
-  kb/              scenes/scene_NN.json, characters.json, props.json,
+  kb/              scenes/<scene_id>.json, characters.json, props.json,
                    location_stubs.json, film.json, shot_design.json
   06_reference/storyboards/control_geometry/   3D model renders
   blender_scenes/  depth_maps/  meshes/  script/  05_output/  07_docs/
 """
 from __future__ import annotations
 
+import json
 import os
-import re
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -88,19 +88,30 @@ def _project_root(slug: str) -> Path:
     return PAI_PROJECTS_ROOT / slug / PAI_BRANCH
 
 
-# Canonical scene files are exactly `scene_<digits>.json`; enrichment and
-# backup siblings share the prefix and must not be read as scenes.
-_CANONICAL_SCENE_RE = re.compile(r"^scene_\d+\.json$")
+def _scene_order(path: Path) -> tuple | None:
+    """Where a scene file sorts, or None for any other file: a scene file is `<scene_id>.json` holding that id, so the
+    enrichment, backup and evidence files beside the scenes are not read as scenes."""
+    try:
+        doc = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+    if not isinstance(doc, dict) or doc.get("scene_id") != path.stem:
+        return None
+    number = doc.get("scene_number")
+    return (0, number, path.stem) if type(number) is int else (1, 0, path.stem)
 
 
 def is_canonical_scene_file(path: Path | str) -> bool:
-    return bool(_CANONICAL_SCENE_RE.fullmatch(Path(path).name))
+    return _scene_order(Path(path)) is not None
 
 
 def iter_canonical_scene_files(scenes_dir: Path) -> list[Path]:
+    """A project's scene files in scene order (`scene_number`, then id): a scene id is opaque, so a file name orders
+    nothing."""
     if not scenes_dir.is_dir():
         return []
-    return sorted(p for p in scenes_dir.glob("scene_*.json") if is_canonical_scene_file(p))
+    keyed = [(order, p) for p in scenes_dir.glob("*.json") if (order := _scene_order(p))]
+    return [p for _, p in sorted(keyed)]
 
 
 def list_projects() -> list[str]:

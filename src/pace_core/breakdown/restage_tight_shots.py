@@ -40,7 +40,7 @@ from typing import Callable
 from pace_core.pai_compat import (  # noqa: E402
     entry_name, primary_focus_of, ref_name, resolve_character_key, resolve_shot,
 )
-from pace_core.paths import paths_for                                     # noqa: E402
+from pace_core.paths import iter_canonical_scene_files, paths_for         # noqa: E402
 
 TIGHT_SIZES = ("extreme_close_up", "close_up", "medium_close_up")
 # Screen share between the focus and each other subject once restaged: a
@@ -249,9 +249,7 @@ def run(project: str, scenes: list[str] | None = None, write: bool = False,
     except (OSError, ValueError):
         characters = {}
     report = {"project": project, "write": write, "scenes": {}}
-    for f in sorted(Path(p.scenes_dir).glob("scene_*.json")):
-        if f.name.count(".") != 1:
-            continue
+    for f in iter_canonical_scene_files(Path(p.scenes_dir)):
         text = f.read_text()
         scene = json.loads(text)
         sid = scene.get("scene_id") or f.stem

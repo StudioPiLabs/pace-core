@@ -88,7 +88,7 @@ from pace_core.pai_compat import (
     resolve_prop_key,
 )
 from pace_core.setup.location_shape import SHAPES, shape_from_stub, shape_maps_from_doc
-from pace_core.paths import paths_for
+from pace_core.paths import iter_canonical_scene_files, paths_for
 
 DEFAULT_RES = (1280, 544)
 # The shell this builds is a cabin: a floor, a roof, two side walls with
@@ -1644,7 +1644,7 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
     stubs = _stub_doc.get("stubs") or {}
     _env_shape, _prefix_shape = shape_maps_from_doc(_stub_doc)
     files = ([Path(p.scenes_dir) / f"{scene_id}.json"] if scene_id
-             else sorted(Path(p.scenes_dir).glob("scene_*.json")))
+             else iter_canonical_scene_files(Path(p.scenes_dir)))
 
     out: list[dict] = []
     for sf in files:

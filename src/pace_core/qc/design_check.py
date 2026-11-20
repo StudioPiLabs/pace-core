@@ -225,7 +225,7 @@ def main() -> int:
     a = ap.parse_args()
 
     kb = (a.projects_root or paths.PAI_PROJECTS_ROOT) / a.project / "kb"
-    scenes = sorted((kb / "scenes").glob("scene_*.json"))
+    scenes = paths.iter_canonical_scene_files(kb / "scenes")
     if not scenes:
         print(f"no scenes for {a.project!r}", file=sys.stderr)
         return 1
