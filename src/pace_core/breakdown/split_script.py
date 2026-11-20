@@ -25,6 +25,7 @@ import json
 import os
 import re
 import sys
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 import logging
@@ -499,7 +500,7 @@ def _build_initial_shots(scene: dict) -> tuple[list[dict], list[dict], dict]:
         kind = _classify_kind(action_text, explicit_nonvisual=has_declared and declared[first] is None)
         beat = _clean_beat(action_text)
         shot_id = f"shot_{i:02d}"
-        panel_id = f"{scene['scene_id']}_{shot_id}_panel_{i:04d}"
+        panel_id = uuid.uuid4().hex   # a keyframe id is opaque: its scene and shot are where it is listed
         design = entry.get("design") or {}
         focus_ref = (design.get("focus") or (None, None))[1]
         looks_type, looks = design.get("eyeline_to") or (None, None)
@@ -637,7 +638,6 @@ def _to_pai_1_1(sc: dict, source_script: str) -> dict:
         "shots":           shots,
         "compile_hints":   compile_hints,
         "_max_shot_n":     len(shots),
-        "_max_panel_n":    len(shots),
         "_source":         source_script,
         "_generated_at":   datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }

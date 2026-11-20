@@ -82,6 +82,12 @@ A scene's id is opaque too. A scene file is `kb/scenes/<scene_id>.json` holding 
 order, then by id. Other files beside the scenes (enrichment sidecars, evidence,
 backups) are never read as scenes, and a file's name orders nothing.
 
+A keyframe (panel) id is opaque as well. `split_script`, `densify_panels`,
+`restage_tight_shots` and `build_beat_panels` mint a uuid4 hex for each panel they
+add; the scene and shot a keyframe belongs to are where it is listed, never parsed
+out of its id. Ids minted in the older `<scene>_shot_NN_panel_NNNN` form stay as
+they are.
+
 ## Tests
 
 ```

@@ -19,7 +19,7 @@ def _scene(size="close_up", framing="two_shot", position="front"):
          "pose": "standing, head tilted", "gaze": {"target_type": "character", "target_ref": "a"}},
     ]
     return {
-        "scene_id": "scene_09", "_max_panel_n": 5,
+        "scene_id": "scene_09",
         "compile_hints": [{"panel_id": "scene_09_shot_02_panel_0005"}],
         "shots": [
             {"shot_id": "shot_01",
@@ -95,13 +95,13 @@ def test_a_restage_that_hides_someone_is_not_kept():
     assert restage_scene(scene, "scene_09", probe, {}, 0.35)[0]["action"] == "split"
 
 
-def test_split_gives_each_subject_a_single_numbered_like_the_studio():
+def test_split_gives_each_subject_a_single_keyed_like_the_studio():
     scene = _scene()
     chars = {"subject_b": {"name": "b", "name_en": "Bee"}, "a": {"name_en": "Ay"}}
     rows = restage_scene(scene, "scene_09", _probe({"bound_by": "width"}), chars, 0.35)
     assert rows[0]["action"] == "split"
-    assert rows[0]["new_panels"] == ["scene_09_shot_02_panel_0006"]
     first, second = scene["shots"][1]["panels"]
+    assert rows[0]["new_panels"] == [second["id"]] and len(second["id"]) == 32   # a minted uuid4, as the Studio mints
     assert [p["panel_number"] for p in (first, second)] == [1, 2]
     assert [s["character_id"] for s in first["setup_override"]["subjects"]] == ["a"]
     assert [s["character_id"] for s in second["setup_override"]["subjects"]] == ["b"]
@@ -114,8 +114,7 @@ def test_split_gives_each_subject_a_single_numbered_like_the_studio():
     assert second["events_override"]["emotions"] == []
     assert second["events_override"]["actions"][0]["description_en"] == \
         "Bee watches Ay, standing, head tilted."
-    assert scene["_max_panel_n"] == 6
-    assert scene["compile_hints"][-1]["panel_id"] == "scene_09_shot_02_panel_0006"
+    assert scene["compile_hints"][-1]["panel_id"] == second["id"]
 
 
 def test_reaction_without_a_gaze_target_says_so():

@@ -313,7 +313,10 @@ def build_prop_anchors(project_root: Path, props: dict[str, Any], images: list[P
     return anchors
 
 
-def build_location_anchors(project_root: Path, loc_stubs: dict[str, Any], images: list[Path], scene_to_loc: dict[str, str]) -> dict[str, Any]:
+def build_location_anchors(project_root: Path, loc_stubs: dict[str, Any], images: list[Path], scene_to_loc: dict[str, str],
+                           scene_panels: dict[str, list[str]]) -> dict[str, Any]:
+    """`scene_panels`: each scene's keyframe ids, which name its storyboard images (a scene id is opaque, and older
+    keyframe ids name the scene by its old id)."""
     storyboard_images = [p for p in images if "/storyboards/" in str(p)]
     # Location anchors must be actual environment/location images. Character
     # sheets, LoRA portraits, and prop texture maps are not valid location
@@ -343,10 +346,8 @@ def build_location_anchors(project_root: Path, loc_stubs: dict[str, Any], images
                 if str(loc_id).lower() in str(x).lower()]
         candidates: list[str] = []
         for scene_id in loc_to_scenes.get(loc_id, [])[:8]:
-            scene_matches = sorted(
-                p for p in storyboard_images
-                if p.name.startswith(f"{scene_id}_") or p.name.startswith(f"{scene_id}__")
-            )
+            names = (f"{scene_id}_", *scene_panels.get(scene_id, ()))
+            scene_matches = sorted(p for p in storyboard_images if p.name.startswith(names))
             for path in scene_matches[:3]:
                 item = rel(path)
                 if item not in candidates:
@@ -836,7 +837,9 @@ def build_packets(project: str, base_model: str | None) -> dict[str, Any]:
 
     character_anchors = build_character_anchors(paths.storage, chars, images)
     prop_anchors = build_prop_anchors(paths.storage, props, images)
-    location_anchors = build_location_anchors(paths.storage, loc_stubs, images, scene_to_loc)
+    scene_panels = {str(s.get("scene_id")): [str(p["id"]) for sh in shots_of(s) for p in panels_of(sh) if p.get("id")]
+                    for s in scenes}
+    location_anchors = build_location_anchors(paths.storage, loc_stubs, images, scene_to_loc, scene_panels)
     ctx = CompileContext(characters_kb=chars, props_kb=props, location_stubs=loc_stubs,
                          film=film_of(paths.film_file), modeling_dir=paths.modeling_dir,
                          target_width=1280, target_height=544)

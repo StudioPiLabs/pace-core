@@ -1700,7 +1700,6 @@ def eligible_panels(project: str, scene_id: str | None = None) -> list[dict]:
                 out.append({
                     "scene_id": sid, "shot_id": sh.get("shot_id"),
                     "panel_id": pl.get("id"),
-                    "panel_n": str(pl.get("id") or "").rsplit("_", 1)[-1],
                     "subjects": len(subs),
                     # The set belongs to the location, not the panel, so a
                     # caller exporting one needs to know which panels share it.
