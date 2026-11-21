@@ -27,6 +27,43 @@ def test_registry_entries_become_litellm_requests():
     assert codex["model"] == "codex/m" and codex["metadata"] == {"codex": {"reasoning_effort": "low"}}
 
 
+def test_host_transport_covers_streaming_lifetime_and_discovery_failure(monkeypatch):
+    from contextlib import contextmanager
+    from types import SimpleNamespace
+    events = []
+    config = {"provider": "local", "model_name": "qwen", "endpoint": "http://old/v1/chat/completions"}
+
+    @contextmanager
+    def transport(cfg, options):
+        assert cfg is config
+        events.append("open")
+        try:
+            yield {**options, "api_base": "https://relay/v1"}
+        finally:
+            events.append("close")
+
+    def complete(litellm, options):
+        assert options["api_base"] == "https://relay/v1" and events == ["open"]
+        events.append("stream-consumed")
+        return SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content="hello"))], usage=None)
+
+    monkeypatch.setattr(llm_client, "_transport", transport)
+    monkeypatch.setattr(llm_client, "_complete", complete)
+    assert llm_client.call_model(config, []) == ("hello", 0.0)
+    assert events == ["open", "stream-consumed", "close"]
+    assert config["endpoint"] == "http://old/v1/chat/completions"
+
+    @contextmanager
+    def unavailable(cfg, options):
+        raise ValueError("discovery unavailable")
+        yield options
+
+    monkeypatch.setattr(llm_client, "_transport", unavailable)
+    with pytest.raises(ValueError, match="discovery unavailable"):
+        llm_client.call_model(config, [])
+    assert events == ["open", "stream-consumed", "close"]
+
+
 def test_chat_messages_become_responses_input():
     instructions, items = llm_client._responses_input([
         {"role": "system", "content": "Be brief."},
