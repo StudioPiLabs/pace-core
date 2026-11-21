@@ -25,7 +25,8 @@ import re
 import threading
 import urllib.error
 import urllib.request
-from typing import Optional
+from contextlib import nullcontext
+from typing import Callable, ContextManager, Optional
 
 # RouterBase (routerbase.com) is Cloudflare-fronted — the default urllib UA gets
 # a 403. Sending a browser-ish UA on every request fixes routerbase and is
@@ -250,6 +251,23 @@ def _load_litellm() -> None:
 
 # ── dispatch ──────────────────────────────────────────────────────────
 
+# A host can supply authenticated service discovery without coupling the shared
+# client to a scheduler or persisting short-lived credentials in model registries.
+_transport: Callable[[dict, dict], ContextManager[dict]] | None = None
+
+
+def configure_transport(factory: Callable[[dict, dict], ContextManager[dict]] | None) -> None:
+    """Set once at host startup; None restores the built-in provider transport.
+
+    The factory receives the registry entry and per-call LiteLLM options, and
+    yields options for exactly one completion. Its context remains open until
+    streaming finishes and sees original provider exceptions for grant cleanup.
+    Resolve network credentials per call; do not store them in the registry.
+    A discovery failure propagates without fallback to the original endpoint.
+    """
+    global _transport
+    _transport = factory
+
 def _api_base(endpoint: str | None, suffix: str) -> str | None:
     return endpoint[: -len(suffix)] if endpoint and endpoint.endswith(suffix) else endpoint
 
@@ -327,14 +345,16 @@ def call_model(model_cfg: dict, messages: list,
     litellm = _litellm()
     kwargs = _request(model_cfg, messages, api_key)
     try:
-        try:
-            response = _complete(litellm, kwargs)
-        except litellm.BadRequestError as e:
-            # Some models refuse temperature (GPT-5.6: "only the default (1)").
-            if "temperature" not in kwargs or "temperature" not in str(e):
-                raise
-            kwargs.pop("temperature")
-            response = _complete(litellm, kwargs)
+        with (_transport(model_cfg, kwargs) if _transport else nullcontext(kwargs)) as routed:
+            try:
+                response = _complete(litellm, routed)
+            except litellm.BadRequestError as e:
+                # An explicit parameter rejection is safe to correct. A lost
+                # connection or authorization failure is never replayed here.
+                if "temperature" not in routed or "temperature" not in str(e):
+                    raise
+                routed.pop("temperature")
+                response = _complete(litellm, routed)
     except litellm.Timeout as e:
         raise _timeout_error(model_cfg, kwargs.get("timeout")) from e
     except litellm.APIError as e:
