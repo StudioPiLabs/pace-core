@@ -38,6 +38,8 @@ rather than this function directly.
 
 from __future__ import annotations
 
+import re
+
 from pace_core.compilers.compile_common import (
     CompileContext, _character_back_hint, _character_hint, _focus_ordered_characters,
     _same_scope, _same_text, location_text as _location_text, seen_from_behind, sentence,
@@ -153,6 +155,11 @@ def _count_word(n: int) -> str:
     reliably than "exactly 3 people" — digits in a prompt full of measurements
     ("20 cm by 10 cm", "35mm") read as another dimension."""
     return _COUNT_EN[n] if 0 <= n < len(_COUNT_EN) else str(n)
+
+
+def _names_in(name: str, text: str) -> bool:
+    """Whether `text` names this character as a whole word ("Ann" is not in "Anna")."""
+    return bool(re.search(rf"(?<!\w){re.escape(name)}(?!\w)", text))
 
 
 _CAMERA_POSITION_EN = {
@@ -405,6 +412,11 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
                 # apart; on a single-subject panel the composition solver has
                 # already put the one subject where it belongs, and naming a
                 # side in the text would compete with it.
+                # The descriptor is trigger-free and nameless, so an action naming this character ("Lena turns
+                # to Ryan") had no body to bind to; the name joins the descriptor only when the action uses it.
+                name = ref_name(c, ctx.characters_kb)
+                if name and name != c and _names_in(name, action.get("description_en") or ""):
+                    hint = f"{name}, {hint}"
                 if phrase and len(chars) > 1:
                     hint = f"{phrase}, {hint}"
                 cast_bits.append(hint)
@@ -548,7 +560,9 @@ def compile_flux2(scene: dict, shot: dict, panel: dict, ctx: CompileContext) -> 
     if not is_feature_extreme_closeup and not empty_shot:
         poses = [str((s or {}).get("pose") or "").strip()
                  for s in (dig(shot, "setup", "subjects") or [])]
-        poses = [p for p in poses if p]
+        # Standing is the unmarked posture every unposed proxy declares; written out, it contradicted the action
+        # ("all standing" after "Lena kneels"), while the 3D model already carries the body.
+        poses = [p for p in poses if p] if any(p not in ("", "standing") for p in poses) else []
         if poses:
             uniq = list(dict.fromkeys(poses))
             if len(uniq) == 1:
