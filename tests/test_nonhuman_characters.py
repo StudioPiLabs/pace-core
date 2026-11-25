@@ -59,3 +59,25 @@ def test_animal_mesh_is_independent_of_human_fallback_files(tmp_path):
         "body_proxy_3d": {"mesh_file": "meshes/characters/otter.obj"}}}))
     assert modeling._subject_mesh_for({"character_id": "otter"}, paths, "standing") == selected
 
+
+
+def test_a_posed_build_stages_the_characters_own_smplx_body_over_its_registered_mesh(tmp_path):
+    chars = tmp_path / "characters.json"
+    paths = SimpleNamespace(chars_file=chars, storage=tmp_path, meshes_dir=tmp_path / "meshes")
+    meshes = paths.meshes_dir / "characters"
+    meshes.mkdir(parents=True)
+    (meshes / "smplx_sitting_c1.obj").write_text("posed")
+    chars.write_text(json.dumps({"c1": {"name": "Mara", "body_proxy_3d": {"mesh_file": "meshes/characters/c1.glb"}}}))
+    subject = {"character_id": "c1"}
+    assert modeling._subject_mesh_for(subject, paths, "sitting") == str(tmp_path / "meshes/characters/c1.glb")
+    assert modeling._subject_mesh_for(subject, paths, "sitting", posed=True) == str(meshes / "smplx_sitting_c1.obj")
+
+
+def test_a_merge_that_changes_nothing_leaves_the_registry_file_alone(tmp_path):
+    chars = tmp_path / "characters.json"
+    chars.write_text(json.dumps({"otter": {"name": "otter", "anchor": "A"}}))
+    seen = [{"name": "otter", "metadata_status": "source_only"}]
+    extract.merge_into_characters_json(seen, chars)
+    before = chars.stat().st_mtime_ns
+    extract.merge_into_characters_json(seen, chars)   # every build seeds the same cast again
+    assert chars.stat().st_mtime_ns == before and not list(tmp_path.glob(".*.tmp"))

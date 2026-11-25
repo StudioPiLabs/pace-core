@@ -148,6 +148,7 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
     entry answers to gets a new uuid4 hex key.
     """
     registry = load_registry(chars_file) or {"_schema_version": "0.1"}
+    before = json.dumps(registry, sort_keys=True)
 
     created = 0
     updated = 0
@@ -206,7 +207,10 @@ def merge_into_characters_json(extracted: list[dict], chars_file: Path) -> tuple
         if c.get("metadata_status") != "source_only":
             registry[key].setdefault("_extracted", {})["metadata_status"] = "extracted"
 
-    chars_file.write_text(json.dumps(registry, indent=2, ensure_ascii=False))
+    if json.dumps(registry, sort_keys=True) != before:   # concurrent builds read it; a reader never sees it half written
+        tmp = chars_file.with_name(f".{chars_file.name}.{uuid.uuid4().hex}.tmp")
+        tmp.write_text(json.dumps(registry, indent=2, ensure_ascii=False))
+        tmp.replace(chars_file)
     return created, updated, keys
 
 

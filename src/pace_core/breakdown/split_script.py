@@ -32,6 +32,7 @@ import logging
 
 from pace_scene_skills import load as _skill
 
+from pace_core.breakdown import derive_lighting_state
 from pace_core.llm_client import default_model
 from pace_core.pai_compat import entity_names
 from pace_core.types_v1 import SCHEMA_VERSION
@@ -626,7 +627,7 @@ def _to_pai_1_1(sc: dict, source_script: str) -> dict:
     shots, compile_hints, coverage = _build_initial_shots(sc)
     narrative_meta["axis"] = sc.get("axis") if isinstance(sc.get("axis"), dict) else None
     narrative_meta["coverage"] = coverage
-    return {
+    doc = {
         "_schema_version": SCHEMA_VERSION,
         "scene_id":        sc.get("scene_id"),
         "scene_number":    sc.get("scene_number"),
@@ -641,6 +642,8 @@ def _to_pai_1_1(sc: dict, source_script: str) -> dict:
         "_source":         source_script,
         "_generated_at":   datetime.now(timezone.utc).isoformat(timespec="seconds"),
     }
+    derive_lighting_state.derive(doc)
+    return doc
 
 
 PIPELINE_DIR = Path(__file__).resolve().parent
