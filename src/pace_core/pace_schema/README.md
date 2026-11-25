@@ -1,7 +1,8 @@
 # schema/ · PACE JSON Schema(机读事实源)
 
 - 体例:JSON Schema **draft-07**;`$id` 形如
-  `pace/<name>.schema.json`;版本随 `schemaVersion`(当前 `pace-0.2`)。
+  `pace/<name>.schema.json`;上游 registry 版本为 `pace-0.2`；SceneDoc 的 `schemaVersion`
+  单独由 `types_v1.py` 中的 `SCHEMA_VERSION` 定义（当前 `pace-1.3`）。
 - **additionalProperties 策略**:对象默认 `true`(向前兼容,读取方容忍新增字段);
   受控枚举字段严格 enum(取值即 `vocab/` 对应词条的 value)。
 - dormant 字段(见 registry)**同样在 schema 中定义**——写入合法但 lint 给 warning。
@@ -14,4 +15,5 @@
   - `semantics.schema.json` — OMC-lite(version/task/participant/context/relationship)
   - `shot_manifest.schema.json` — Shot Manifest(shot 级根:四柱 pace / continuity / audio / review / shot 级 artifacts[])
   - `panel_manifest.schema.json` — Panel Manifest(panel 级根:关键帧元数据 / panel 级 artifacts[])
-- 校验入口:`../tools/validate.py`(examples 全量校验 + registry/vocab 交叉检查)。
+- 版本一致性检查：[test_schema_version.py](../../../tests/test_schema_version.py)。
+  该测试检查版本常量和 schema 声明，不替代对业务输入的完整校验。
