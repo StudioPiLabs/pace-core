@@ -425,15 +425,16 @@ DEFAULT_SEAT_TOP = 0.45
 
 # ── host side: read the panel, measure the proxies, build the spec ────────
 
-def _subject_mesh_for(subject: dict, paths, pose: str) -> str:
-    """An explicit character mesh takes precedence over human stature fallbacks."""
+def _subject_mesh_for(subject: dict, paths, pose: str, *, posed: bool = False) -> str:
+    """An explicit character mesh takes precedence over human stature fallbacks; `posed` takes the character's posed
+    SMPL-X body instead, whose separate head is what the head matte and the read-point checks measure."""
     from pace_core.pai_compat import resolve_character
 
     cid = subject.get("character_id") or ""
     chars_file = getattr(paths, "chars_file", None)
     registry = json.loads(Path(chars_file).read_text()) if chars_file and Path(chars_file).is_file() else {}
     entry = resolve_character(cid, registry) or {}
-    declared = entry.get("body_proxy_3d")
+    declared = None if posed else entry.get("body_proxy_3d")
     if isinstance(declared, dict):
         declared = declared.get(pose) or declared.get("default") or declared.get("mesh_file")
     if isinstance(declared, str) and declared:
@@ -1016,12 +1017,13 @@ def hair_tone(descriptor: str | None) -> float | None:
 
 def build_spec(project: str, scene_id: str, panel_id: str,
                out_png: str | Path, res: tuple[int, int] = DEFAULT_RES, *,
-               scene: dict | None = None, dress: bool = False) -> dict:
+               scene: dict | None = None, dress: bool = False, posed_proxies: bool = False) -> dict:
     """Everything the kernel needs, read off the panel and the location stub.
 
     `scene` builds from a scene document that is not installed in the
     project (the paper's beat pilot); `dress` tones each proxy's garments from
-    its registered costume (see garment_tones).
+    its registered costume (see garment_tones); `posed_proxies` stages each character as its posed SMPL-X body rather
+    than its registered mesh (see _subject_mesh_for).
     """
     p = paths_for(project)
     if scene is None:
@@ -1252,7 +1254,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
         def _footprint_m(s: dict) -> float:
             if pose_key_for(s.get("pose"), pose) != "lying":
                 return SUBJECT_SPACING_M
-            mesh = Path(_subject_mesh_for(s, p, "lying"))
+            mesh = Path(_subject_mesh_for(s, p, "lying", posed=posed_proxies))
             return _proxy_length_m(str(mesh)) if mesh.is_file() else 1.75
 
         n = len(subs)
@@ -1405,7 +1407,7 @@ def build_spec(project: str, scene_id: str, panel_id: str,
     # three identical crouching bodies in a row where one should have been on
     # the ground.
     subjects = [{"character_id": s.get("character_id") or f"subj{i}",
-                 "mesh": _subject_mesh_for(s, p, pose_key_for(s.get("pose"), pose)),
+                 "mesh": _subject_mesh_for(s, p, pose_key_for(s.get("pose"), pose), posed=posed_proxies),
                  "pose": pose_key_for(s.get("pose"), pose),
                  "facing_deg": _facing_from_gaze(subs, places, i),
                  # The aim solve needs to know what each subject asked for,
@@ -1717,7 +1719,8 @@ def make_panel_modeling(project: str, scene_id: str, panel_id: str,
                        camera_delta: dict | None = None,
                        scene: dict | None = None,
                        dress: bool = False,
-                       scene_shell: dict | None = None) -> dict:
+                       scene_shell: dict | None = None,
+                       posed_proxies: bool = False) -> dict:
     """Build one panel's control frame. Returns the kernel's result dict.
 
     `scene_shell`: the cabin every panel of the scene is built in, as
@@ -1746,7 +1749,7 @@ def make_panel_modeling(project: str, scene_id: str, panel_id: str,
     from pace_core.node.blender_box import BlenderBox, PanelModelingSpec
 
     spec = build_spec(project, scene_id, panel_id, out_png, res=res, scene=scene,
-                      dress=dress)
+                      dress=dress, posed_proxies=posed_proxies)
     if camera_delta:
         spec["camera_delta"] = camera_delta
     if scene_shell:
